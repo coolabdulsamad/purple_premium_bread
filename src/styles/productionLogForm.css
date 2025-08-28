@@ -1,0 +1,342 @@
+/* ================================
+   Production Log Form — Full CSS
+   Theme: Purple / White / Black
+   ================================ */
+
+:root{
+  --ppb-primary: #6f42c1;      /* purple */
+  --ppb-primary-2: #56328f;    /* darker purple */
+  --ppb-dark: #212529;
+  --ppb-text: #2b2b2b;
+  --ppb-muted: #666b7a;
+  --ppb-border: #e6e6ef;
+  --ppb-bg: #ffffff;
+  --ppb-bg-alt: #fafafa;
+  --ppb-success: #1f9d55;
+  --ppb-error: #dc3545;
+  --ppb-info: #3b82f6;
+}
+
+/* Better defaults */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ================================
+   Wrapper + Title
+   ================================ */
+
+.plf-wrapper{
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--ppb-bg);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.06);
+}
+
+.plf-title{
+  margin: 2px 0 14px 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--ppb-dark);
+}
+
+/* Form spacing */
+.plf-form{
+  display: block;
+}
+
+/* ================================
+   Shift selector
+   ================================ */
+
+.plf-shift{
+  margin-bottom: 16px;
+}
+
+.plf-shift > label{
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: var(--ppb-dark);
+}
+
+/* Generic input wrapper with icon */
+.plf-inputwrap{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--ppb-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.plf-inputwrap svg{
+  color: var(--ppb-primary);
+  flex: 0 0 auto;
+}
+
+.plf-input{
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  background: transparent;
+  font-size: 14px;
+  color: var(--ppb-text);
+}
+
+/* Remove number spinners (Chrome) */
+.plf-input[type="number"]::-webkit-outer-spin-button,
+.plf-input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Firefox */
+.plf-input[type="number"]{
+  -moz-appearance: textfield;
+}
+
+/* Focus ring */
+.plf-input:focus,
+.plf-inputwrap:focus-within{
+  box-shadow: 0 0 0 3px rgba(111,66,193,.15);
+  border-color: #d5c8ff;
+}
+
+/* ================================
+   Product card row
+   ================================ */
+
+.plf-product{
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--ppb-border);
+  background: var(--ppb-bg-alt);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.plf-image{
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.plf-details{
+  min-width: 0; /* prevent overflowing on long names */
+}
+
+.plf-details h5{
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ppb-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plf-meta{
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ppb-muted);
+}
+
+/* Two-column inputs (desktop) */
+.plf-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.plf-grid > div > label{
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ppb-dark);
+  margin-bottom: 6px;
+}
+
+/* ================================
+   Buttons
+   ================================ */
+
+.plf-btn--primary{
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: var(--ppb-primary);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  transition: transform .12s ease, background .18s ease, box-shadow .18s ease;
+  box-shadow: 0 10px 24px rgba(111,66,193,.22);
+}
+
+.plf-btn--primary:hover{
+  background: var(--ppb-primary-2);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(111,66,193,.26);
+}
+
+.plf-btn--primary:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 8px 20px rgba(111,66,193,.18);
+}
+
+/* ================================
+   Empty / Loading states
+   ================================ */
+
+.plf-empty{
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--ppb-muted);
+  background: #f7f7fc;
+  border: 1px dashed #d9d2ff;
+  border-radius: 10px;
+}
+
+.centered-loading{
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 20px 0;
+  color: var(--ppb-muted);
+}
+
+/* ================================
+   Toastify (global look)
+   ================================ */
+
+.Toastify__toast{
+  border-radius: 12px;
+  font-weight: 700;
+  color: #fff;
+  padding-block: 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+}
+
+/* keep icon & body aligned nicely */
+.Toastify__toast-body{
+  align-items: center;
+}
+
+/* Left color accents by type (works with CustomToast too) */
+.Toastify__toast--success{
+  background: var(--ppb-success);
+  border-left: 6px solid #0f6a33;
+}
+.Toastify__toast--error{
+  background: var(--ppb-error);
+  border-left: 6px solid #a31628;
+}
+.Toastify__toast--info{
+  background: var(--ppb-primary);
+  border-left: 6px solid var(--ppb-primary-2);
+}
+
+/* Close button */
+.Toastify__close-button{
+  opacity: .9;
+}
+
+/* ================================
+   Responsiveness
+   ================================ */
+
+/* Tablets and down */
+@media (max-width: 1024px){
+  .plf-wrapper{
+    padding: 16px;
+    max-width: 100%;
+  }
+  .plf-product{
+    grid-template-columns: 100px 1fr;
+    gap: 14px;
+  }
+  .plf-image{
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px){
+  .plf-wrapper{
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.06);
+  }
+
+  .plf-title{
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  /* Stack product row vertically */
+  .plf-product{
+    grid-template-columns: 1fr;
+    align-items: flex-start;  /* ✅ align everything left */
+    text-align: left;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  /* Image: make full width like a banner */
+  .plf-image{
+    width: 100%;              /* ✅ takes full width */
+    height: auto;
+    max-height: 200px;        /* ✅ keep height reasonable */
+    border-radius: 10px;
+    margin: 0 0 10px 0;
+    object-fit: cover;        /* ✅ keep proportion nicely */
+  }
+
+  /* Inputs become single column */
+  .plf-grid{
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Ultra-small devices */
+@media (max-width: 380px){
+  .plf-wrapper{
+    padding: 10px;
+  }
+  .plf-inputwrap{
+    padding: 7px 9px;
+  }
+  .plf-btn--primary{
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+}

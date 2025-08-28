@@ -1,0 +1,211 @@
+:root {
+  --primary-purple: #4a148c;
+  --secondary-purple: #6a1b9a;
+  --text-light: #f4f4f4;
+  --text-dark: #2c3e50;
+  --bg-white: #ffffff;
+  --bg-dark-sidebar: #1f2833;
+  --border-color: #4a148c;
+  --header-height: 60px;
+  --sidebar-width-expanded: 250px;
+  --sidebar-width-collapsed: 80px;
+}
+
+.sidebar-container {
+  background-color: var(--bg-white);
+  color: var(--bg-dark-sidebar);
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  width: var(--sidebar-width-expanded);
+}
+
+.sidebar-container::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 1rem 1rem;
+  min-height: 40px;
+  margin-bottom: 1rem;
+}
+
+.app-branding-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 1;
+}
+
+.app-logo-sidebar {
+  height: 35px;
+  width: 35px;
+  margin-right: 0.5rem;
+}
+
+.app-name-sidebar {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary-purple);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-toggle-button {
+  background: none;
+  border: none;
+  color: var(--bg-dark-sidebar);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.sidebar-toggle-button:hover {
+  color: var(--secondary-purple);
+}
+
+.sidebar-nav {
+  flex-grow: 1;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: var(--bg-dark-sidebar);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin: 0 15px 15px 15px;
+  border-radius: 8px;
+}
+
+.nav-link:hover {
+  color: var(--primary-purple);
+  background-color: rgba(74, 20, 140, 0.1);
+}
+
+.nav-link.active {
+  background-color: var(--primary-purple);
+  color: var(--bg-white);
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  margin-right: 1rem;
+  transition: margin 0.3s ease;
+  min-width: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.nav-name {
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 1.5rem;
+}
+
+.sidebar-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem 1.5rem;
+  color: var(--bg-dark-sidebar);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.logout-button:hover {
+  color: var(--primary-purple);
+  background-color: rgba(74, 20, 140, 0.1);
+}
+
+.logout-button .nav-icon {
+  margin-right: 1rem;
+}
+
+/* Collapsed state styles */
+.sidebar-container.collapsed {
+  width: var(--sidebar-width-collapsed);
+}
+
+.sidebar-container.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar-container.collapsed .nav-name,
+.sidebar-container.collapsed .logout-button .nav-name {
+  width: 0;
+  opacity: 0;
+}
+
+.sidebar-container.collapsed .nav-icon {
+  margin-right: 0;
+}
+
+.sidebar-container.collapsed .nav-link,
+.sidebar-container.collapsed .logout-button {
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+
+.sidebar-container.collapsed .nav-link:hover,
+.sidebar-container.collapsed .logout-button:hover {
+  background-color: transparent;
+  color: var(--primary-purple);
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .sidebar-container {
+    position: fixed;
+    height: 100vh;
+    width: var(--sidebar-width-expanded);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .sidebar-container.expanded {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle-button {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .app-branding-sidebar {
+    display: none;
+  }
+}

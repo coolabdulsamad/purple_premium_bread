@@ -1,0 +1,377 @@
+/* Color Palette & Variables */
+:root {
+    --primary-purple: #7B68EE; /* Main purple */
+    --primary-purple-light: #ab47bc; /* Accent for gradients */
+    --primary-purple-dark: #6a1b9a;
+    --primary-blue: #42A5F5;
+    --primary-green: #66BB6A;
+    --primary-orange: #FFA726;
+    --primary-dark-blue: #3949AB;
+    --primary-gray: #BDBDBD;
+
+    --text-dark: #333333;
+    --text-light: #FFFFFF;
+    --text-gray: #555555;
+    --background-light: #F0F2F5; /* A softer light background */
+    --background-card: #FFFFFF;
+    --border-color: #e9ecef;
+    --shadow-light: rgba(0, 0, 0, 0.08);
+    --shadow-medium: rgba(0, 0, 0, 0.12);
+}
+
+/* Base Styles */
+body {
+    background-color: var(--background-light);
+    color: var(--text-dark);
+    font-family: 'Inter', sans-serif; /* Using a clean, modern font */
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-container {
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+/* Welcome Banner */
+.welcome-banner {
+    background: linear-gradient(135deg, var(--primary-purple-dark) 0%, var(--primary-purple) 100%);
+    color: var(--text-light);
+    padding: 3rem;
+    border-radius: 20px;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 20vh;
+}
+
+.banner-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.banner-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.banner-text {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.banner-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.banner-subtitle {
+    font-size: 1.2rem;
+    font-weight: 400;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+/* Header & Main Title */
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+    text-align: center;
+}
+
+.header-icon {
+    font-size: 3rem;
+    color: var(--primary-purple);
+}
+
+.main-header {
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin: 0;
+    color: var(--text-dark);
+}
+
+/* KPI Cards */
+.kpi-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.kpi-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 2.5rem;
+    border-radius: 16px;
+    background-color: var(--background-card);
+    box-shadow: 0 6px 20px var(--shadow-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    min-height: 100px;
+}
+
+.kpi-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+/* Card background effects */
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.05); /* a subtle background color */
+    opacity: 0.5;
+    z-index: 1;
+}
+
+/* Thematic icons */
+.kpi-icon-absolute {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    font-size: 2.5rem;
+    z-index: 2;
+}
+
+/* Specific icon colors */
+.kpi-card .fa-dollar-sign { color: #8E24AA; } /* Purple */
+.kpi-card .fa-chart-line { color: #039BE5; } /* Blue */
+.kpi-card .fa-credit-card { color: #43A047; } /* Green */
+.kpi-card .fa-box-open { color: #FDD835; } /* Yellow */
+.kpi-card .fa-tractor { color: #EF6C00; } /* Orange */
+.kpi-card .fa-exclamation-triangle { color: #E53935; } /* Red */
+.kpi-card .fa-trash-alt { color: #6D4C41; } /* Brown */
+.kpi-card .fa-receipt { color: #7CB342; } /* Lime Green */
+.kpi-card .fa-users { color: #37474F; } /* Dark Gray */
+
+/* Text styles for the new card design */
+.kpi-card .kpi-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+}
+
+.kpi-value-large {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1;
+    margin-bottom: 1rem;
+}
+
+.kpi-subtitle-large {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.subtitle-icon {
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+/* Charts Section */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.chart-card {
+    background-color: var(--background-card);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px var(--shadow-light);
+    transition: box-shadow 0.3s ease;
+    height: 450px; /* Increased height for all charts */
+}
+
+.chart-card:hover {
+    box-shadow: 0 12px 35px var(--shadow-medium);
+}
+
+.chart-card-small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 450px; /* Increased height for small charts */
+    padding: 1.5rem;
+}
+
+/* Low Stock Table */
+.table-section-card {
+    background-color: var(--background-card);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px var(--shadow-light);
+    overflow: hidden;
+}
+
+.section-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-dark);
+}
+
+.icon-danger {
+    color: #dc3545;
+}
+
+.no-stock-alert {
+    border-radius: 10px;
+    font-weight: 500;
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.table-responsive-wrapper {
+    overflow-x: auto;
+}
+
+.low-stock-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+.low-stock-table th, .low-stock-table td {
+    padding: 1.2rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.low-stock-table th {
+    background-color: var(--background-light);
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+}
+
+.low-stock-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.stock-low {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .main-header {
+        font-size: 2.2rem;
+    }
+    .kpi-cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .charts-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .dashboard-container {
+        padding: 1.5rem;
+    }
+    .kpi-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .welcome-banner {
+        padding: 2.5rem;
+    }
+    .banner-title {
+        font-size: 2rem;
+    }
+    .banner-subtitle {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    .main-header {
+        font-size: 1.8rem;
+    }
+    .welcome-banner {
+        padding: 2rem 1rem;
+    }
+    .banner-title {
+        font-size: 1.8rem;
+    }
+    .banner-subtitle {
+        font-size: 1rem;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .kpi-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    .kpi-card:hover {
+        transform: none;
+    }
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .chart-card, .chart-card-small {
+        height: 350px;
+        padding: 1.5rem;
+    }
+    .table-section-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .banner-icon {
+        font-size: 3rem;
+    }
+    .kpi-value-large {
+        font-size: 2.2rem;
+    }
+}

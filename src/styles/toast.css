@@ -1,0 +1,44 @@
+/* ===== Toastify Custom Theme ===== */
+.Toastify__toast {
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ppb-text);
+  box-shadow: var(--ppb-shadow);
+}
+
+/* Success */
+.Toastify__toast--success {
+  background: var(--ppb-purple);
+  color: #fff;
+}
+.Toastify__toast--success .Toastify__progress-bar {
+  background: #fff; /* progress bar matches text */
+}
+
+/* Error */
+.Toastify__toast--error {
+  background: #ff4b4b;
+  color: #fff;
+}
+.Toastify__toast--error .Toastify__progress-bar {
+  background: #fff;
+}
+
+/* Warning */
+.Toastify__toast--warning {
+  background: #ffb020;
+  color: #fff;
+}
+.Toastify__toast--warning .Toastify__progress-bar {
+  background: #fff;
+}
+
+/* Info */
+.Toastify__toast--info {
+  background: var(--ppb-purple-600);
+  color: #fff;
+}
+.Toastify__toast--info .Toastify__progress-bar {
+  background: #fff;
+}

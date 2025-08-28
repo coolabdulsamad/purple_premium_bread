@@ -1,0 +1,117 @@
+:root{
+  --ppb-primary:#6f42c1;   /* purple */
+  --ppb-primary-2:#4e2d91; /* darker purple */
+  --ppb-dark:#212529;
+  --ppb-bg:#ffffff;
+  --ppb-light:#f8f9fa;
+  --ppb-success:#28a745;
+  --ppb-error:#dc3545;
+}
+
+/* Page container */
+.production-dashboard-container{
+  max-width:1200px;
+  margin:0 auto;
+  padding:16px;
+}
+
+/* Header (POS-style) */
+.production-dashboard-header{
+  background: linear-gradient(135deg, var(--ppb-primary), var(--ppb-primary-2));
+  color:#fff;
+  padding:22px;
+  border-radius:14px;
+  margin-bottom:18px;
+  box-shadow: 0 6px 16px rgba(111,66,193,0.25);
+}
+.production-title{
+  margin:0;
+  font-size:22px;
+  font-weight:700;
+}
+.production-subtitle{
+  margin:6px 0 0 0;
+  opacity:.95;
+  font-size:14px;
+}
+
+/* Tabs */
+.tab-container{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:16px;
+}
+.tab-btn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:#fff;
+  border:1px solid #e6e6ef;
+  color:var(--ppb-dark);
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition:.18s ease-in-out;
+}
+.tab-btn:hover{
+  transform: translateY(-1px);
+  background:#f1edfb;
+  border-color:#ded3ff;
+}
+.tab-btn.active{
+  background: var(--ppb-primary);
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(111,66,193,.22);
+}
+
+/* Content area */
+.tab-content{
+  background:#fff;
+  border-radius:14px;
+  padding:16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+
+/* Utility cards (if any content sections need a card look) */
+.prod-card{
+  background:#fff;
+  border-radius:12px;
+  padding:16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+
+/* Toastify quick tune (optional global look) */
+.Toastify__toast{
+  border-radius:10px;
+  font-weight:600;
+}
+.Toastify__toast--success{
+  background: var(--ppb-success);
+  color:#fff;
+}
+.Toastify__toast--error{
+  background: var(--ppb-error);
+  color:#fff;
+}
+.Toastify__toast--info{
+  background: var(--ppb-primary);
+  color:#fff;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .production-dashboard-container{
+    padding:8px;
+    max-width:100%;
+  }
+  .tab-container{
+    gap:8px;
+  }
+  .tab-content{
+    padding:12px;
+  }
+}

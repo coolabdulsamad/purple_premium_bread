@@ -1,0 +1,123 @@
+:root {
+  --primary-purple: #4a148c;
+  --secondary-purple: #6a1b9a;
+  --text-light: #f4f4f4;
+  --text-dark: #2c3e50;
+  --bg-white: #ffffff;
+  --bg-dark-sidebar: #1f2833;
+  --border-color: #4a148c;
+  --header-height: 60px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 999;
+  height: var(--header-height);
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-branding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-logo {
+  height: 40px;
+  width: 40px;
+}
+
+.app-name {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--primary-purple);
+  white-space: nowrap;
+}
+
+.menu-toggle-button {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--primary-purple);
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.profile-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.user-role {
+  font-size: 0.85rem;
+  color: var(--secondary-purple);
+  font-weight: 400;
+  text-transform: capitalize;
+  line-height: 1.1;
+}
+
+.profile-icon {
+  font-size: 2rem;
+  color: var(--secondary-purple);
+  transition: color 0.2s ease;
+}
+
+.profile-icon:hover {
+  color: var(--primary-purple);
+}
+
+@media (max-width: 768px) {
+  .menu-toggle-button {
+    display: block;
+  }
+
+  .app-branding .app-name {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .user-name {
+    display: none;
+  }
+  .profile-container {
+    max-width: 50px;
+  }
+  .user-role {
+    display: none;
+  }
+}

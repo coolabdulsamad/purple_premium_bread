@@ -1,0 +1,68 @@
+:root {
+  --purple: #6B46C1;
+  --yellow: #F6E05E;
+  --white: #FFFFFF;
+  --light-gray: #F7FAFC;
+  --dark-gray: #2D3748;
+}
+
+body {
+  margin: 0;
+  font-family: 'Open Sans', sans-serif; /* Fallback font */
+  background-color: var(--light-gray);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.login-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-card h1 {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--purple);
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
+
+.login-card button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--purple);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.login-card button:hover {
+  background-color: #553C9A; /* A slightly darker purple */
+}
