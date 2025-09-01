@@ -17,7 +17,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CustomToast from '../components/CustomToast';
-import '../styles/salesOut.css';
+import '../assets/styles/salesOut.css';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 

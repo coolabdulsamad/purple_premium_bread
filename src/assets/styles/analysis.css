@@ -1,0 +1,435 @@
+/* src/styles/analysis.css */
+:root {
+    --report--purple: #4a148c;
+    --report--purple-700: #3a0f6e;
+    --report--purple-50: #f6f0ff;
+    --ink: #141414;
+    --muted: #6b6b6b;
+    --line: #e0e0e0;
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --report-success: #4a148c;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #17a2b8;
+    --positive: #28a745;
+    --negative: #dc3545;
+}
+
+.analysis-page-container {
+    padding: 1.5rem;
+    background-color: var(--bg);
+    min-height: 100vh;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.main-header {
+    /* color: var(--report--purple); */
+    color: white;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 1.1rem;
+}
+
+.analysis-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--card-bg);
+    overflow: hidden;
+}
+
+.analysis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.analysis-card-header {
+    background: linear-gradient(to right, var(--report--purple-50), white);
+    border-bottom: 1px solid var(--line);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.analysis-card-header h5 {
+    color: var(--report--purple);
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.card-icon {
+    background-color: var(--report--purple);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1.1rem;
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.filter-label {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.filter-row {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0 0.5rem;
+}
+
+.filter-col {
+    flex: 1 0 calc(25% - 1rem);
+    margin-bottom: 0.5rem;
+    min-width: 200px;
+}
+
+.clear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    height: fit-content;
+    align-self: flex-end;
+}
+
+.clear-btn:hover {
+    background-color: var(--report--purple-50);
+    color: var(--report--purple);
+    border-color: var(--report--purple);
+}
+
+.form-control, .form-select {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--report--purple);
+    box-shadow: 0 0 0 0.2rem rgba(74, 20, 140, 0.15);
+}
+
+.chart-container {
+    height: 400px;
+    position: relative;
+    margin-top: 1rem;
+}
+
+/* Summary Section */
+.summary-section {
+    padding: 1rem;
+    background-color: var(--report--purple-50);
+    border-radius: 8px;
+    height: 100%;
+}
+
+.summary-title {
+    color: var(--report--purple);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 1.1rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.summary-item {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+}
+
+.summary-value {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 1rem;
+}
+
+.summary-value.positive {
+    color: var(--positive);
+}
+
+.summary-value.negative {
+    color: var(--negative);
+}
+
+.period-info {
+    background-color: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.period-dates {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.period-label {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.metric-item {
+    background-color: var(--report--purple-50);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: var(--report--purple);
+    font-size: 1.1rem;
+}
+
+.metric-explanation {
+    grid-column: 1 / -1;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+}
+
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.data-table {
+    font-size: 0.9rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    min-width: 800px;
+}
+
+.data-table th {
+    background-color: var(--report--purple-50);
+    color: var(--report--purple);
+    font-weight: 600;
+    padding: 0.75rem;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 0.75rem;
+    border-top: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.no-data-alert {
+    background-color: var(--report--purple-50);
+    border: none;
+    border-radius: 8px;
+    color: var(--report--purple);
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    color: var(--report--purple);
+}
+
+.loading-container p {
+    margin-top: 1rem;
+    color: var(--muted);
+}
+
+.text-success {
+    color: var(--report-success) !important;
+    font-weight: 600;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .filter-controls {
+        gap: 0.75rem;
+    }
+    
+    .filter-group {
+        min-width: 100px;
+    }
+    
+    .filter-col {
+        flex: 1 0 calc(33.333% - 1rem);
+    }
+}
+
+@media (max-width: 992px) {
+    .analysis-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filter-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: auto;
+        margin-right: 0.5rem;
+    }
+    
+    .filter-col {
+        flex: 1 0 calc(50% - 1rem);
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        height: 350px;
+    }
+}
+
+@media (max-width: 768px) {
+    .analysis-page-container {
+        padding: 1rem;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .filter-group {
+        margin-right: 0;
+    }
+    
+    .filter-col {
+        flex: 1 0 100%;
+    }
+    
+    .clear-btn {
+        align-self: stretch;
+        margin-top: 0.5rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .main-header {
+        font-size: 1.75rem;
+    }
+    
+    .analysis-card-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    .card-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+    
+    .data-table {
+        font-size: 0.8rem;
+    }
+    
+    .data-table th, 
+    .data-table td {
+        padding: 0.5rem;
+    }
+}

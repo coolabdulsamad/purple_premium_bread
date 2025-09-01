@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes } from 'react-icons/fa'; // Import icons
-import '../styles/admin.css'; // Ensure this CSS file exists and is styled appropriately
+import '../assets/styles/admin.css'; // Ensure this CSS file exists and is styled appropriately
 
 const API_BASE_URL = 'http://localhost:5000/api';
 

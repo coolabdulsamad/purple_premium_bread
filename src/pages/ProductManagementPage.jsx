@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Form, FormControl, Table, Alert, Spinner, Tabs, Tab, Card, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaTimes } from 'react-icons/fa';
-import '../styles/product-management.css';
+import { Button, Form, FormControl, Table, Alert, Spinner, Card, Row, Col, InputGroup, Nav } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaBox, FaTags, FaFilter, FaImage } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import '../assets/styles/product-management.css';
+import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -64,8 +67,13 @@ const ProductManagementPage = () => {
 
             const response = await axios.get(`${API_BASE_URL}/products`, { params });
             setProducts(response.data);
+            // toast.success(`Loaded ${response.data.length} products successfully`);
+            toast(<CustomToast id="tab-switched" type="success" message={`Loaded ${response.data.length} products successfully`} />);
         } catch (err) {
-            setError('Failed to fetch products: ' + (err.response?.data?.details || err.message));
+            const errorMsg = 'Failed to fetch products: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             console.error('Error fetching products:', err);
         } finally {
             setLoading(false);
@@ -80,15 +88,19 @@ const ProductManagementPage = () => {
             const response = await axios.get(`${API_BASE_URL}/products/categories`, { params });
             setCategories(response.data);
         } catch (err) {
-            setError('Failed to fetch categories: ' + (err.response?.data?.details || err.message));
+            const errorMsg = 'Failed to fetch categories: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
             console.error('Error fetching categories:', err);
         }
     };
 
     useEffect(() => {
-        fetchProducts();
-        fetchCategories();
-    }, []);
+        if (activeTab === 'products') {
+            fetchProducts();
+        } else if (activeTab === 'categories') {
+            fetchCategories();
+        }
+    }, [activeTab]);
 
     useEffect(() => {
         if (activeTab === 'products') {
@@ -133,7 +145,6 @@ const ProductManagementPage = () => {
         }));
     };
 
-
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -141,13 +152,19 @@ const ProductManagementPage = () => {
         const dataToSubmit = { ...productFormData };
 
         if (dataToSubmit.units.length === 0) {
-            setError('At least one unit is required for the product.');
+            const errorMsg = 'At least one unit is required for the product.';
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             return;
         }
 
         const invalidUnit = dataToSubmit.units.some(unit => !unit.type || !unit.display.trim());
         if (invalidUnit) {
-            setError('All unit types and display values must be filled.');
+            const errorMsg = 'All unit types and display values must be filled.';
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             return;
         }
 
@@ -159,8 +176,13 @@ const ProductManagementPage = () => {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 dataToSubmit.image_url = uploadRes.data.url;
+                // toast.success('Image uploaded successfully');
+                toast(<CustomToast id="tab-switched" type="success" message="Image uploaded successfully" />);
             } catch (err) {
-                setError('Failed to upload image: ' + (err.response?.data?.details || err.message));
+                const errorMsg = 'Failed to upload image: ' + (err.response?.data?.details || err.message);
+                setError(errorMsg);
+                // toast.error(errorMsg);
+                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
                 console.error('Image upload error:', err);
                 return;
             }
@@ -171,10 +193,12 @@ const ProductManagementPage = () => {
         try {
             if (editingProduct) {
                 await axios.put(`${API_BASE_URL}/products/${editingProduct.id}`, dataToSubmit);
-                alert('Product updated successfully!');
+                // toast.success('Product updated successfully!');
+                toast(<CustomToast id="tab-switched" type="success" message="Product updated successfully!" />);
             } else {
                 await axios.post(`${API_BASE_URL}/products`, dataToSubmit);
-                alert('Product created successfully!');
+                toast.success('Product created successfully!');
+                toast(<CustomToast id="tab-switched" type="error" message="Product created successfully" />);
             }
             fetchProducts();
             setEditingProduct(null);
@@ -190,7 +214,10 @@ const ProductManagementPage = () => {
                 units: [{ type: 'pcs', display: '1 pcs' }],
             });
         } catch (err) {
-            setError('Failed to save product: ' + (err.response?.data?.details || err.message));
+            const errorMsg = 'Failed to save product: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             console.error('Product save error:', err);
         }
     };
@@ -208,6 +235,8 @@ const ProductManagementPage = () => {
             is_active: product.is_active,
             units: product.units && product.units.length > 0 ? product.units : [{ type: 'pcs', display: '1 pcs' }],
         });
+        // toast.info('Editing product: ' + product.name);
+        toast(<CustomToast id="tab-switched" type="info" message={'Editing product: ' + product.name} />);
     };
 
     const handleDeleteProduct = async (productId) => {
@@ -215,10 +244,14 @@ const ProductManagementPage = () => {
             setError('');
             try {
                 await axios.delete(`${API_BASE_URL}/products/${productId}`);
-                alert('Product deleted successfully!');
+                // toast.success('Product deleted successfully!');
+                toast(<CustomToast id="tab-switched" type="success" message='Product deleted successfully!' />);
                 fetchProducts();
             } catch (err) {
-                setError('Failed to delete product: ' + (err.response?.data?.details || err.message));
+                const errorMsg = 'Failed to delete product: ' + (err.response?.data?.details || err.message);
+                setError(errorMsg);
+                // toast.error(errorMsg);
+                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
                 console.error('Product delete error:', err);
             }
         }
@@ -229,6 +262,8 @@ const ProductManagementPage = () => {
         setProductFormData({
             name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
         });
+        // toast.info('Cancelled product editing');
+        toast(<CustomToast id="tab-switched" type="info" message='Cancelled product editing' />);
     };
 
     // --- Category Handlers ---
@@ -246,16 +281,21 @@ const ProductManagementPage = () => {
         try {
             if (editingCategory) {
                 await axios.put(`${API_BASE_URL}/products/categories/${editingCategory.id}`, categoryFormData);
-                alert('Category updated successfully!');
+                // toast.success('Category updated successfully!');
+                toast(<CustomToast id="tab-switched" type="success" message='Category updated successfully!' />);
             } else {
                 await axios.post(`${API_BASE_URL}/products/categories`, categoryFormData);
-                alert('Category created successfully!');
+                // toast.success('Category created successfully!');
+                toast(<CustomToast id="tab-switched" type="success" message='Category created successfully!' />);
             }
             fetchCategories();
             setEditingCategory(null);
             setCategoryFormData({ name: '', description: '' });
         } catch (err) {
-            setError('Failed to save category: ' + (err.response?.data?.details || err.message));
+            const errorMsg = 'Failed to save category: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             console.error('Category save error:', err);
         }
     };
@@ -266,6 +306,8 @@ const ProductManagementPage = () => {
             name: category.name,
             description: category.description,
         });
+        // toast.info('Editing category: ' + category.name);
+        toast(<CustomToast id="tab-switched" type="success" message={'Editing category: ' + category.name} />);
     };
 
     const handleDeleteCategory = async (categoryId) => {
@@ -273,11 +315,14 @@ const ProductManagementPage = () => {
             setError('');
             try {
                 await axios.delete(`${API_BASE_URL}/products/categories/${categoryId}`);
-                alert('Category deleted successfully!');
+                // toast.success('Category deleted successfully!');
+                toast(<CustomToast id="tab-switched" type="success" message='Category deleted successfully!' />);
                 fetchCategories();
-                fetchProducts();
             } catch (err) {
-                setError('Failed to delete category: ' + (err.response?.data?.details || err.message));
+                const errorMsg = 'Failed to delete category: ' + (err.response?.data?.details || err.message);
+                setError(errorMsg);
+                // toast.error(errorMsg);
+                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
                 console.error('Category delete error:', err);
             }
         }
@@ -286,360 +331,434 @@ const ProductManagementPage = () => {
     const cancelCategoryEdit = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: '', description: '' });
+        // toast.info('Cancelled category editing');
+        toast(<CustomToast id="tab-switched" type="info" message='Cancelled category editing' />);
     };
 
     // Helper for filter submission
     const handleProductFilterSubmit = (e) => {
         e.preventDefault();
         fetchProducts();
+        // toast.info('Applying product filters...');
+        toast(<CustomToast id="tab-switched" type="info" message='Applying product filters...' />);
     };
 
     const handleCategoryFilterSubmit = (e) => {
         e.preventDefault();
         fetchCategories();
+        // toast.info('Searching categories...');
+        toast(<CustomToast id="tab-switched" type="info" message='Searching categories...' />);
     };
 
     return (
         <div className="product-management-container">
-            <h1 className="product-management-header">Product & Category Management</h1>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                id="tab-switched"
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
 
-            {error && <Alert variant="danger" className="my-3">{error}</Alert>}
+            <div className="product-management-header">
+                <h1>
+                    <FaBox className="me-2" /> Product & Category Management
+                </h1>
+                <p>Manage products and categories efficiently</p>
+            </div>
 
-            <Tabs activeKey={activeTab} onSelect={(k) => {
-                setActiveTab(k);
-                setFilterName('');
-                setFilterCategory('');
-                setFilterMinPrice('');
-                setFilterMaxPrice('');
-                setFilterMinStock('');
-                setFilterMaxStock('');
-                setFilterIsActive('');
-                setFilterProductId('');
-                setCategorySearchTerm('');
-                setProductFormData({
-                    name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
-                });
-                setEditingProduct(null);
-                setCategoryFormData({ name: '', description: '' });
-                setEditingCategory(null);
-            }} className="mb-3 custom-tabs">
-                <Tab eventKey="products" title="Products">
-                    {/* Product Add/Edit Form */}
-                    <Card className="product-management-card form-card mb-4">
-                        <h2 className="card-title">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-                        <Form onSubmit={handleProductSubmit} className="product-form">
-                            <Form.Group className="mb-3">
-                                <Form.Label>Product Name</Form.Label>
-                                <FormControl type="text" name="name" value={productFormData.name} onChange={handleProductChange} required />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Category</Form.Label>
-                                <Form.Control as="select" name="category" value={productFormData.category} onChange={handleProductChange} required>
-                                    <option value="">Select Category</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+            {error && <Alert variant="danger" className="alert-message">{error}</Alert>}
+
+            {/* Custom Tab Navigation */}
+            <div className="custom-tabs-container">
+                <Nav variant="pills" className="custom-tabs-nav" activeKey={activeTab} onSelect={setActiveTab}>
+                    <Nav.Item>
+                        <Nav.Link eventKey="products" className={activeTab === 'products' ? 'active' : ''}>
+                            <FaBox className="me-1" /> Products
+                        </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                        <Nav.Link eventKey="categories" className={activeTab === 'categories' ? 'active' : ''}>
+                            <FaTags className="me-1" /> Categories
+                        </Nav.Link>
+                    </Nav.Item>
+                </Nav>
+
+                {/* Tab Content */}
+                <div className="tab-content">
+                    {/* Products Tab */}
+                    {activeTab === 'products' && (
+                        <div className="tab-pane active">
+                            {/* Product Add/Edit Form */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaPlus /> {editingProduct ? 'Edit Product' : 'Add New Product'}
+                                </div>
+                                <Form onSubmit={handleProductSubmit} className="product-form">
+                                    <Row>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Product Name</Form.Label>
+                                                <FormControl type="text" name="name" value={productFormData.name} onChange={handleProductChange} required />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Category</Form.Label>
+                                                <Form.Control as="select" name="category" value={productFormData.category} onChange={handleProductChange} required>
+                                                    <option value="">Select Category</option>
+                                                    {categories.map(cat => (
+                                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                    ))}
+                                                </Form.Control>
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Price</Form.Label>
+                                                <FormControl type="number" name="price" value={productFormData.price} onChange={handleProductChange} step="0.01" required />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Min Stock Level</Form.Label>
+                                                <FormControl type="number" name="min_stock_level" value={productFormData.min_stock_level} onChange={handleProductChange} step="0.01" required />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Product Image</Form.Label>
+                                                <FormControl type="file" name="image_file" onChange={handleProductChange} />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6} lg={4}>
+                                            <Form.Group>
+                                                <Form.Label>Status</Form.Label>
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    name="is_active"
+                                                    label="Active"
+                                                    checked={productFormData.is_active}
+                                                    onChange={handleProductChange}
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+
+                                    {/* Dynamic Unit Inputs */}
+                                    <Form.Label className="mt-3">Product Units:</Form.Label>
+                                    {productFormData.units.map((unit, index) => (
+                                        <Row key={index} className="mb-2 align-items-end">
+                                            <Col md={5}>
+                                                <Form.Group>
+                                                    <Form.Label>Unit Type</Form.Label>
+                                                    <Form.Control as="select" value={unit.type} onChange={(e) => handleUnitChange(index, 'type', e.target.value)} required>
+                                                        <option value="pcs">Pieces (pcs)</option>
+                                                        <option value="kg">Kilogram (kg)</option>
+                                                        <option value="meter">Meter (m)</option>
+                                                        <option value="liter">Liter (L)</option>
+                                                        <option value="dozen">Dozen</option>
+                                                    </Form.Control>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={5}>
+                                                <Form.Group>
+                                                    <Form.Label>Display Value</Form.Label>
+                                                    <FormControl type="text" placeholder="e.g., 0.5 kg, 15 pcs" value={unit.display} onChange={(e) => handleUnitChange(index, 'display', e.target.value)} required />
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={2}>
+                                                {productFormData.units.length > 1 && (
+                                                    <Button variant="outline-secondary" size="sm" onClick={() => removeUnit(index)}>
+                                                        <FaTimes />
+                                                    </Button>
+                                                )}
+                                            </Col>
+                                        </Row>
                                     ))}
-                                </Form.Control>
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Price</Form.Label>
-                                <FormControl type="number" name="price" value={productFormData.price} onChange={handleProductChange} step="0.01" required />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Min_Stock_Level</Form.Label>
-                                <FormControl type="number" name="min_stock_level" value={productFormData.min_stock_level} onChange={handleProductChange} step="0.01" required />
-                            </Form.Group>
+                                    <Button variant="outline-secondary" size="sm" onClick={addUnit} className="mb-3">
+                                        <FaPlus className="me-1" /> Add Another Unit
+                                    </Button>
 
-                            {/* Dynamic Unit Inputs */}
-                            <Form.Label className="mt-3">Product Units:</Form.Label>
-                            {productFormData.units.map((unit, index) => (
-                                <Row key={index} className="mb-2 align-items-end">
-                                    <Col md={5}>
-                                        <Form.Group>
-                                            <Form.Label>Unit Type</Form.Label>
-                                            <Form.Control as="select" value={unit.type} onChange={(e) => handleUnitChange(index, 'type', e.target.value)} required>
-                                                <option value="pcs">Pieces (pcs)</option>
-                                                <option value="kg">Kilogram (kg)</option>
-                                                <option value="meter">Meter (m)</option>
-                                                <option value="liter">Liter (L)</option>
-                                                <option value="dozen">Dozen</option>
-                                            </Form.Control>
+                                    {productFormData.image_url && !productFormData.image_file && (
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Current Image</Form.Label>
+                                            <div className="mt-2">
+                                                <img src={productFormData.image_url} alt="Current Product" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/e0e0e0/000000?text=Img+Err'; }} />
+                                            </div>
                                         </Form.Group>
-                                    </Col>
-                                    <Col md={5}>
-                                        <Form.Group>
-                                            <Form.Label>Display Value</Form.Label>
-                                            <FormControl type="text" placeholder="e.g., 0.5 kg, 15 pcs" value={unit.display} onChange={(e) => handleUnitChange(index, 'display', e.target.value)} required />
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={2}>
-                                        {productFormData.units.length > 1 && (
-                                            <Button variant="danger" size="sm" onClick={() => removeUnit(index)}>
-                                                <FaTimes />
+                                    )}
+
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Description</Form.Label>
+                                        <FormControl as="textarea" name="description" placeholder="Product Description" value={productFormData.description} onChange={handleProductChange} rows="3"></FormControl>
+                                    </Form.Group>
+
+                                    <div className="form-actions">
+                                        {editingProduct && (
+                                            <Button variant="outline-secondary" onClick={cancelProductEdit}>
+                                                <FaTimes className="me-1" /> Cancel
                                             </Button>
                                         )}
-                                    </Col>
-                                </Row>
-                            ))}
-                            <Button variant="outline-secondary" size="sm" onClick={addUnit} className="mb-3">
-                                <FaPlus className="me-1" /> Add Another Unit
-                            </Button>
+                                        <Button variant="add-primary" className='add-primary' type="submit">
+                                            {editingProduct ? <><FaEdit /> Update Product</> : <><FaPlus /> Add Product</>}
+                                        </Button>
+                                    </div>
+                                </Form>
+                            </Card>
 
-                            <Form.Group className="mb-3">
-                                <Form.Label>Product Image</Form.Label>
-                                <FormControl type="file" name="image_file" onChange={handleProductChange} />
-                                {productFormData.image_url && !productFormData.image_file && (
-                                    <div className="mt-2">
-                                        <p>Current Image:</p>
-                                        <img src={productFormData.image_url} alt="Current Product" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x100/e0e0e0/000000?text=Img+Err'; }} />
+                            {/* Products Filter Section */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaFilter /> Filter Products
+                                </div>
+                                <Form onSubmit={handleProductFilterSubmit} className="filter-form">
+                                    <div className="filter-grid">
+                                        <div className="filter-item">
+                                            <Form.Label>Product ID</Form.Label>
+                                            <FormControl type="number" placeholder="Search by ID" value={filterProductId} onChange={e => setFilterProductId(e.target.value)} />
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Product Name</Form.Label>
+                                            <FormControl type="text" placeholder="Search by name" value={filterName} onChange={e => setFilterName(e.target.value)} />
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Category</Form.Label>
+                                            <Form.Control as="select" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+                                                <option value="">All Categories</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Status</Form.Label>
+                                            <Form.Control as="select" value={filterIsActive} onChange={e => setFilterIsActive(e.target.value)}>
+                                                <option value="">All Statuses</option>
+                                                <option value="true">Active</option>
+                                                <option value="false">Inactive</option>
+                                            </Form.Control>
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Min Price</Form.Label>
+                                            <FormControl type="number" step="0.01" placeholder="Min Price" value={filterMinPrice} onChange={e => setFilterMinPrice(e.target.value)} />
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Max Price</Form.Label>
+                                            <FormControl type="number" step="0.01" placeholder="Max Price" value={filterMaxPrice} onChange={e => setFilterMaxPrice(e.target.value)} />
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Min Stock</Form.Label>
+                                            <FormControl type="number" placeholder="Min Stock" value={filterMinStock} onChange={e => setFilterMinStock(e.target.value)} />
+                                        </div>
+                                        <div className="filter-item">
+                                            <Form.Label>Max Stock</Form.Label>
+                                            <FormControl type="number" placeholder="Max Stock" value={filterMaxStock} onChange={e => setFilterMaxStock(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="filter-actions">
+                                        <Button variant="add-primary" type="submit" className="filter-apply-btn">
+                                            <FaSearch className="me-2" /> Apply Filters
+                                        </Button>
+                                    </div>
+                                </Form>
+                            </Card>
+
+                            {/* Products Table */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaBox /> All Products
+                                </div>
+                                {loading ? (
+                                    <div className="text-center my-5">
+                                        <Spinner animation="border" variant="primary" />
+                                        <p className="mt-2">Loading products...</p>
+                                    </div>
+                                ) : products.length === 0 ? (
+                                    <Alert variant="info" className="m-3">
+                                        No products found for the applied filters.
+                                    </Alert>
+                                ) : (
+                                    <div className="table-container">
+                                        <Table striped bordered hover className="products-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Image</th>
+                                                    <th>Name</th>
+                                                    <th>Category</th>
+                                                    <th>Price</th>
+                                                    <th>Units</th>
+                                                    <th>Stock</th>
+                                                    <th>Min Stock</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {products.map((product, index) => (
+                                                    <tr key={product.id}>
+                                                        <td className="serial-number">{index + 1}</td>
+                                                        <td className="product-images">
+                                                            <img src={product.image_url || 'https://placehold.co/50x50/e0e0e0/000000?text=No+Image'} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/000000?text=Img+Err'; }} />
+                                                        </td>
+                                                        <td className="product-names">{product.name}</td>
+                                                        <td className="product-categorys">{product.category}</td>
+                                                        <td className="product-prices">₦{Number(product.price).toFixed(2)}</td>
+                                                        <td className="product-unitss">
+                                                            {product.units && product.units.length > 0 ? (
+                                                                product.units.map((unit, idx) => (
+                                                                    <div key={idx}>
+                                                                        {unit.display || 'N/A'} {unit.type ? `(${unit.type})` : ''}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                'N/A'
+                                                            )}
+                                                        </td>
+                                                        <td className="product-stock">{product.stock_level}</td>
+                                                        <td className="product-min-stock">{product.min_stock_level}</td>
+                                                        <td className="product-status">
+                                                            <span className={`badge ${product.is_active ? 'bg-success' : 'bg-danger'}`}>
+                                                                {product.is_active ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="product-actions">
+                                                            <div className="action-buttons">
+                                                                <Button variant='outline-primary' className="btn-action edit" onClick={() => handleEditProduct(product)} title="Edit">
+                                                                    <FaEdit />
+                                                                </Button>
+                                                                <Button className="btn-action delete" onClick={() => handleDeleteProduct(product.id)} title="Delete">
+                                                                    <FaTrash />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
                                     </div>
                                 )}
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Description</Form.Label>
-                                <FormControl as="textarea" name="description" placeholder="Product Description" value={productFormData.description} onChange={handleProductChange} rows="3"></FormControl>
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Check type="checkbox" id="is_active_product" name="is_active" label="Is Active" checked={productFormData.is_active} onChange={handleProductChange} />
-                            </Form.Group>
-                            <Button variant="primary" type="submit" className="me-2">
-                                {editingProduct ? 'Update Product' : 'Add Product'}
-                            </Button>
-                            {editingProduct && (
-                                <Button variant="secondary" onClick={cancelProductEdit}>
-                                    Cancel
-                                </Button>
-                            )}
-                        </Form>
-                    </Card>
+                            </Card>
+                        </div>
+                    )}
 
-                    {/* Products Filter Section */}
-                    <Card className="product-management-card filter-card mb-4">
-                        <h2 className="card-title">Filter Products</h2>
-                        <Form onSubmit={handleProductFilterSubmit}>
-                            <Row className="mb-3">
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Product ID</Form.Label>
-                                        <FormControl type="number" placeholder="Search by ID" value={filterProductId} onChange={e => setFilterProductId(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Product Name</Form.Label>
-                                        <FormControl type="text" placeholder="Search by name" value={filterName} onChange={e => setFilterName(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Category</Form.Label>
-                                        <Form.Control as="select" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-                                            <option value="">All Categories</option>
-                                            {categories.map(cat => (
-                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                            <Row className="mb-3">
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Min Price</Form.Label>
-                                        <FormControl type="number" step="0.01" placeholder="Min Price" value={filterMinPrice} onChange={e => setFilterMinPrice(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Max Price</Form.Label>
-                                        <FormControl type="number" step="0.01" placeholder="Max Price" value={filterMaxPrice} onChange={e => setFilterMaxPrice(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Min Stock</Form.Label>
-                                        <FormControl type="number" placeholder="Min Stock" value={filterMinStock} onChange={e => setFilterMinStock(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                            <Row className="mb-3">
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Max Stock</Form.Label>
-                                        <FormControl type="number" placeholder="Max Stock" value={filterMaxStock} onChange={e => setFilterMaxStock(e.target.value)} />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={4}>
-                                    <Form.Group>
-                                        <Form.Label>Status</Form.Label>
-                                        <Form.Control as="select" value={filterIsActive} onChange={e => setFilterIsActive(e.target.value)}>
-                                            <option value="">All Statuses</option>
-                                            <option value="true">Active</option>
-                                            <option value="false">Inactive</option>
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                            <Button variant="primary" type="submit" className="mt-3">
-                                <FaSearch className="me-2" /> Apply Filters
-                            </Button>
-                        </Form>
-                    </Card>
-
-                    {/* Products Table */}
-                    <Card className="product-management-card table-card">
-                        <h2 className="card-title">All Products</h2>
-                        {loading ? (
-                            <div className="text-center my-5"><Spinner animation="border" /><p>Loading products...</p></div>
-                        ) : products.length === 0 ? (
-                            <Alert variant="info">No products found for the applied filters.</Alert>
-                        ) : (
-                            <div className="table-responsive">
-                                <Table striped bordered hover className="products-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Image</th>
-                                            <th>ID</th>
-                                            <th>Name</th>
-                                            <th>Description</th>
-                                            <th>Category</th>
-                                            <th>Price</th>
-                                            <th>Units</th>
-                                            <th>Stock</th>
-                                            <th>Min_Stock_Level</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {products.map(product => (
-                                            <tr key={product.id}>
-                                                <td>
-                                                    <img src={product.image_url || 'https://placehold.co/50x50/e0e0e0/000000?text=No+Image'} alt={product.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/000000?text=Img+Err'; }} />
-                                                </td>
-                                                <td>{product.id}</td>
-                                                <td>{product.name}</td>
-                                                <td>{product.description || 'N/A'}</td>
-                                                <td>{product.category}</td>
-                                                <td>₦{Number(product.price).toFixed(2)}</td>
-                                                <td>
-                                                    {product.units && product.units.length > 0 ? (
-                                                        product.units.map((unit, idx) => (
-                                                            <div key={idx}>
-                                                                {unit.display || 'N/A'} {unit.type ? `(${unit.type})` : ''}
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        'N/A'
+                    {/* Categories Tab */}
+                    {activeTab === 'categories' && (
+                        <div className="tab-pane active">
+                            {/* Category Add/Edit Form */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaPlus /> {editingCategory ? 'Edit Category' : 'Add New Category'}
+                                </div>
+                                <Form onSubmit={handleCategorySubmit} className="category-form">
+                                    <Row>
+                                        <Col md={8}>
+                                            <Form.Group>
+                                                <Form.Label>Category Name</Form.Label>
+                                                <FormControl type="text" name="name" value={categoryFormData.name} onChange={handleCategoryChange} required />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={4}>
+                                            <Form.Group className="d-flex align-items-end h-100">
+                                                <div className="form-actions w-100">
+                                                    {editingCategory && (
+                                                        <Button variant="outline-secondary" onClick={cancelCategoryEdit} className="me-2">
+                                                            <FaTimes className="me-1" /> Cancel
+                                                        </Button>
                                                     )}
-                                                </td>
-                                                <td>{product.stock_level}</td>
-                                                <td>{product.min_stock_level}</td>
-                                                <td>
-                                                    <span className={`badge ${product.is_active ? 'bg-success' : 'bg-danger'}`}>
-                                                        {product.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <Button variant="info" size="sm" className="me-1" onClick={() => handleEditProduct(product)}>
-                                                        <FaEdit /> Edit
+                                                    <Button variant="add-primary" type="submit" className="add-primary">
+                                                        {editingCategory ? <><FaEdit /> Update</> : <><FaPlus /> Add</>}
                                                     </Button>
-                                                    <Button variant="danger" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                                                        <FaTrash /> Delete
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                        )}
-                    </Card>
-                </Tab>
+                                                </div>
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                    <Form.Group>
+                                        <Form.Label>Description (optional)</Form.Label>
+                                        <FormControl as="textarea" name="description" placeholder="Category Description" value={categoryFormData.description} onChange={handleCategoryChange} rows="2"></FormControl>
+                                    </Form.Group>
+                                </Form>
+                            </Card>
 
-                <Tab eventKey="categories" title="Categories">
-                    {/* Category Add/Edit Form */}
-                    <Card className="product-management-card form-card mb-4">
-                        <h2 className="card-title">{editingCategory ? 'Edit Category' : 'Add New Category'}</h2>
-                        <Form onSubmit={handleCategorySubmit} className="category-form">
-                            <Form.Group className="mb-3">
-                                <Form.Label>Category Name</Form.Label>
-                                <FormControl type="text" name="name" value={categoryFormData.name} onChange={handleCategoryChange} required />
-                            </Form.Group>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Description (optional)</Form.Label>
-                                <FormControl as="textarea" name="description" placeholder="Category Description" value={categoryFormData.description} onChange={handleCategoryChange} rows="2"></FormControl>
-                            </Form.Group>
-                            <Button variant="primary" type="submit" className="me-2">
-                                {editingCategory ? 'Update Category' : 'Add Category'}
-                            </Button>
-                            {editingCategory && (
-                                <Button variant="secondary" onClick={cancelCategoryEdit}>
-                                    Cancel
-                                </Button>
-                            )}
-                        </Form>
-                    </Card>
+                            {/* Category Search/Filter */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaSearch /> Search Categories
+                                </div>
+                                <Form onSubmit={handleCategoryFilterSubmit}>
+                                    <InputGroup>
+                                        <FormControl
+                                            type="text"
+                                            placeholder="Search categories by name or description..."
+                                            value={categorySearchTerm}
+                                            onChange={e => setCategorySearchTerm(e.target.value)}
+                                        />
+                                        <Button variant="add-primary" className='add-primary' type="submit">
+                                            <FaSearch /> Search
+                                        </Button>
+                                    </InputGroup>
+                                </Form>
+                            </Card>
 
-                    {/* Category Search/Filter */}
-                    <Card className="product-management-card filter-card mb-4">
-                        <h2 className="card-title">Search Categories</h2>
-                        <Form onSubmit={handleCategoryFilterSubmit}>
-                            <InputGroup className="mb-3">
-                                <FormControl
-                                    type="text"
-                                    placeholder="Search categories by name or description..."
-                                    value={categorySearchTerm}
-                                    onChange={e => setCategorySearchTerm(e.target.value)}
-                                />
-                                <Button variant="primary" type="submit">
-                                    <FaSearch /> Search
-                                </Button>
-                            </InputGroup>
-                        </Form>
-                    </Card>
-
-                    {/* Categories Table */}
-                    <Card className="product-management-card table-card">
-                        <h2 className="card-title">All Categories</h2>
-                        {loading ? (
-                            <div className="text-center my-5"><Spinner animation="border" /><p>Loading categories...</p></div>
-                        ) : categories.length === 0 ? (
-                            <Alert variant="info">No categories found. Add some above!</Alert>
-                        ) : (
-                            <div className="table-responsive">
-                                <Table striped bordered hover className="categories-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Name</th>
-                                            <th>Description</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {categories.map(category => (
-                                            <tr key={category.id}>
-                                                <td>{category.id}</td>
-                                                <td>{category.name}</td>
-                                                <td>{category.description || 'N/A'}</td>
-                                                <td>
-                                                    <Button variant="info" size="sm" className="me-1" onClick={() => handleEditCategory(category)}>
-                                                        <FaEdit /> Edit
-                                                    </Button>
-                                                    <Button variant="danger" size="sm" onClick={() => handleDeleteCategory(category.id)}>
-                                                        <FaTrash /> Delete
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                        )}
-                    </Card>
-                </Tab>
-            </Tabs>
+                            {/* Categories Table */}
+                            <Card className="product-management-card">
+                                <div className="card-titles">
+                                    <FaTags /> All Categories
+                                </div>
+                                {loading ? (
+                                    <div className="text-center my-5">
+                                        <Spinner animation="border" variant="primary" />
+                                        <p className="mt-2">Loading categories...</p>
+                                    </div>
+                                ) : categories.length === 0 ? (
+                                    <Alert variant="info" className="m-3">
+                                        No categories found. Add some above!
+                                    </Alert>
+                                ) : (
+                                    <div className="table-container">
+                                        <Table striped bordered hover className="categories-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>S/N</th>
+                                                    <th>Name</th>
+                                                    <th>Description</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {categories.map((category, index) => (
+                                                    <tr key={category.id}>
+                                                        <td className="serial-number">{index + 1}</td>
+                                                        <td className="category-name">{category.name}</td>
+                                                        <td className="category-description">{category.description || 'N/A'}</td>
+                                                        <td className="category-actions">
+                                                            <div className="action-buttons">
+                                                                <Button variant='outline-primary' className="btn-action edit" onClick={() => handleEditCategory(category)} title="Edit">
+                                                                    <FaEdit />
+                                                                </Button>
+                                                                <Button className="btn-action delete" onClick={() => handleDeleteCategory(category.id)} title="Delete">
+                                                                    <FaTrash />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </Card>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import useAuth from '../hooks/useAuth';
-import '../styles/pos.css';
+import '../assets/styles/pos.css';
 import { FaShoppingCart, FaPlus, FaMinus } from 'react-icons/fa';
 
 const API_BASE_URL = 'http://localhost:5000/api';

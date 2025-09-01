@@ -4,7 +4,7 @@ import axios from 'axios';
 // import '../styles/login.css';
 import { FaBreadSlice } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://10.116.242.21:5000/api/auth'; // Our backend API base URL
+const API_BASE_URL = 'http://10.44.106.21:5000/api/auth'; // Our backend API base URL
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');

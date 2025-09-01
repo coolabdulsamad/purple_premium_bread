@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaBars, FaUserCircle } from 'react-icons/fa';
-import '../styles/header.css';
+import '../assets/styles/header.css';
 import { ASSETS } from '../assets';
 import axios from 'axios';
 

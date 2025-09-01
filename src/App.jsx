@@ -47,7 +47,6 @@ function App() {
         <Route path="/production" element={<Layout><ProductionDashboard /></Layout>} />
         <Route path="/products" element={<Layout><ProductManagementPage /></Layout>} />
         <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
-        {/* <Route path="/customers/edit/:id" element={<Layout><EditCustomerPage /></Layout>} /> */}
         <Route path="/sales-history" element={<Layout><SalesHistoryPage /></Layout>} />
         <Route path="/branches" element={<Layout><BranchesPage /></Layout>} />
         <Route path="/recipes" element={<Layout><RecipeManagement /></Layout>} />

@@ -1,0 +1,447 @@
+/* staff-management.css */
+.staff-management-container {
+    padding: 2rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #4a148c 0%, #12005e 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.page-header p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+}
+
+/* Cards */
+.form-card,
+.filter-card,
+.table-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: white;
+}
+
+.form-card:hover,
+.filter-card:hover,
+.table-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #4a148c 0%, #7c43bd 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.assignment-count {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+}
+
+/* Forms */
+.form-card .card-body,
+.filter-card .card-body {
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-control {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    border-color: #4a148c;
+    box-shadow: 0 0 0 0.2rem rgba(74, 20, 140, 0.25);
+    outline: none;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #4a148c 0%, #7c43bd 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #12005e 0%, #4a148c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 20, 140, 0.3);
+}
+
+.btn-outline-primary,
+.btn-outline-secondary {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+/* Tables */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.staff-duties-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.staff-duties-table th {
+    background: #f8f9fa;
+    color: #343a40;
+    font-weight: 600;
+    padding: 1rem;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+    border-bottom: 2px solid #4a148c;
+}
+
+.staff-duties-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+    transition: background-color 0.2s ease;
+}
+
+.staff-duties-table tr:hover td {
+    background-color: #f3e5f5;
+}
+
+.staff-duties-table tr:last-child td {
+    border-bottom: none;
+}
+
+.duty-id {
+    font-weight: 600;
+    color: #4a148c;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.btn-action {
+    background: transparent;
+    border: 1px solid #dee2e6;
+    color: #343a40;
+    padding: 0.4rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+}
+
+.btn-action:hover {
+    background: #f8f9fa;
+    border-color: #4a148c;
+    color: #4a148c;
+    transform: translateY(-1px);
+}
+
+.btn-action.edit {
+    color: #4a148c;
+}
+
+.btn-action.delete {
+    color: #dc3545;
+}
+
+.btn-action.edit:hover {
+    background: #4a148c;
+    color: white;
+}
+
+.btn-action.delete:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* Alerts */
+.alert-custom {
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+/* Loading state */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #4a148c;
+}
+
+.loading-container .spinner {
+    margin-bottom: 1rem;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: #7c43bd;
+}
+
+.empty-state h4 {
+    color: #343a40;
+    margin-bottom: 0.5rem;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .staff-duties-table {
+        font-size: 0.9rem;
+    }
+    
+    .staff-duties-table th,
+    .staff-duties-table td {
+        padding: 0.9rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .staff-management-container {
+        padding: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .form-card .card-body,
+    .filter-card .card-body {
+        padding: 1.25rem;
+    }
+    
+    .form-control {
+        font-size: 0.95rem;
+        padding: 0.65rem;
+    }
+    
+    .staff-duties-table th,
+    .staff-duties-table td {
+        padding: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .staff-management-container {
+        padding: 1rem;
+    }
+    
+    .page-header {
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.75rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .card-header-custom {
+        padding: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .form-card .card-body,
+    .filter-card .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-primary {
+        padding: 0.65rem 1.5rem;
+        font-size: 0.95rem;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Make table scroll horizontally on mobile */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .staff-duties-table {
+        min-width: 900px;
+        font-size: 0.85rem;
+    }
+    
+    .staff-duties-table th,
+    .staff-duties-table td {
+        padding: 0.75rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    
+    .btn-action {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .staff-management-container {
+        padding: 1rem;
+    }
+    
+    .page-header {
+        padding: 1rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-control {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+    
+    .staff-duties-table {
+        min-width: 800px;
+        font-size: 0.8rem;
+    }
+    
+    .staff-duties-table th,
+    .staff-duties-table td {
+        padding: 0.6rem;
+    }
+}
+
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-card,
+.filter-card,
+.table-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.staff-duties-table {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Focus states for accessibility */
+.btn-primary:focus,
+.form-control:focus {
+    outline: 2px solid #e91e63;
+    outline-offset: 2px;
+}

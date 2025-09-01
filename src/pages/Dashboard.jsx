@@ -5,7 +5,7 @@ import { FaChartBar, FaSmile, FaDollarSign, FaCreditCard, FaBoxes, FaUser, FaTra
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import useAuth from '../hooks/useAuth';
-import '../styles/dashboard.css';
+import '../assets/styles/dashboard.css';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);

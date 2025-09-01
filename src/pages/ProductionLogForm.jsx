@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast"; // ✅ same as SalesOutPage
-import "../styles/productionLogForm.css";
+import "../assets/styles/productionLogForm.css";
 
 const API_BASE_URL = "http://10.116.242.21:5000/api";
 

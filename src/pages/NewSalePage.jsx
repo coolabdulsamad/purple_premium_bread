@@ -30,7 +30,7 @@ import {
 } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "../styles/newSale.css";
+import "../assets/styles/newSale.css";
 
 const API_BASE_URL = "http://localhost:5000/api";
 

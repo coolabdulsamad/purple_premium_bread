@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import useAuth from '../hooks/useAuth';
-import '../styles/layout.css';
+import '../assets/styles/layout.css';
 
 const Layout = ({ children }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);

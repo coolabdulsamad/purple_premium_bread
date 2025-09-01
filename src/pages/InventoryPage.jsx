@@ -10,7 +10,7 @@ import {
     FileText,
     Boxes
 } from 'lucide-react';
-import '../styles/inventory.css';
+import '../assets/styles/inventory.css';
 
 const API_BASE_URL = 'http://10.116.242.21:5000/api';
 

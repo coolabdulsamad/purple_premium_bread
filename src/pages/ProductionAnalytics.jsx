@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import CustomToast from '../components/CustomToast';
-import '../styles/productionAnalytics.css';
+import '../assets/styles/productionAnalytics.css';
 
 // Register Chart.js components
 ChartJS.register(
@@ -34,7 +34,7 @@ ChartJS.register(
   BarElement
 );
 
-const API_BASE_URL = 'http://10.116.242.21:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const ProductionAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);

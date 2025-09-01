@@ -10,7 +10,7 @@ import ProductionAnalytics from './ProductionAnalytics';
 import { ClipboardList, History, BarChart3 } from 'lucide-react';
 
 // Styles + Toast container here so child forms can show toasts
-import '../styles/production.css';
+import '../assets/styles/production.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 

@@ -4,7 +4,7 @@ import { Card, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { Calendar, Package, User, Filter } from "lucide-react";
 import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast";
-import "../styles/productionHistory.css";
+import "../assets/styles/productionHistory.css";
 
 const API_BASE_URL = 'http://10.116.242.21:5000/api';
 

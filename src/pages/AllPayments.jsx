@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaSearch, FaTimes, FaMoneyBillWave } from 'react-icons/fa';
-import '../styles/forms.css'; // Reusing forms.css for general styling
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import { FaSearch, FaTimes, FaMoneyBillWave, FaFilter, FaRedo, FaReceipt, FaListAlt } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import '../assets/styles/credit-dashboard.css';
+import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const AllPayments = () => {
     const [payments, setPayments] = useState([]);
-    const [customers, setCustomers] = useState([]); // For customer filter dropdown
+    const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: 'payment_date', direction: 'descending' });
 
-    // Filter states
     const [filters, setFilters] = useState({
         customerId: '',
         transactionId: '',
@@ -21,16 +23,14 @@ const AllPayments = () => {
         paymentMethod: '',
     });
 
-    const paymentMethods = ['Cash', 'Bank Transfer', 'POS', 'Cheque', 'Internal Transfer']; // Include 'Internal Transfer' for B2B if applicable
+    const paymentMethods = ['Cash', 'Bank Transfer', 'POS', 'Cheque', 'Internal Transfer'];
 
-    // --- Data Fetching ---
     const fetchCustomers = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/customers`);
             setCustomers(response.data);
         } catch (err) {
             console.error('Error fetching customers for filter:', err);
-            // Don't set global error, just log. Payments can still load.
         }
     };
 
@@ -41,9 +41,13 @@ const AllPayments = () => {
             const queryParams = new URLSearchParams(filters).toString();
             const response = await axios.get(`${API_BASE_URL}/payments?${queryParams}`);
             setPayments(response.data);
+            // toast.success('Payments loaded successfully');
+            toast(<CustomToast id="123" type="success" message="Payments loaded successfully" />);
         } catch (err) {
-            console.error('Error fetching all payments:', err.response?.data || err.message);
-            setError('Failed to load payments history. ' + (err.response?.data?.details || err.message));
+            const errorMsg = 'Failed to load payments history. ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            // toast.error(errorMsg);
+            toast(<CustomToast id="123" type="error" message={errorMsg} />);
         } finally {
             setLoading(false);
         }
@@ -54,7 +58,6 @@ const AllPayments = () => {
         fetchPayments();
     }, [fetchPayments]);
 
-    // --- Filter Handlers ---
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
@@ -68,23 +71,84 @@ const AllPayments = () => {
             endDate: '',
             paymentMethod: '',
         });
+        // toast.info('Filters cleared');
+        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+    };
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key) => {
+        if (sortConfig.key !== key) return <FaSearch />;
+        return sortConfig.direction === 'ascending' ? '↑' : '↓';
+    };
+
+    const sortedPayments = [...payments].sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const getPaymentMethodBadgeVariant = (method) => {
+        switch (method) {
+            case 'Cash': return 'success';
+            case 'Bank Transfer': return 'primary';
+            case 'POS': return 'info';
+            case 'Cheque': return 'warning';
+            case 'Internal Transfer': return 'secondary';
+            default: return 'light';
+        }
+    };
+
+    const formatProof = (proof) => {
+        if (!proof) return 'N/A';
+        if (proof.startsWith('http')) {
+            return <a href={proof} target="_blank" rel="noopener noreferrer" className="proof-link">View Receipt</a>;
+        }
+        return <span className="proof-text">{proof}</span>;
     };
 
     return (
         <div className="all-payments-container">
-            <h1 className="main-header">All Payments Overview</h1>
+            <div className="section-header">
+                <FaListAlt className="section-icon" />
+                <h2>All Payments Overview</h2>
+            </div>
 
-            {error && <Alert variant="danger" className="my-3">{error}</Alert>}
+            {error && <Alert variant="danger" className="alert-message">{error}</Alert>}
 
             {/* Payment Filters */}
-            <Card className="filter-card mb-4">
-                <h2 className="card-title">Filter Payments</h2>
-                <Form>
-                    <Row className="g-3 mb-3">
-                        <Col md={4}>
+            <Card className="filter-card">
+                <Card.Header className="filter-card-header">
+                    <h3>
+                        <FaFilter className="me-2" />
+                        Filter Payments
+                    </h3>
+                    <Button variant="outline-secondary" size="sm" onClick={handleClearFilters}>
+                        <FaRedo className="me-1" /> Clear Filters
+                    </Button>
+                </Card.Header>
+                <Card.Body>
+                    <Row className="g-3 align-items-end">
+                        <Col md={12} lg={3}>
                             <Form.Group>
                                 <Form.Label>Customer</Form.Label>
-                                <Form.Control as="select" name="customerId" value={filters.customerId} onChange={handleFilterChange}>
+                                <Form.Control
+                                    as="select"
+                                    name="customerId"
+                                    value={filters.customerId}
+                                    onChange={handleFilterChange}
+                                    className="full-width-input"
+                                >
                                     <option value="">All Customers</option>
                                     {customers.map(c => (
                                         <option key={c.id} value={c.id}>{c.fullname}</option>
@@ -92,22 +156,29 @@ const AllPayments = () => {
                                 </Form.Control>
                             </Form.Group>
                         </Col>
-                        <Col md={4}>
+                        <Col md={12} lg={2}>
                             <Form.Group>
-                                <Form.Label>Sales Transaction ID</Form.Label>
+                                <Form.Label>Transaction ID</Form.Label>
                                 <Form.Control
                                     type="text"
                                     name="transactionId"
                                     placeholder="e.g., 123"
                                     value={filters.transactionId}
                                     onChange={handleFilterChange}
+                                    className="full-width-input"
                                 />
                             </Form.Group>
                         </Col>
-                        <Col md={4}>
+                        <Col md={12} lg={2}>
                             <Form.Group>
                                 <Form.Label>Payment Method</Form.Label>
-                                <Form.Control as="select" name="paymentMethod" value={filters.paymentMethod} onChange={handleFilterChange}>
+                                <Form.Control
+                                    as="select"
+                                    name="paymentMethod"
+                                    value={filters.paymentMethod}
+                                    onChange={handleFilterChange}
+                                    className="full-width-input"
+                                >
                                     <option value="">All Methods</option>
                                     {paymentMethods.map(method => (
                                         <option key={method} value={method}>{method}</option>
@@ -115,66 +186,136 @@ const AllPayments = () => {
                                 </Form.Control>
                             </Form.Group>
                         </Col>
-                    </Row>
-                    <Row className="g-3">
-                        <Col md={4}>
+                        <Col md={12} lg={2}>
                             <Form.Group>
                                 <Form.Label>Start Date</Form.Label>
-                                <Form.Control type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+                                <Form.Control
+                                    type="date"
+                                    name="startDate"
+                                    value={filters.startDate}
+                                    onChange={handleFilterChange}
+                                    className="full-width-input"
+                                />
                             </Form.Group>
                         </Col>
-                        <Col md={4}>
+                        <Col md={12} lg={2}>
                             <Form.Group>
                                 <Form.Label>End Date</Form.Label>
-                                <Form.Control type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+                                <Form.Control
+                                    type="date"
+                                    name="endDate"
+                                    value={filters.endDate}
+                                    onChange={handleFilterChange}
+                                    className="full-width-input"
+                                />
                             </Form.Group>
                         </Col>
-                        <Col md={4} className="d-flex align-items-end justify-content-end">
-                            <Button variant="outline-secondary" onClick={handleClearFilters}>
-                                <FaTimes className="me-1" /> Clear Filters
+                        <Col md={12} lg={1}>
+                            <Button
+                                variant="outline-primary"
+                                onClick={fetchPayments}
+                                className="w-100 filter-apply-btn"
+                            >
+                                <FaSearch className="me-1" /> Apply
                             </Button>
                         </Col>
                     </Row>
-                </Form>
+                </Card.Body>
             </Card>
 
             {/* All Payments Table */}
-            <Card className="table-card mb-4">
-                <h2 className="card-title">All Payments Recorded</h2>
-                {loading ? (
-                    <div className="text-center my-5"><Spinner animation="border" /><p>Loading all payments...</p></div>
-                ) : payments.length === 0 ? (
-                    <Alert variant="info">No payments found matching the filters.</Alert>
-                ) : (
-                    <div className="table-responsive">
-                        <Table striped bordered hover className="all-payments-table">
-                            <thead>
-                                <tr>
-                                    <th>Payment ID</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Sales ID</th>
-                                    <th>Amount (₦)</th>
-                                    <th>Method</th>
-                                    <th>Proof</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {payments.map(payment => (
-                                    <tr key={payment.id}>
-                                        <td>{payment.id}</td>
-                                        <td>{new Date(payment.payment_date).toLocaleString()}</td>
-                                        <td>{payment.customer_name || 'N/A'}</td>
-                                        <td>{payment.transaction_id}</td>
-                                        <td>₦{Number(payment.amount).toFixed(2)}</td>
-                                        <td>{payment.payment_method}</td>
-                                        <td>{payment.proof || 'N/A'}</td>
+            <Card className="payments-table-card">
+                <Card.Header className="table-card-header">
+                    <h3>
+                        <FaReceipt className="me-2" />
+                        All Payments Recorded
+                    </h3>
+                    <Badge bg="secondary" pill>
+                        {payments.length} payments
+                    </Badge>
+                </Card.Header>
+                <Card.Body>
+                    {loading ? (
+                        <div className="loading-container">
+                            <Spinner animation="border" variant="primary" />
+                            <p>Loading all payments...</p>
+                        </div>
+                    ) : payments.length === 0 ? (
+                        <div className="empty-state">
+                            <FaReceipt size={48} />
+                            <h4>No payments found</h4>
+                            <p>Try adjusting your filters or record new payments</p>
+                        </div>
+                    ) : (
+                        <div className="table-responsive-wide">
+                            <Table hover className="all-payments-table">
+                                <thead>
+                                    <tr>
+                                        <th className="serial-number">S/N</th>
+                                        <th className="sortable" onClick={() => handleSort('id')}>
+                                            <div className="th-content">
+                                                Payment ID {getSortIcon('id')}
+                                            </div>
+                                        </th>
+                                        <th className="sortable" onClick={() => handleSort('payment_date')}>
+                                            <div className="th-content">
+                                                Date {getSortIcon('payment_date')}
+                                            </div>
+                                        </th>
+                                        <th className="sortable" onClick={() => handleSort('customer_name')}>
+                                            <div className="th-content">
+                                                Customer {getSortIcon('customer_name')}
+                                            </div>
+                                        </th>
+                                        <th className="sortable" onClick={() => handleSort('transaction_id')}>
+                                            <div className="th-content">
+                                                Sales ID {getSortIcon('transaction_id')}
+                                            </div>
+                                        </th>
+                                        <th className="sortable" onClick={() => handleSort('amount')}>
+                                            <div className="th-content">
+                                                Amount (₦) {getSortIcon('amount')}
+                                            </div>
+                                        </th>
+                                        <th>Method</th>
+                                        <th>Proof</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </div>
-                )}
+                                </thead>
+                                <tbody>
+                                    {sortedPayments.map((payment, index) => (
+                                        <tr key={payment.id}>
+                                            <td className="fw-bold serial-number">{index + 1}</td>
+                                            <td className="fw-bold payment-id">#{payment.id}</td>
+                                            <td className="payment-date">
+                                                {new Date(payment.payment_date).toLocaleDateString()}
+                                                <br />
+                                                <small className="text-muted">
+                                                    {new Date(payment.payment_date).toLocaleTimeString()}
+                                                </small>
+                                            </td>
+                                            <td className="customer-name">{payment.customer_name || 'N/A'}</td>
+                                            <td className="transaction-id">#{payment.transaction_id}</td>
+                                            <td className="payment-amount fw-bold">
+                                                ₦{Number(payment.amount).toFixed(2)}
+                                            </td>
+                                            <td>
+                                                <Badge
+                                                    bg={getPaymentMethodBadgeVariant(payment.payment_method)}
+                                                    className="payment-method-badge"
+                                                >
+                                                    {payment.payment_method}
+                                                </Badge>
+                                            </td>
+                                            <td className="payment-proof">
+                                                {formatProof(payment.proof)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+                </Card.Body>
             </Card>
         </div>
     );

@@ -9,7 +9,7 @@ import CustomersPage from './CustomersPage';
 import { FaCashRegister, FaTruck, FaBoxes, FaUsers } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import '../styles/pos.css';
+import '../assets/styles/pos.css';
 
 const POSDashboard = () => {
     const [activeTab, setActiveTab] = useState('newSale');

@@ -1,0 +1,316 @@
+/* SalesHistoryPage.css */
+
+/* ===== GENERAL LAYOUT & TYPOGRAPHY ===== */
+:root {
+    --purple: #4a148c;
+    --purple-700: #3a0f6e;
+    --purple-50: #f6f0ff;
+    --ink: #141414;
+    --muted: #6b6b6b;
+    --line: #e0e0e0;
+    --bg: #f8f9fa; /* Lighter background */
+    --card-bg: #ffffff;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background-color: var(--bg);
+}
+
+.sales-history-container {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+.page-title {
+    font-weight: 700;
+    color: var(--purple);
+    margin-bottom: 25px;
+    font-size: 2rem;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border-color: var(--line);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== FILTERS & BUTTONS ===== */
+.filter-form {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #fafafa;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.btn-primary-pp {
+    background: var(--purple) !important;
+    border-color: var(--purple) !important;
+    color: #fff !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.btn-primary-pp:hover {
+    background: var(--purple-700) !important;
+    border-color: var(--purple-700) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+.btn-outline-primary {
+    border-color: var(--purple) !important;
+    color: var(--purple) !important;
+}
+.btn-outline-primary:hover {
+    background: var(--purple) !important;
+    color: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* ===== TABLE STYLES ===== */
+.table-wrapper {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: auto; /* Correct property is already here */
+    background: var(--card-bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.sales-table {
+    margin: 0;
+    font-size: 14px;
+    border-collapse: collapse;
+    min-width: 800px; /* Force minimum width for horizontal scroll */
+}
+
+.sales-table thead th {
+    background: var(--purple-50);
+    color: var(--purple);
+    font-weight: 700;
+    padding: 12px 15px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid var(--purple);
+}
+
+.sales-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+.sales-table tbody tr:nth-child(even) {
+    background-color: #fcfcfc;
+}
+.sales-table tbody tr:hover {
+    background-color: #f3f3f3;
+}
+
+.sales-table td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--line);
+}
+
+.sales-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.mono {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+.truncate {
+    max-width: 250px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* ===== CUSTOM DIALOG ===== */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1050;
+    animation: fadeIn 0.2s ease-in-out;
+}
+.dialog-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 750px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    z-index: 1060;
+    animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.dialog-header {
+    background: var(--purple);
+    color: #fff;
+    padding: 18px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dialog-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.dialog-close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+.dialog-close:hover {
+    opacity: 1;
+}
+
+.dialog-body {
+    padding: 25px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.dialog-footer {
+    padding: 15px 25px;
+    background: #f8f9fa;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.section-title {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    font-weight: 700;
+    color: var(--purple-700);
+    position: relative;
+    padding-left: 10px;
+}
+.section-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 100%;
+    background: var(--purple);
+    border-radius: 2px;
+}
+
+.modal-table-wrapper {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow-x: auto; /* Added horizontal scroll */
+}
+
+.modal-items-table {
+    margin-bottom: 0;
+    width: 100%;
+    min-width: 500px; /* Force min-width for table inside dialog */
+}
+.modal-items-table thead th {
+    background: var(--purple-50);
+    color: var(--purple);
+    position: sticky;
+    top: 0;
+}
+.modal-items-table td, .modal-items-table th {
+    padding: 10px;
+}
+
+.totals-box {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 1.1rem;
+}
+.totals-box .grand {
+    font-size: 1.4rem;
+    color: var(--purple);
+    margin-top: 10px;
+}
+
+/* ===== RESPONSIVE TWEAKS ===== */
+@media (max-width: 992px) {
+    .truncate { max-width: 150px; }
+}
+
+@media (max-width: 768px) {
+    .filter-form .row > [class^="col"] {
+        margin-bottom: 10px;
+    }
+    .page-title { font-size: 1.75rem; }
+    .sales-history-container { padding: 20px; }
+    .dialog-header h4 { font-size: 1.1rem; }
+    .dialog-body { padding: 15px; }
+    .dialog-footer { flex-direction: column; gap: 8px; }
+    .dialog-footer .btn { width: 100%; }
+}
+
+/* Remove column hiding on mobile for a single scrollable table */
+@media (max-width: 576px) {
+    .sales-table {
+        font-size: 12px;
+    }
+    /* Don't hide any columns, let the table scroll */
+    .sales-table th, .sales-table td {
+        white-space: nowrap;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes scaleIn {
+    from { transform: translate(-50%, -50%) scale(0.95); opacity: 0; }
+    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}

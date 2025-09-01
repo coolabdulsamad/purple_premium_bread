@@ -14,7 +14,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CustomToast from "../components/CustomToast";
 import EditCustomerPage from "./EditCustomerPage";
-import "../styles/customers.css";
+import "../assets/styles/customers.css";
 
 const API_BASE_URL = "http://10.116.242.21:5000/api";
 

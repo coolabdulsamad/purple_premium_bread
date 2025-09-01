@@ -4,7 +4,7 @@ import axios from "axios";
 import { Save, X } from "lucide-react";
 import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast";
-import "../styles/editCustomer.css";
+import "../assets/styles/editCustomer.css";
 
 const API_BASE_URL = "http://10.116.242.21:5000/api";
 

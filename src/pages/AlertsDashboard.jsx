@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Form, Button, Table, Alert, Spinner, Card, Row, Col } from 'react-bootstrap';
 import { FaBell, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'; // FaSyncAlt removed
-import '../styles/forms.css'; // Reusing forms.css for general styling
+import '../assets/styles/forms.css'; // Reusing forms.css for general styling
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
