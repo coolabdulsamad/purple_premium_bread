@@ -212,6 +212,7 @@ const Dashboard = () => {
                             <table className="low-stock-table">
                                 <thead>
                                     <tr>
+                                        <th>S/N</th>
                                         <th>Product Name</th>
                                         <th>Image</th>
                                         <th>Current Stock</th>
@@ -220,8 +221,9 @@ const Dashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {lowStockProducts.map(product => (
+                                    {lowStockProducts.map((product, index) => (
                                         <tr key={product.id}>
+                                            <td>{index + 1}</td>
                                             <td>{product.product_name}</td>
                                             <td>
                                                 <img src={product.image_url || 'https://placehold.co/50x50/e0e0e0/000000?text=No+Img'} alt={product.product_name} className="product-image" onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/50x50/e0e0e0/000000?text=Img+Err'; }} />

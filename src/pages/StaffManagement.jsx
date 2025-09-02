@@ -44,7 +44,8 @@ const StaffManagement = () => {
         } catch (err) {
             console.error('Error fetching users:', err);
             setError('Failed to load users for duty assignment.');
-            toast.error('Failed to load users for duty assignment.');
+            // toast.error('Failed to load users for duty assignment.');
+            toast(<CustomToast id="123" type="error" message="Failed to load users for duty assignmenty." />);
         }
     };
 
@@ -58,7 +59,8 @@ const StaffManagement = () => {
         } catch (err) {
             console.error('Error fetching staff duties:', err.response?.data || err.message);
             setError('Failed to load staff duty assignments. ' + (err.response?.data?.details || err.message));
-            toast.error('Failed to load duty assignments.');
+            // toast.error('Failed to load duty assignments.');
+            toast(<CustomToast id="123" type="error" message="Failed to load duty assignments." />);
         } finally {
             setLoading(false);
         }
@@ -89,7 +91,8 @@ const StaffManagement = () => {
 
         if (!dutyFormData.user_id || !dutyFormData.duty_date || !dutyFormData.shift_name) {
             setError('Please fill in all required fields (Staff, Date, Shift).');
-            toast.error('Please fill in all required fields.');
+            // toast.error('Please fill in all required fields.');
+            toast(<CustomToast id="123" type="error" message="Please fill in all required fields." />);
             setSubmitting(false);
             return;
         }
@@ -100,20 +103,23 @@ const StaffManagement = () => {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setSuccessMessage('Duty assignment updated successfully!');
-                toast.success('Duty assignment updated successfully!');
+                // toast.success('Duty assignment updated successfully!');
+                toast(<CustomToast id="123" type="success" message="Duty assignment updated successfully!" />);
             } else {
                 await axios.post(`${API_BASE_URL}/staff/duties`, dutyFormData, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setSuccessMessage('Duty assignment created successfully!');
-                toast.success('Duty assignment created successfully!');
+                // toast.success('Duty assignment created successfully!');
+                toast(<CustomToast id="123" type="success" message="Duty assignment created successfully!" />);
             }
             fetchDuties();
             handleCancelEdit();
         } catch (err) {
             console.error('Error saving duty assignment:', err.response?.data || err.message);
             setError('Failed to save duty assignment. ' + (err.response?.data?.error || err.message));
-            toast.error('Failed to save duty assignment.');
+            // toast.error('Failed to save duty assignment.');
+            toast(<CustomToast id="123" type="error" message="Failed to save duty assignment." />);
         } finally {
             setSubmitting(false);
         }
@@ -141,12 +147,14 @@ const StaffManagement = () => {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setSuccessMessage('Duty assignment deleted successfully!');
-                toast.success('Duty assignment deleted successfully!');
+                // toast.success('Duty assignment deleted successfully!');
+                toast(<CustomToast id="123" type="success" message="Duty assignment deleted successfully!" />);
                 fetchDuties();
             } catch (err) {
                 console.error('Error deleting duty assignment:', err.response?.data || err.message);
                 setError('Failed to delete duty assignment. ' + (err.response?.data?.details || err.message));
-                toast.error('Failed to delete duty assignment.');
+                // toast.error('Failed to delete duty assignment.');
+                toast(<CustomToast id="123" type="error" message="Failed to delete duty assignment." />);
             }
         }
     };
@@ -177,17 +185,19 @@ const StaffManagement = () => {
             endDate: '',
             shiftName: '',
         });
-        toast.info('Filters cleared');
+        // toast.info('Filters cleared');
+        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
     };
 
     const handleRefresh = () => {
         fetchDuties();
         fetchUsers();
-        toast.info('Data refreshed');
+        // toast.info('Data refreshed');
+        toast(<CustomToast id="123" type="info" message="Data refreshed" />);
     };
 
     const getShiftBadgeVariant = (shift) => {
-        switch(shift) {
+        switch (shift) {
             case 'Morning': return 'success';
             case 'Afternoon': return 'warning';
             case 'Night': return 'primary';
@@ -279,7 +289,7 @@ const StaffManagement = () => {
                                     <FaTimes className="me-1" /> Cancel Edit
                                 </Button>
                             )}
-                            <Button variant="primary" type="submit" disabled={submitting}>
+                            <Button variant="outline-primary" type="submit" disabled={submitting}>
                                 {submitting ? (
                                     <>
                                         <Spinner animation="border" size="sm" className="me-2" />
@@ -298,62 +308,58 @@ const StaffManagement = () => {
 
             {/* Duty Assignment Filters */}
             <Card className="filter-card">
-                <Card.Header className="card-header-custom">
+                <Card.Header className="card-header-custom-f">
                     <FaFilter className="me-2" />
                     Filter Duty Assignments
                 </Card.Header>
                 <Card.Body>
-                    <Form>
-                        <Row className="g-3 mb-3">
-                            <Col md={4}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>
-                                        <FaUser className="me-1" />
-                                        Staff Member
-                                    </Form.Label>
-                                    <Form.Control as="select" name="userId" value={filters.userId} onChange={handleFilterChange}>
-                                        <option value="">All Staff</option>
-                                        {users.map(user => (
-                                            <option key={user.id} value={user.id}>{user.fullname} ({user.role})</option>
-                                        ))}
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Shift</Form.Label>
-                                    <Form.Control as="select" name="shiftName" value={filters.shiftName} onChange={handleFilterChange}>
-                                        <option value="">All Shifts</option>
-                                        {shiftOptions.map(shift => (
-                                            <option key={shift} value={shift}>{shift}</option>
-                                        ))}
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                            <Col md={4} className="d-flex align-items-end justify-content-end">
-                                <Button variant="outline-secondary" onClick={handleClearFilters} className="me-2">
-                                    <FaTimes className="me-1" /> Clear Filters
-                                </Button>
-                                <Button variant="outline-primary" onClick={handleRefresh}>
-                                    <FaSync className="me-1" /> Refresh
-                                </Button>
-                            </Col>
-                        </Row>
-                        <Row className="g-3">
-                            <Col md={4}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Start Date</Form.Label>
-                                    <Form.Control type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>End Date</Form.Label>
-                                    <Form.Control type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                    </Form>
+                    <Row className="g-3">
+                        <Col md={4}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>
+                                    <FaUser className="me-1" />
+                                    Staff Member
+                                </Form.Label>
+                                <Form.Control as="select" name="userId" value={filters.userId} onChange={handleFilterChange}>
+                                    <option value="">All Staff</option>
+                                    {users.map(user => (
+                                        <option key={user.id} value={user.id}>{user.fullname} ({user.role})</option>
+                                    ))}
+                                </Form.Control>
+                            </Form.Group>
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Shift</Form.Label>
+                                <Form.Control as="select" name="shiftName" value={filters.shiftName} onChange={handleFilterChange}>
+                                    <option value="">All Shifts</option>
+                                    {shiftOptions.map(shift => (
+                                        <option key={shift} value={shift}>{shift}</option>
+                                    ))}
+                                </Form.Control>
+                            </Form.Group>
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Start Date</Form.Label>
+                                <Form.Control type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} />
+                            </Form.Group>
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>End Date</Form.Label>
+                                <Form.Control type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} />
+                            </Form.Group>
+                        </Col>
+                        <Col md={8} className="d-flex align-items-end justify-content-end">
+                            <Button variant="outline-secondary" onClick={handleClearFilters} className="me-2 filter-btn">
+                                <FaTimes className="me-1" /> Clear Filters
+                            </Button>
+                            <Button variant="outline-primary" onClick={handleRefresh} className="filter-btn">
+                                <FaSync className="me-1" /> Refresh
+                            </Button>
+                        </Col>
+                    </Row>
                 </Card.Body>
             </Card>
 
@@ -381,58 +387,58 @@ const StaffManagement = () => {
                             <p>No duty assignments found matching the filters. Assign some duties above!</p>
                         </div>
                     ) : (
-                        <div className="table-responsive">
+                        <div className="table-container">
                             <Table striped bordered hover className="staff-duties-table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Staff Member</th>
-                                        <th>Role</th>
-                                        <th>Date</th>
-                                        <th>Shift</th>
-                                        <th>Description</th>
-                                        <th>Assigned By</th>
-                                        <th>Actions</th>
+                                        <th className="col-id">ID</th>
+                                        <th className="col-staff">Staff Member</th>
+                                        <th className="col-role">Role</th>
+                                        <th className="col-date">Date</th>
+                                        <th className="col-shift">Shift</th>
+                                        <th className="col-desc">Description</th>
+                                        <th className="col-assigned">Assigned By</th>
+                                        <th className="col-actions">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {duties.map(duty => (
                                         <tr key={duty.id}>
-                                            <td className="duty-id">{duty.id}</td>
-                                            <td>
+                                            <td className="col-id">{duty.id}</td>
+                                            <td className="col-staff">
                                                 <div className="d-flex align-items-center">
                                                     <FaUser className="me-2 text-muted" />
                                                     <strong>{duty.user_fullname}</strong>
                                                 </div>
                                             </td>
-                                            <td>{duty.user_role}</td>
-                                            <td>
+                                            <td className="col-role">{duty.user_role}</td>
+                                            <td className="col-date">
                                                 <div className="d-flex align-items-center">
                                                     <FaCalendarAlt className="me-2 text-muted" />
                                                     {new Date(duty.duty_date).toLocaleDateString()}
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td className="col-shift">
                                                 <Badge bg={getShiftBadgeVariant(duty.shift_name)}>
                                                     {duty.shift_name}
                                                 </Badge>
                                             </td>
-                                            <td>{duty.duty_description || 'N/A'}</td>
-                                            <td>{duty.assigned_by_fullname || 'N/A'}</td>
-                                            <td>
+                                            <td className="col-desc">{duty.duty_description || 'N/A'}</td>
+                                            <td className="col-assigned">{duty.assigned_by_fullname || 'N/A'}</td>
+                                            <td className="col-actions">
                                                 <div className="action-buttons">
-                                                    <Button 
-                                                        variant="outline-primary" 
-                                                        size="sm" 
-                                                        className="me-1 btn-action edit" 
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        className="me-1 btn-action edit"
                                                         onClick={() => handleEditDuty(duty)}
                                                         title="Edit Duty"
                                                     >
                                                         <FaEdit />
                                                     </Button>
-                                                    <Button 
-                                                        variant="outline-danger" 
-                                                        size="sm" 
+                                                    <Button
+                                                        variant="outline-danger"
+                                                        size="sm"
                                                         className="btn-action delete"
                                                         onClick={() => handleDeleteDuty(duty.id, duty.user_fullname, duty.duty_date, duty.shift_name)}
                                                         title="Delete Duty"

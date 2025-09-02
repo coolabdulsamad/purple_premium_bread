@@ -1,33 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes } from 'react-icons/fa'; // Import icons
-import '../assets/styles/admin.css'; // Ensure this CSS file exists and is styled appropriately
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaUser, FaEnvelope, FaPhone, FaVenusMars, FaUserTag, FaKey, FaFilter, FaSync, FaCalendarAlt } from 'react-icons/fa';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import '../assets/styles/admin.css';
+import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
-const roles = ['admin', 'manager', 'sales', 'baker']; // Define available roles
+const roles = ['admin', 'manager', 'sales', 'baker'];
 
 const AdminPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
-        id: null, // For editing existing users
+        id: null,
         fullname: '',
         username: '',
         email: '',
-        password: '', // Password field for new users and optional update for existing
+        password: '',
         phone_number: '',
         gender: '',
-        role: 'sales', // Default role for new users
+        role: 'sales',
     });
 
-    const [isEditing, setIsEditing] = useState(false); // State to track if we are editing
-
-    // Filter states
+    const [isEditing, setIsEditing] = useState(false);
     const [filterRole, setFilterRole] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -45,6 +47,8 @@ const AdminPage = () => {
         } catch (err) {
             console.error('Error fetching users:', err.response?.data || err.message);
             setError('Failed to load users. ' + (err.response?.data?.details || err.message));
+            // toast.error('Failed to load users.');
+            toast(<CustomToast id="123" type="error" message="Failed to load users." />);
         } finally {
             setLoading(false);
         }
@@ -52,7 +56,7 @@ const AdminPage = () => {
 
     useEffect(() => {
         fetchUsers();
-    }, [filterRole, searchTerm]); // Re-fetch users when filters or search term change
+    }, [filterRole, searchTerm]);
 
     // --- Form Handlers ---
     const handleChange = (e) => {
@@ -63,26 +67,33 @@ const AdminPage = () => {
         e.preventDefault();
         setError('');
         setSuccessMessage('');
+        setSubmitting(true);
 
         try {
             if (isEditing) {
-                // Update user
                 const payload = { ...formData };
-                if (!payload.password) { // Don't send empty password if not changed
+                if (!payload.password) {
                     delete payload.password;
                 }
                 const response = await axios.put(`${API_BASE_URL}/users/${formData.id}`, payload);
                 setSuccessMessage(`User "${response.data.fullname}" updated successfully!`);
+                // toast.success(`User "${response.data.fullname}" updated successfully!`);
+                toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" updated successfully!`} />);
             } else {
-                // Create new user
                 const response = await axios.post(`${API_BASE_URL}/users`, formData);
                 setSuccessMessage(`User "${response.data.fullname}" created successfully!`);
+                // toast.success(`User "${response.data.fullname}" created successfully!`);
+                toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" created successfully!`} />);
             }
-            fetchUsers(); // Refresh the user list
-            handleCancelEdit(); // Clear form and reset state
+            fetchUsers();
+            handleCancelEdit();
         } catch (err) {
             console.error('Error submitting user data:', err.response?.data || err.message);
             setError('Failed to save user. ' + (err.response?.data?.error || err.message));
+            // toast.error('Failed to save user.');
+            toast(<CustomToast id="123" type="error" message="Failed to save user." />);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -92,7 +103,7 @@ const AdminPage = () => {
             fullname: user.fullname,
             username: user.username,
             email: user.email,
-            password: '', // Clear password for security, user will re-enter if changing
+            password: '',
             phone_number: user.phone_number,
             gender: user.gender,
             role: user.role,
@@ -109,10 +120,14 @@ const AdminPage = () => {
             try {
                 await axios.delete(`${API_BASE_URL}/users/${userId}`);
                 setSuccessMessage(`User "${userFullname}" deleted successfully!`);
-                fetchUsers(); // Refresh the user list
+                // toast.success(`User "${userFullname}" deleted successfully!`);
+                toast(<CustomToast id="123" type="success" message={`User "${userFullname}" deleted successfully!`} />);
+                fetchUsers();
             } catch (err) {
                 console.error('Error deleting user:', err.response?.data || err.message);
                 setError('Failed to delete user. ' + (err.response?.data?.message || err.message));
+                // toast.error('Failed to delete user.');
+                toast(<CustomToast id="123" type="error" message="Failed to delete user." />);
             }
         }
     };
@@ -133,92 +148,240 @@ const AdminPage = () => {
         setSuccessMessage('');
     };
 
-    // --- Render ---
+    const handleClearFilters = () => {
+        setFilterRole('');
+        setSearchTerm('');
+        // toast.info('Filters cleared');
+        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+    };
+
+    const handleRefresh = () => {
+        fetchUsers();
+        // toast.info('Users list refreshed');
+        toast(<CustomToast id="123" type="info" message="Users list refreshed" />);
+    };
+
+    const getRoleBadgeVariant = (role) => {
+        switch (role) {
+            case 'admin': return 'danger';
+            case 'manager': return 'warning';
+            case 'baker': return 'info';
+            case 'sales': return 'primary';
+            default: return 'secondary';
+        }
+    };
+
     return (
         <div className="admin-container">
-            <h1 className="admin-header">User Management</h1>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
 
-            {error && <Alert variant="danger" className="my-3">{error}</Alert>}
-            {successMessage && <Alert variant="success" className="my-3">{successMessage}</Alert>}
+            <div className="page-header">
+                <h1>
+                    <FaUser className="me-2" />
+                    User Management
+                </h1>
+                <p>Manage system users and their permissions</p>
+            </div>
+
+            {error && <Alert variant="danger" className="alert-custom">{error}</Alert>}
+            {successMessage && <Alert variant="success" className="alert-custom">{successMessage}</Alert>}
 
             {/* User Creation/Edit Form */}
-            <Card className="admin-card user-form-card mb-4">
-                <h2 className="card-title">{isEditing ? 'Edit User' : 'Create New User'}</h2>
-                <Form onSubmit={handleSubmit} className="user-form">
-                    <Row className="g-3">
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Full Name</Form.Label>
-                                <Form.Control type="text" name="fullname" placeholder="Full Name" value={formData.fullname} onChange={handleChange} required />
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Email Address</Form.Label>
-                                <Form.Control type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required />
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Phone Number</Form.Label>
-                                <Form.Control type="tel" name="phone_number" placeholder="Phone Number" value={formData.phone_number} onChange={handleChange} />
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Gender</Form.Label>
-                                <Form.Control as="select" name="gender" value={formData.gender} onChange={handleChange}>
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </Form.Control>
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Username</Form.Label>
-                                <Form.Control type="text" name="username" placeholder="Username" value={formData.username} onChange={handleChange} required />
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>{isEditing ? 'New Password (optional)' : 'Password'}</Form.Label>
-                                <Form.Control type="password" name="password" placeholder={isEditing ? 'Leave blank to keep current' : 'Password'} value={formData.password} onChange={handleChange} { ...(!isEditing && {required: true}) } />
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Role</Form.Label>
-                                <Form.Control as="select" name="role" value={formData.role} onChange={handleChange} required>
-                                    {roles.map(role => (
-                                        <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
-                                    ))}
-                                </Form.Control>
-                            </Form.Group>
-                        </Col>
-                    </Row>
-                    <div className="d-flex justify-content-end mt-4">
-                        {isEditing && (
-                            <Button variant="secondary" onClick={handleCancelEdit} className="me-2">
-                                <FaTimes className="me-1" /> Cancel Edit
+            <Card className="form-card">
+                <Card.Header className="card-header-custom">
+                    {isEditing ? (
+                        <>
+                            <FaEdit className="me-2" />
+                            Edit User
+                        </>
+                    ) : (
+                        <>
+                            <FaPlus className="me-2" />
+                            Create New User
+                        </>
+                    )}
+                </Card.Header>
+                <Card.Body>
+                    <Form onSubmit={handleSubmit}>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaUser className="me-1" />
+                                        Full Name
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="fullname"
+                                        placeholder="Full Name"
+                                        value={formData.fullname}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaEnvelope className="me-1" />
+                                        Email Address
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        name="email"
+                                        placeholder="Email Address"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaPhone className="me-1" />
+                                        Phone Number
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="tel"
+                                        name="phone_number"
+                                        placeholder="Phone Number"
+                                        value={formData.phone_number}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaVenusMars className="me-1" />
+                                        Gender
+                                    </Form.Label>
+                                    <Form.Control
+                                        as="select"
+                                        name="gender"
+                                        value={formData.gender}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">Select Gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </Form.Control>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaUserTag className="me-1" />
+                                        Username
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="username"
+                                        placeholder="Username"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaKey className="me-1" />
+                                        {isEditing ? 'New Password (optional)' : 'Password'}
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        name="password"
+                                        placeholder={isEditing ? 'Leave blank to keep current' : 'Password'}
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        {...(!isEditing && { required: true })}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>
+                                        <FaUserTag className="me-1" />
+                                        Role
+                                    </Form.Label>
+                                    <Form.Control
+                                        as="select"
+                                        name="role"
+                                        value={formData.role}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        {roles.map(role => (
+                                            <option key={role} value={role}>
+                                                {role.charAt(0).toUpperCase() + role.slice(1)}
+                                            </option>
+                                        ))}
+                                    </Form.Control>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <div className="d-flex justify-content-end mt-4">
+                            {isEditing && (
+                                <Button
+                                    variant="outline-secondary"
+                                    onClick={handleCancelEdit}
+                                    className="me-2"
+                                    disabled={submitting}
+                                >
+                                    <FaTimes className="me-1" /> Cancel Edit
+                                </Button>
+                            )}
+                            <Button
+                                variant="outline-primary"
+                                type="submit"
+                                disabled={submitting}
+                            >
+                                {submitting ? (
+                                    <>
+                                        <Spinner animation="border" size="sm" className="me-2" />
+                                        {isEditing ? 'Updating...' : 'Creating...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {isEditing ? <FaEdit className="me-1" /> : <FaPlus className="me-1" />}
+                                        {isEditing ? 'Update User' : 'Create User'}
+                                    </>
+                                )}
                             </Button>
-                        )}
-                        <Button variant="primary" type="submit">
-                            <FaPlus className="me-1" /> {isEditing ? 'Update User' : 'Create User'}
-                        </Button>
-                    </div>
-                </Form>
+                        </div>
+                    </Form>
+                </Card.Body>
             </Card>
 
-            {/* User Search and Filter */}
-            <Card className="admin-card filter-card mb-4">
-                <h2 className="card-title">Search & Filter Users</h2>
-                <Form>
+            {/* User Search and Filter - Fixed Layout */}
+            <Card className="filter-card">
+                <Card.Header className="card-header-custom-f">
+                    <FaFilter className="me-2" />
+                    Search & Filter Users
+                </Card.Header>
+                <Card.Body>
                     <Row className="g-3 align-items-end">
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Search Term</Form.Label>
+                        <Col md={5}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>
+                                    <FaSearch className="me-1" />
+                                    Search Term
+                                </Form.Label>
                                 <InputGroup>
                                     <Form.Control
                                         type="text"
@@ -226,75 +389,161 @@ const AdminPage = () => {
                                         value={searchTerm}
                                         onChange={e => setSearchTerm(e.target.value)}
                                     />
-                                    <Button variant="outline-secondary" onClick={() => setSearchTerm('')}>
-                                        <FaTimes />
-                                    </Button>
+                                    {/* {searchTerm && (
+                                        <Button 
+                                            variant="outline-secondary" 
+                                            onClick={() => setSearchTerm('')}
+                                            title="Clear search"
+                                        >
+                                            <FaTimes />
+                                        </Button>
+                                    )} */}
                                 </InputGroup>
                             </Form.Group>
                         </Col>
-                        <Col md={4}>
-                            <Form.Group>
+                        <Col md={3}>
+                            <Form.Group className="mb-3">
                                 <Form.Label>Filter by Role</Form.Label>
-                                <Form.Control as="select" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
+                                <Form.Control
+                                    as="select"
+                                    value={filterRole}
+                                    onChange={e => setFilterRole(e.target.value)}
+                                >
                                     <option value="">All Roles</option>
                                     {roles.map(role => (
-                                        <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+                                        <option key={role} value={role}>
+                                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                                        </option>
                                     ))}
                                 </Form.Control>
                             </Form.Group>
                         </Col>
+                        <Col md={4} className="d-flexs align-items-end justify-content-end">
+                            <Button
+                                variant="outline-secondary"
+                                onClick={handleClearFilters}
+                                className="me-2 filter-btns"
+                                disabled={!filterRole && !searchTerm}
+                            >
+                                <FaTimes className="me-1" /> Clear Filters
+                            </Button>
+                            <Button
+                                variant="outline-primary"
+                                onClick={handleRefresh}
+                                className="filter-btns"
+                            >
+                                <FaSync className="me-1" /> Refresh
+                            </Button>
+                        </Col>
                     </Row>
-                </Form>
+                </Card.Body>
             </Card>
 
-            {/* User Table */}
-            <Card className="admin-card user-table-card">
-                <h2 className="card-title">Existing Users</h2>
-                {loading ? (
-                    <div className="text-center my-5"><Spinner animation="border" /><p>Loading users...</p></div>
-                ) : users.length === 0 ? (
-                    <Alert variant="info">No users found matching the filters.</Alert>
-                ) : (
-                    <div className="table-responsive">
-                        <Table striped bordered hover className="user-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Full Name</th>
-                                    <th>Username</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Gender</th>
-                                    <th>Role</th>
-                                    <th>Created At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map(user => (
-                                    <tr key={user.id}>
-                                        <td>{user.id}</td>
-                                        <td>{user.fullname}</td>
-                                        <td>{user.username}</td>
-                                        <td>{user.email}</td>
-                                        <td>{user.phone_number || 'N/A'}</td>
-                                        <td>{user.gender || 'N/A'}</td>
-                                        <td><span className={`badge bg-${user.role === 'admin' ? 'danger' : user.role === 'manager' ? 'warning' : user.role === 'baker' ? 'info' : 'primary'}`}>{user.role}</span></td>
-                                        <td>{new Date(user.created_at).toLocaleDateString()}</td>
-                                        <td>
-                                            <Button variant="info" size="sm" className="me-1" onClick={() => handleEdit(user)}>
-                                                <FaEdit /> Edit
-                                            </Button>
-                                            <Button variant="danger" size="sm" onClick={() => handleDelete(user.id, user.fullname)}>
-                                                <FaTrash /> Delete
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
+            {/* User Table - Increased width and fixed layout */}
+            <Card className="table-card">
+                <Card.Header className="card-header-custom d-flex justify-content-between align-items-center">
+                    <div>
+                        <FaUser className="me-2" />
+                        Existing Users
                     </div>
-                )}
+                    <Badge bg="light" text="dark" className="user-count">
+                        {users.length} users
+                    </Badge>
+                </Card.Header>
+                <Card.Body>
+                    {loading ? (
+                        <div className="loading-container">
+                            <Spinner animation="border" variant="primary" />
+                            <p>Loading users...</p>
+                        </div>
+                    ) : users.length === 0 ? (
+                        <div className="empty-state">
+                            <FaUser className="empty-icon" />
+                            <h4>No Users Found</h4>
+                            <p>No users found matching the filters. Create a new user above!</p>
+                        </div>
+                    ) : (
+                        <div className="table-container-wide">
+                            <Table striped bordered hover className="user-table-wide">
+                                <thead>
+                                    <tr>
+                                        <th className="col-sn">S/N</th>
+                                        <th className="col-name">Full Name</th>
+                                        <th className="col-username">Username</th>
+                                        <th className="col-email">Email</th>
+                                        <th className="col-phone">Phone</th>
+                                        <th className="col-gender">Gender</th>
+                                        <th className="col-role">Role</th>
+                                        <th className="col-created">Created At</th>
+                                        <th className="col-actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map((user, index) => (
+                                        <tr key={user.id}>
+                                            <td className="col-sn text-center">{index + 1}</td>
+                                            <td className="col-name">
+                                                <div className="d-flex align-items-center">
+                                                    <FaUser className="me-2 text-muted" />
+                                                    <strong>{user.fullname}</strong>
+                                                </div>
+                                            </td>
+                                            <td className="col-username">{user.username}</td>
+                                            <td className="col-email">
+                                                <div className="d-flex align-items-center">
+                                                    <FaEnvelope className="me-2 text-muted" />
+                                                    {user.email}
+                                                </div>
+                                            </td>
+                                            <td className="col-phone">
+                                                {user.phone_number ? (
+                                                    <div className="d-flex align-items-center">
+                                                        <FaPhone className="me-2 text-muted" />
+                                                        {user.phone_number}
+                                                    </div>
+                                                ) : 'N/A'}
+                                            </td>
+                                            <td className="col-gender">{user.gender || 'N/A'}</td>
+                                            <td className="col-role">
+                                                <Badge bg={getRoleBadgeVariant(user.role)}>
+                                                    {user.role}
+                                                </Badge>
+                                            </td>
+                                            <td className="col-created">
+                                                <div className="d-flex align-items-center">
+                                                    <FaCalendarAlt className="me-2 text-muted" />
+                                                    {new Date(user.created_at).toLocaleDateString()}
+                                                </div>
+                                            </td>
+                                            <td className="col-actions">
+                                                <div className="action-buttons">
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        className="me-1 btn-action edit"
+                                                        onClick={() => handleEdit(user)}
+                                                        title="Edit User"
+                                                    >
+                                                        <FaEdit />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline-danger"
+                                                        size="sm"
+                                                        className="btn-action delete"
+                                                        onClick={() => handleDelete(user.id, user.fullname)}
+                                                        title="Delete User"
+                                                    >
+                                                        <FaTrash />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+                </Card.Body>
             </Card>
         </div>
     );

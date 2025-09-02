@@ -37,15 +37,15 @@ body {
 .welcome-banner {
     background: linear-gradient(135deg, var(--primary-purple-dark) 0%, var(--primary-purple) 100%);
     color: var(--text-light);
-    padding: 3rem;
+    padding: 2rem;
     border-radius: 20px;
-    margin-bottom: 2.5rem;
+    margin-bottom: 0.5rem;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
-    height: 20vh;
+    height: 28vh;
 }
 
 .banner-content {
@@ -55,7 +55,7 @@ body {
 }
 
 .banner-icon {
-    font-size: 4rem;
+    font-size: 3rem;
     margin-bottom: 1rem;
     color: rgba(255, 255, 255, 0.8);
 }
@@ -67,7 +67,7 @@ body {
 }
 
 .banner-title {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
 }
 
@@ -198,8 +198,8 @@ body {
 /* Charts Section */
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
     margin-bottom: 2.5rem;
 }
 
@@ -210,6 +210,7 @@ body {
     box-shadow: 0 6px 20px var(--shadow-light);
     transition: box-shadow 0.3s ease;
     height: 450px; /* Increased height for all charts */
+    width: 100%;
 }
 
 .chart-card:hover {
@@ -361,6 +362,7 @@ body {
     .chart-card, .chart-card-small {
         height: 350px;
         padding: 1.5rem;
+        width: 100%;
     }
     .table-section-card {
         padding: 1.5rem;
