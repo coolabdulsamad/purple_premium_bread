@@ -19,7 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import CustomToast from '../components/CustomToast';
 import '../assets/styles/salesOut.css';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const getCashierIdFromToken = () => {
   const token = localStorage.getItem('token');
@@ -82,11 +82,17 @@ const SalesOutPage = () => {
       );
 
       if (!silent) {
-        toast(<CustomToast type="success" message="Data refreshed" />);
+        // toast(<CustomToast type="success" message="Data refreshed" />);
+        toast(<CustomToast id={`success-refresh-${Date.now()}`} type="success" message="Data refreshed" />, {
+          toastId: 'refresh-success'
+        });
       }
     } catch (err) {
       setError('Failed to load data for sales out.');
-      toast(<CustomToast type="error" message="Failed to load sales out data." />);
+      // toast(<CustomToast type="error" message="Failed to load sales out data." />);
+      toast(<CustomToast id={`error-data-${Date.now()}`} type="error" message="Failed to load sales out data." />, {
+        toastId: 'data-error'
+      });
       console.error(err);
     } finally {
       setLoading(false);   // ✅ always stop loading
@@ -119,7 +125,10 @@ const SalesOutPage = () => {
     const stock = inventory[productId] || 0;
 
     if (qty > stock) {
-      toast(<CustomToast type="warning" message={`Cannot sell more than available stock (${stock}).`} />);
+      // toast(<CustomToast type="warning" message={`Cannot sell more than available stock (${stock}).`} />);
+      toast(<CustomToast id={`warning-stock-${Date.now()}`} type="warning" message={`Cannot sell more than available stock (${stock}).`} />, {
+        toastId: 'stock-warning'
+      });
       return;
     }
 
@@ -133,26 +142,44 @@ const SalesOutPage = () => {
     setError('');
 
     if (!selectedBranch) {
-      return toast(<CustomToast type="error" message="Please select a branch." />);
+      return toast(<CustomToast id={`error-branch-${Date.now()}`} type="error" message="Please select a branch." />, {
+        toastId: 'branch-error'
+        // toast(<CustomToast type="error" message="Please select a branch." />);
+      });
     }
     if (!selectedDriver) {
-      return toast(<CustomToast type="warning" message="Please select a driver or add a new one." />);
+      return toast(<CustomToast id={`warn-dropdown-${Date.now()}`} type="warning" message="Please select a driver or add a new one." />, {
+        toastId: 'dropdown-warn'
+        // toast(<CustomToast type="warning" message="Please select a driver or add a new one." />);
+      });
     }
     if (selectedDriver === 'new' && (!newDriverName || !newDriverPhoneNumber)) {
-      return toast(<CustomToast type="warning" message="Enter name and phone for the new driver." />);
+      return toast(<CustomToast id={`warn-driver-${Date.now()}`} type="warning" message="Enter name and phone for the new driver." />, {
+        toastId: 'driver-warn'
+        // toast(<CustomToast type="warning" message="Enter name and phone for the new driver." />);
+      });
     }
 
     const itemsToSell = salesOutData.filter((i) => i.quantity > 0);
     if (itemsToSell.length === 0) {
-      return toast(<CustomToast type="info" message="Add quantities to sell." />);
+      return toast(<CustomToast id={`info-quantity-${Date.now()}`} type="info" message="Add quantities to sell." />, {
+        toastId: 'quantity-info'
+        // toast(<CustomToast type="info" message="Add quantities to sell." />);
+      });
     }
 
     const cashierId = getCashierIdFromToken();
     if (!cashierId) {
-      return toast(<CustomToast type="error" message="You must be logged in." />);
+      return toast(<CustomToast id={`error-logged-${Date.now()}`} type="error" message="You must be logged in." />, {
+        toastId: 'logged-error'
+        // toast(<CustomToast type="error" message="You must be logged in." />);
+      });
     }
 
-    toast(<CustomToast type="info" message="Submitting sale…" />);
+    // toast(<CustomToast type="info" message="Submitting sale…" />);
+    toast(<CustomToast id={`info-sale-${Date.now()}`} type="info" message="Submitting sale..." />, {
+      toastId: 'sale-info'
+    });
 
     try {
       const response = await axios.post(`${API_BASE_URL}/sales/b2b`, {
@@ -166,7 +193,10 @@ const SalesOutPage = () => {
       });
 
       const successMsg = response?.data?.message || 'Bulk sale recorded successfully.';
-      toast(<CustomToast type="success" message={successMsg} />);
+      // toast(<CustomToast type="success" message={successMsg} />);
+      toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+        toastId: 's-success'
+      });
 
       // Reset fields
       setNote('');
@@ -183,7 +213,10 @@ const SalesOutPage = () => {
         err?.response?.data?.details ||
         err.message ||
         'Failed to record bulk sale.';
-      toast(<CustomToast type="error" message={errorMsg} />);
+      // toast(<CustomToast type="error" message={errorMsg} />);
+      toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+        toastId: 'e-error'
+      });
       console.error('Sale error:', err);
     }
   };

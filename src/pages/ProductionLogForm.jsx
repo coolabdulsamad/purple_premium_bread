@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast"; // ✅ same as SalesOutPage
 import "../assets/styles/productionLogForm.css";
 
-const API_BASE_URL = "http://10.116.242.21:5000/api";
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const getUserIdFromToken = () => {
   const token = localStorage.getItem("token");
@@ -48,12 +48,15 @@ function ProductionLogForm() {
         setProductionCounts(init);
         setWasteCounts(init);
       } catch (err) {
-        toast(
-          <CustomToast
-            type="error"
-            message="Failed to load products. Try again."
-          />
-        );
+        // toast(
+        //   <CustomToast
+        //     type="error"
+        //     message="Failed to load products. Try again."
+        //   />
+        // );
+        toast(<CustomToast id={`error-products-${Date.now()}`} type="error" message="Failed to load products. Try again." />, {
+          toastId: 'products-error'
+        });
       } finally {
         setLoading(false);
       }
@@ -77,6 +80,9 @@ function ProductionLogForm() {
     const token = localStorage.getItem("token");
     if (!token) {
       toast(<CustomToast type="error" message="Not authenticated. Please login." />);
+      toast(<CustomToast id={`error-login-${Date.now()}`} type="error" message="Not authenticated. Please login." />, {
+        toastId: 'login-error'
+      });
       setSubmitting(false);
       return;
     }
@@ -90,7 +96,10 @@ function ProductionLogForm() {
       .filter((item) => item.quantityProduced > 0 || item.wasteQuantity > 0);
 
     if (payload.length === 0) {
-      toast(<CustomToast type="info" message="Enter at least one quantity to log." />);
+      // toast(<CustomToast type="info" message="Enter at least one quantity to log." />);
+      toast(<CustomToast id={`info-quantity-${Date.now()}`} type="info" message="Enter at least one quantity to log." />, {
+        toastId: 'quantity-info'
+      });
       setSubmitting(false);
       return;
     }
@@ -102,16 +111,23 @@ function ProductionLogForm() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast(
-        <CustomToast
-          type="success"
-          message={
-            res?.data?.batchNumber
-              ? `Production logged ✅ Batch: ${res.data.batchNumber}`
-              : "Production logged successfully ✅"
-          }
-        />
-      );
+      // toast(
+      //   <CustomToast
+      //     type="success"
+      //     message={
+      //       res?.data?.batchNumber
+      //         ? `Production logged ✅ Batch: ${res.data.batchNumber}`
+      //         : "Production logged successfully ✅"
+      //     }
+      //   />
+      // );
+      toast(<CustomToast id={`success-log-${Date.now()}`} type="success" message={
+        res?.data?.batchNumber
+          ? `Production logged ✅ Batch: ${res.data.batchNumber}`
+          : "Production logged successfully ✅"
+      } />, {
+        toastId: 'log-success'
+      });
 
       // reset
       const init = products.reduce((acc, p) => ({ ...acc, [p.id]: 0 }), {});
@@ -122,7 +138,10 @@ function ProductionLogForm() {
         err?.response?.data?.details ||
         err?.response?.data?.error ||
         err.message;
-      toast(<CustomToast type="error" message={`Failed to log production. ${msg}`} />);
+      // toast(<CustomToast type="error" message={`Failed to log production. ${msg}`} />);
+      toast(<CustomToast id={`error-log-${Date.now()}`} type="error" message={`Failed to log production. ${msg}`} />, {
+        toastId: 'log-error'
+      });
     } finally {
       setSubmitting(false);
     }

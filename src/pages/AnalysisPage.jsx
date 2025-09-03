@@ -35,7 +35,7 @@ ChartJS.register(
     Filler
 );
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const AnalysisPage = () => {
     const [loading, setLoading] = useState(true);
@@ -108,11 +108,17 @@ const AnalysisPage = () => {
             setAllBranches(branchesRes.data);
             setAllRawMaterials(rawMaterialsRes.data);
             // toast.success('Analysis data loaded successfully');
-            toast(<CustomToast id="123" type="success" message="Analysis data loaded successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Analysis data loaded successfully" />);
+            toast(<CustomToast id={`success-analysis-${Date.now()}`} type="success" message="Analysis data loaded successfully" />, {
+                toastId: 'analysis-success'
+            });
         } catch (err) {
             console.error('Error fetching dropdown data for analysis:', err);
             // toast.error('Failed to load analysis options');
-            toast(<CustomToast id="123" type="error" message="Failed to load analysis options" />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load analysis options" />);
+            toast(<CustomToast id={`error-analysis-${Date.now()}`} type="error" message="Failed to load analysis options" />, {
+                toastId: 'analysis-error'
+            });
         }
     };
 
@@ -160,12 +166,18 @@ const AnalysisPage = () => {
             setCustomerLifetimeValue(cltvRes.data.reportData);
 
             // toast.success('Analysis updated successfully');
-            toast(<CustomToast id="123" type="success" message="Analysis updated successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Analysis updated successfully" />);
+            toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="Analysis updated successfully" />, {
+                toastId: 'update-success'
+            });
         } catch (err) {
             console.error('Error fetching analysis data:', err.response?.data || err.message);
             setError('Failed to load analysis data. ' + (err.response?.data?.details || err.message));
             // toast.error('Failed to load analysis data');
-            toast(<CustomToast id="123" type="error" message="Failed to load analysis data" />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load analysis data" />);
+            toast(<CustomToast id={`error-load-${Date.now()}`} type="error" message="Failed to load analysis data" />, {
+                toastId: 'load-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -217,8 +229,11 @@ const AnalysisPage = () => {
                 }
             });
             setAnalysisFilters(prev => ({ ...prev, ...sectionFilters }));
-            toast.info(`Cleared ${section} filters`);
-            toast(<CustomToast id="123" type="info" message={`Cleared ${section} filters`} />);
+            // toast.info(`Cleared ${section} filters`);
+            // toast(<CustomToast id="123" type="info" message={`Cleared ${section} filters`} />);
+            toast(<CustomToast id={`info-filter-${Date.now()}`} type="info" message={`Cleared ${section} filters`} />, {
+                toastId: 'filter-info'
+            });
         } else {
             const clearedFilters = {};
             Object.keys(analysisFilters).forEach(key => {
@@ -226,7 +241,10 @@ const AnalysisPage = () => {
             });
             setAnalysisFilters(prev => ({ ...prev, ...clearedFilters }));
             // toast.info('All filters cleared');
-            toast(<CustomToast id="123" type="info" message="All filters cleared" />);
+            // toast(<CustomToast id="123" type="info" message="All filters cleared" />);
+            toast(<CustomToast id={`info-cleared-${Date.now()}`} type="info" message="All filters cleared" />, {
+                toastId: 'cleared-info'
+            });
         }
     };
 

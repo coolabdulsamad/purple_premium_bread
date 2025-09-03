@@ -32,7 +32,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../assets/styles/newSale.css";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 /* ========= Helpers ========= */
 const getCashierIdFromToken = () => {
@@ -105,7 +105,10 @@ const NewSalePage = () => {
       }, {});
       setInventory(inventoryMap);
     } catch {
-      toast.error("Failed to load POS data.");
+      // toast.error("Failed to load POS data.");
+      toast(<CustomToast id={`error-pos-${Date.now()}`} type="error" message="Failed to load POS data." />, {
+        toastId: 'pos-error'
+      });
     } finally {
       setLoading(false);
     }
@@ -179,10 +182,16 @@ const NewSalePage = () => {
 
         if (existing) {
           if (existing.quantity + 1 > stock) {
-            toast.warn("Inventory limit reached.");
+            // toast.warn("Inventory limit reached.");
+            toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warn" message="Inventory limit reached." />, {
+              toastId: 'inventory-warn'
+            });
             return cart;
           }
           toast.success(`${product.name} +1`);
+          toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={`${product.name} +1`} />, {
+            toastId: 's-success'
+          });
           return {
             ...cart,
             items: cart.items.map((i) =>
@@ -191,10 +200,16 @@ const NewSalePage = () => {
           };
         } else {
           if (stock <= 0) {
-            toast.error("Out of stock.");
+            // toast.error("Out of stock.");
+            toast(<CustomToast id={`error-stock-${Date.now()}`} type="error" message="Out of stock." />, {
+              toastId: 'stock-error'
+            });
             return cart;
           }
-          toast.success(`${product.name} added to cart`);
+          // toast.success(`${product.name} added to cart`);
+          toast(<CustomToast id={`success-cart-${Date.now()}`} type="success" message={`${product.name} added to cart`} />, {
+            toastId: 'cart-success'
+          });
           return {
             ...cart,
             items: [
@@ -222,7 +237,10 @@ const NewSalePage = () => {
             if (i.id !== itemId) return i;
             const qty = Math.max(0, Number(nextQty) || 0);
             if (qty > productStock) {
-              toast.warn("Inventory limit reached.");
+              // toast.warn("Inventory limit reached.");
+              toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warn" message="Inventory limit reached." />, {
+                toastId: 'inventory-warn'
+              });
               return i;
             }
             return { ...i, quantity: qty };
@@ -258,12 +276,18 @@ const NewSalePage = () => {
       },
     ]);
     setActiveCartId(nextId);
-    toast.info(`${groupName} created`);
+    // toast.info(`${groupName} created`);
+    toast(<CustomToast id={`info-group-${Date.now()}`} type="info" message={`${groupName} created`} />, {
+      toastId: 'group-info'
+    });
   };
 
   const removeCart = (cartId) => {
     if (carts.length === 1) {
-      toast.warn("At least one group is required.");
+      // toast.warn("At least one group is required.");
+      toast(<CustomToast id={`warn-group-${Date.now()}`} type="warn" message="At least one group is required." />, {
+        toastId: 'group-warn'
+      });
       return;
     }
     const removed =
@@ -273,19 +297,28 @@ const NewSalePage = () => {
     if (!next.find((c) => c.id === activeCartId) && next.length) {
       setActiveCartId(next[0].id);
     }
-    toast.success(`${removed} removed`);
+    // toast.success(`${removed} removed`);
+    toast(<CustomToast id={`success-remove-${Date.now()}`} type="success" message={`${removed} removed`} />, {
+      toastId: 'remove-success'
+    });
   };
 
   /* ========= Checkout ========= */
   const handleCheckout = async (cartToProcess) => {
     if (!cartToProcess || cartToProcess.items.length === 0) {
-      toast.warn("Cart is empty.");
+      // toast.warn("Cart is empty.");
+      toast(<CustomToast id={`warn-cart-${Date.now()}`} type="warn" message="Cart is empty." />, {
+        toastId: 'cart-warn'
+      });
       return;
     }
 
     const cashierId = getCashierIdFromToken();
     if (!cashierId) {
-      toast.error("You must be logged in to process a sale.");
+      // toast.error("You must be logged in to process a sale.");
+      toast(<CustomToast id={`error-sale-${Date.now()}`} type="error" message="You must be logged in to process a sale." />, {
+        toastId: 'sale-error'
+      });
       return;
     }
 
@@ -302,7 +335,10 @@ const NewSalePage = () => {
         );
         paymentImageUrl = upload.data.url;
       } catch {
-        toast.error("Failed to upload receipt image.");
+        // toast.error("Failed to upload receipt image.");
+        toast(<CustomToast id={`error-receipt-${Date.now()}`} type="error" message="Failed to upload receipt image." />, {
+          toastId: 'receipt-error'
+        });
         return;
       }
     }
@@ -316,7 +352,10 @@ const NewSalePage = () => {
 
     if (cartToProcess.payment.paymentMethod === "Credit") {
       if (!cartToProcess.payment.customer) {
-        toast.error("Select a customer for credit sales.");
+        // toast.error("Select a customer for credit sales.");
+        toast(<CustomToast id={`error-sales-${Date.now()}`} type="error" message="Select a customer for credit sales." />, {
+          toastId: 'sales-error'
+        });
         return;
       }
       customerId = cartToProcess.payment.customer.id;
@@ -328,7 +367,10 @@ const NewSalePage = () => {
         Number(cartToProcess.payment.customer.credit_limit || 0) -
         Number(cartToProcess.payment.customer.balance || 0);
       if (balanceDue > remainingLimit && amountPaid < total) {
-        toast.error("Exceeds customer remaining credit limit.");
+        // toast.error("Exceeds customer remaining credit limit.");
+        toast(<CustomToast id={`error-credit-${Date.now()}`} type="error" message="Exceeds customer remaining credit limit." />, {
+          toastId: 'credit-error'
+        });
         return;
       }
 
@@ -341,7 +383,10 @@ const NewSalePage = () => {
 
       dueDate = cartToProcess.payment.dueDate || null;
       if (!dueDate && balanceDue > 0) {
-        toast.warn("Choose a due date for outstanding balance.");
+        // toast.warn("Choose a due date for outstanding balance.");
+        toast(<CustomToast id={`warn-balance-${Date.now()}`} type="warn" message="Choose a date for outstanding balance." />, {
+          toastId: 'balance-warn'
+        });
         return;
       }
     } else {
@@ -370,7 +415,10 @@ const NewSalePage = () => {
 
     try {
       await axios.post(`${API_BASE_URL}/sales/process`, payload);
-      toast.success("Sale completed successfully.");
+      // toast.success("Sale completed successfully.");
+      toast(<CustomToast id={`success-sales-${Date.now()}`} type="success" message="Sale completed successfully." />, {
+        toastId: 'sales-success'
+      });
 
       // remove processed cart
       const remaining = carts.filter((c) => c.id !== cartToProcess.id);
@@ -381,7 +429,10 @@ const NewSalePage = () => {
       }
       fetchAllData();
     } catch {
-      toast.error("Failed to process sale.");
+      // toast.error("Failed to process sale.");
+      toast(<CustomToast id={`error-sales-${Date.now()}`} type="error" message="Failed to process sale." />, {
+        toastId: 'sales-error'
+      });
     }
   };
 
@@ -424,9 +475,8 @@ const NewSalePage = () => {
             {carts.map((cart) => (
               <button
                 key={cart.id}
-                className={`ppb-group ${
-                  cart.id === activeCartId ? "ppb-group--active" : ""
-                }`}
+                className={`ppb-group ${cart.id === activeCartId ? "ppb-group--active" : ""
+                  }`}
                 onClick={() => setActiveCartId(cart.id)}
               >
                 <span>{cart.name}</span>
@@ -549,10 +599,10 @@ const NewSalePage = () => {
                           prev.map((c) =>
                             c.id === activeCart.id
                               ? {
-                                  ...c,
-                                  discount:
-                                    parseInt(e.target.value || 0, 10) || 0,
-                                }
+                                ...c,
+                                discount:
+                                  parseInt(e.target.value || 0, 10) || 0,
+                              }
                               : c
                           )
                         )
@@ -596,27 +646,26 @@ const NewSalePage = () => {
                     ].map((opt) => (
                       <button
                         key={opt.key}
-                        className={`ppb-seg__btn ${
-                          activeCart.payment.paymentMethod === opt.key
-                            ? "ppb-seg__btn--active"
-                            : ""
-                        }`}
+                        className={`ppb-seg__btn ${activeCart.payment.paymentMethod === opt.key
+                          ? "ppb-seg__btn--active"
+                          : ""
+                          }`}
                         onClick={() =>
                           setCarts((prev) =>
                             prev.map((c) =>
                               c.id === activeCart.id
                                 ? {
-                                    ...c,
-                                    payment: {
-                                      ...c.payment,
-                                      paymentMethod: opt.key,
-                                      paymentReference: "",
-                                      paymentImage: null,
-                                      customer: null,
-                                      amountPaid: 0,
-                                      dueDate: "",
-                                    },
-                                  }
+                                  ...c,
+                                  payment: {
+                                    ...c.payment,
+                                    paymentMethod: opt.key,
+                                    paymentReference: "",
+                                    paymentImage: null,
+                                    customer: null,
+                                    amountPaid: 0,
+                                    dueDate: "",
+                                  },
+                                }
                                 : c
                             )
                           )
@@ -631,59 +680,59 @@ const NewSalePage = () => {
                   {/* method-specific fields */}
                   {(activeCart.payment.paymentMethod === "Card" ||
                     activeCart.payment.paymentMethod === "Bank Transfer") && (
-                    <div className="ppb-pay__fields">
-                      <div className="ppb-opt">
-                        <label>Reference</label>
-                        <FormControl
-                          placeholder="Enter reference number"
-                          value={activeCart.payment.paymentReference || ""}
-                          onChange={(e) =>
-                            setCarts((prev) =>
-                              prev.map((c) =>
-                                c.id === activeCart.id
-                                  ? {
+                      <div className="ppb-pay__fields">
+                        <div className="ppb-opt">
+                          <label>Reference</label>
+                          <FormControl
+                            placeholder="Enter reference number"
+                            value={activeCart.payment.paymentReference || ""}
+                            onChange={(e) =>
+                              setCarts((prev) =>
+                                prev.map((c) =>
+                                  c.id === activeCart.id
+                                    ? {
                                       ...c,
                                       payment: {
                                         ...c.payment,
                                         paymentReference: e.target.value,
                                       },
                                     }
-                                  : c
+                                    : c
+                                )
                               )
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="ppb-opt">
-                        <label>
-                          <FaFileUpload /> Receipt Image
-                        </label>
-                        <FormControl
-                          type="file"
-                          onChange={(e) =>
-                            setCarts((prev) =>
-                              prev.map((c) =>
-                                c.id === activeCart.id
-                                  ? {
+                            }
+                          />
+                        </div>
+                        <div className="ppb-opt">
+                          <label>
+                            <FaFileUpload /> Receipt Image
+                          </label>
+                          <FormControl
+                            type="file"
+                            onChange={(e) =>
+                              setCarts((prev) =>
+                                prev.map((c) =>
+                                  c.id === activeCart.id
+                                    ? {
                                       ...c,
                                       payment: {
                                         ...c.payment,
                                         paymentImage: e.target.files?.[0] || null,
                                       },
                                     }
-                                  : c
+                                    : c
+                                )
                               )
-                            )
-                          }
-                        />
-                        {activeCart.payment.paymentImage && (
-                          <small className="ppb-file">
-                            {activeCart.payment.paymentImage.name}
-                          </small>
-                        )}
+                            }
+                          />
+                          {activeCart.payment.paymentImage && (
+                            <small className="ppb-file">
+                              {activeCart.payment.paymentImage.name}
+                            </small>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {activeCart.payment.paymentMethod === "Credit" && (
                     <div className="ppb-pay__fields">
@@ -701,13 +750,13 @@ const NewSalePage = () => {
                               prev.map((c) =>
                                 c.id === activeCart.id
                                   ? {
-                                      ...c,
-                                      payment: {
-                                        ...c.payment,
-                                        customer: selected || null,
-                                        amountPaid: 0,
-                                      },
-                                    }
+                                    ...c,
+                                    payment: {
+                                      ...c.payment,
+                                      customer: selected || null,
+                                      amountPaid: 0,
+                                    },
+                                  }
                                   : c
                               )
                             );
@@ -750,12 +799,12 @@ const NewSalePage = () => {
                                     prev.map((c) =>
                                       c.id === activeCart.id
                                         ? {
-                                            ...c,
-                                            payment: {
-                                              ...c.payment,
-                                              amountPaid: e.target.value,
-                                            },
-                                          }
+                                          ...c,
+                                          payment: {
+                                            ...c.payment,
+                                            amountPaid: e.target.value,
+                                          },
+                                        }
                                         : c
                                     )
                                   )
@@ -766,7 +815,7 @@ const NewSalePage = () => {
                               Remaining:{" "}
                               {formatNaira(
                                 activeCart.total -
-                                  (Number(activeCart.payment.amountPaid) || 0)
+                                (Number(activeCart.payment.amountPaid) || 0)
                               )}
                             </small>
                           </div>
@@ -783,12 +832,12 @@ const NewSalePage = () => {
                                   prev.map((c) =>
                                     c.id === activeCart.id
                                       ? {
-                                          ...c,
-                                          payment: {
-                                            ...c.payment,
-                                            dueDate: e.target.value,
-                                          },
-                                        }
+                                        ...c,
+                                        payment: {
+                                          ...c.payment,
+                                          dueDate: e.target.value,
+                                        },
+                                      }
                                       : c
                                   )
                                 )
@@ -862,9 +911,8 @@ const NewSalePage = () => {
               return (
                 <div
                   key={p.id}
-                  className={`ppb-product ${
-                    stock === 0 ? "ppb-product--oos" : ""
-                  }`}
+                  className={`ppb-product ${stock === 0 ? "ppb-product--oos" : ""
+                    }`}
                 >
                   <div className="ppb-product__media">
                     <img

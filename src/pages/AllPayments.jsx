@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import '../assets/styles/credit-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const AllPayments = () => {
     const [payments, setPayments] = useState([]);
@@ -42,12 +42,18 @@ const AllPayments = () => {
             const response = await axios.get(`${API_BASE_URL}/payments?${queryParams}`);
             setPayments(response.data);
             // toast.success('Payments loaded successfully');
-            toast(<CustomToast id="123" type="success" message="Payments loaded successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Payments loaded successfully" />);
+            toast(<CustomToast id={`success-payment-${Date.now()}`} type="success" message="Payments loaded successfully" />, {
+                toastId: 'payment-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to load payments history. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'error-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -72,7 +78,10 @@ const AllPayments = () => {
             paymentMethod: '',
         });
         // toast.info('Filters cleared');
-        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-cleared-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'cleared-info'
+        });
     };
 
     const handleSort = (key) => {

@@ -8,7 +8,7 @@ import { FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign, FiList } fro
 import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
 
-const API_BASE_URL = 'http://10.44.106.21:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const SalesHistoryPage = () => {
     const [sales, setSales] = useState([]);
@@ -34,7 +34,10 @@ const SalesHistoryPage = () => {
         } catch (err) {
             setError('Failed to fetch sales history.');
             console.error('Sales fetch error:', err.response?.data || err.message);
-            toast.error('Failed to fetch sales history.');
+            // toast.error('Failed to fetch sales history.');
+            toast(<CustomToast id={`error-history-${Date.now()}`} type="error" message="Failed to fetch sales history." />, {
+                toastId: 'history-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -49,7 +52,10 @@ const SalesHistoryPage = () => {
         } catch (err) {
             setError('Failed to fetch sale details.');
             console.error('Sale details fetch error:', err.response?.data || err.message);
-            toast.error('Failed to fetch sale details.');
+            // toast.error('Failed to fetch sale details.');
+            toast(<CustomToast id={`error-sale-${Date.now()}`} type="error" message="Failed to fetch sale details." />, {
+                toastId: 'sale-error'
+            });
         }
     };
 
@@ -144,7 +150,10 @@ const SalesHistoryPage = () => {
         printWindow.document.write('</body></html>');
         printWindow.document.close();
         printWindow.print();
-        toast.success('Receipt sent to printer.');
+        // toast.success('Receipt sent to printer.');
+        toast(<CustomToast id={`success-printer-${Date.now()}`} type="success" message="Receipt sent to printer." />, {
+            toastId: 'printer-success'
+        });
     };
 
     const closeDialog = () => {

@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast";
 import "../assets/styles/editCustomer.css";
 
-const API_BASE_URL = "http://10.116.242.21:5000/api";
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const EditCustomerPage = ({ customerId, onClose }) => {
     const [loading, setLoading] = useState(true);
@@ -14,6 +14,7 @@ const EditCustomerPage = ({ customerId, onClose }) => {
         fullname: "",
         email: "",
         phone: "",
+        gender: "",
         address: "",
         credit_limit: "",
         due_date: "",
@@ -31,13 +32,17 @@ const EditCustomerPage = ({ customerId, onClose }) => {
                     fullname: data.fullname || "",
                     email: data.email || "",
                     phone: data.phone || "",
+                    gender: data.gender || "",
                     address: data.address || "",
                     credit_limit: data.credit_limit ?? "",
                     due_date: data.due_date ? data.due_date.split("T")[0] : "",
                     is_active: data.is_active ?? true,
                 });
             } catch (e) {
-                toast(<CustomToast type="error" message="Failed to load customer." />);
+                // toast(<CustomToast type="error" message="Failed to load customer." />);
+                toast(<CustomToast id={`error-customer-${Date.now()}`} type="error" message="Failed to load customer." />, {
+                    toastId: 'customer-error'
+                });
             } finally {
                 setLoading(false);
             }
@@ -57,10 +62,16 @@ const EditCustomerPage = ({ customerId, onClose }) => {
                 ...form,
                 credit_limit: Number(form.credit_limit || 0),
             });
-            toast(<CustomToast type="success" message="Customer updated successfully." />);
+            // toast(<CustomToast type="success" message="Customer updated successfully." />);
+            toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="Customer updated successfully." />, {
+                toastId: 'update-success'
+            });
             if (onClose) onClose();
         } catch (e) {
-            toast(<CustomToast type="error" message="Update failed." />);
+            // toast(<CustomToast type="error" message="Update failed." />);
+            toast(<CustomToast id={`error-update-${Date.now()}`} type="error" message="Update failed." />, {
+                toastId: 'update-error'
+            });
         }
     };
 
@@ -100,6 +111,20 @@ const EditCustomerPage = ({ customerId, onClose }) => {
                 value={form.phone}
                 onChange={onChange}
             />
+
+            <label className="ppb-label">Gender</label>
+            <select
+                className="ppb-input"
+                name="gender"
+                value={form.gender}
+                onChange={(e) => setForm({ ...form, gender: e.target.value })}
+            >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select>
 
             <label className="ppb-label">Address</label>
             <input

@@ -26,7 +26,7 @@ const BranchesPage = () => {
     const [deleting, setDeleting] = useState(false);
 
     // API base URL - adjust this to match your backend
-    const API_BASE_URL = 'http://localhost:5000/api';
+    const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
     useEffect(() => {
         fetchBranches();
@@ -39,22 +39,28 @@ const BranchesPage = () => {
             const response = await axios.get(`${API_BASE_URL}/branches`);
             setBranches(response.data);
             // toast.success('Branches loaded successfully');
-            toast(
-                <CustomToast
-                    type="success"
-                    message="Branches loaded successfully"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="success"
+            //         message="Branches loaded successfully"
+            //     />
+            // );
+            toast(<CustomToast id={`success-branches-${Date.now()}`} type="success" message="Branches loaded successfully" />, {
+                toastId: 'branches-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to fetch branches. Please make sure the backend server is running.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(
-                <CustomToast
-                    type="error"
-                    message={errorMsg}
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message={errorMsg}
+            //     />
+            // );
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             console.error('Error fetching branches:', err);
         } finally {
             setLoading(false);
@@ -90,24 +96,30 @@ const BranchesPage = () => {
                 const successMsg = 'Branch updated successfully!';
                 setSuccess(successMsg);
                 // toast.success(successMsg);
-                toast(
-                    <CustomToast
-                        type="success"
-                        message={successMsg}
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="success"
+                //         message={successMsg}
+                //     />
+                // );
+                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                    toastId: 's-success'
+                });
             } else {
                 // Create new branch
                 await axios.post(`${API_BASE_URL}/branches`, formData);
                 const successMsg = 'Branch registered successfully!';
                 setSuccess(successMsg);
                 // toast.success(successMsg);
-                toast(
-                    <CustomToast
-                        type="success"
-                        message={successMsg}
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="success"
+                //         message={successMsg}
+                //     />
+                // );
+                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                    toastId: 's-success'
+                });
             }
 
             resetForm();
@@ -118,12 +130,15 @@ const BranchesPage = () => {
                 ' Please check your backend connection.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(
-                <CustomToast
-                    type="error"
-                    message={errorMsg}
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message={errorMsg}
+            //     />
+            // );
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             console.error('Error saving branch:', err);
         } finally {
             setSubmitting(false);
@@ -141,22 +156,28 @@ const BranchesPage = () => {
             try {
                 await axios.delete(`${API_BASE_URL}/branches/${branchId}`);
                 // toast.success('Branch deleted successfully!');
-                toast(
-                    <CustomToast
-                        type="success"
-                        message="Branch deleted successfully!"
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="success"
+                //         message="Branch deleted successfully!"
+                //     />
+                // );
+                toast(<CustomToast id={`success-deleted-${Date.now()}`} type="success" message="Branch deleted successfully!" />, {
+                    toastId: 'deleted-success'
+                });
                 fetchBranches();
             } catch (err) {
                 const errorMsg = err.response?.data?.error || 'Failed to delete branch. Please check your backend connection.';
                 // toast.error(errorMsg);
-                toast(
-                    <CustomToast
-                        type="error"
-                        message={errorMsg}
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="error"
+                //         message={errorMsg}
+                //     />
+                // );
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'e-error'
+                });
                 console.error('Error deleting branch:', err);
             } finally {
                 setDeleting(false);
@@ -167,12 +188,15 @@ const BranchesPage = () => {
     const handleRefresh = () => {
         fetchBranches();
         // toast.info('Refreshing branches list...');
-        toast(
-            <CustomToast
-                type="info"
-                message="Refreshing branches list..."
-            />
-        );
+        // toast(
+        //     <CustomToast
+        //         type="info"
+        //         message="Refreshing branches list..."
+        //     />
+        // );
+        toast(<CustomToast id={`info-refresh-${Date.now()}`} type="info" message="Refreshing branches list..." />, {
+            toastId: 'refresh-info'
+        });
     };
 
     return (

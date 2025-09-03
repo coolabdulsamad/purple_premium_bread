@@ -6,7 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/staff-management.css';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);
@@ -45,7 +45,10 @@ const StaffManagement = () => {
             console.error('Error fetching users:', err);
             setError('Failed to load users for duty assignment.');
             // toast.error('Failed to load users for duty assignment.');
-            toast(<CustomToast id="123" type="error" message="Failed to load users for duty assignmenty." />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load users for duty assignmenty." />);
+            toast(<CustomToast id={`error-duty-${Date.now()}`} type="error" message="Failed to load users for duty assignmenty." />, {
+                toastId: 'duty-error'
+            });
         }
     };
 
@@ -60,7 +63,10 @@ const StaffManagement = () => {
             console.error('Error fetching staff duties:', err.response?.data || err.message);
             setError('Failed to load staff duty assignments. ' + (err.response?.data?.details || err.message));
             // toast.error('Failed to load duty assignments.');
-            toast(<CustomToast id="123" type="error" message="Failed to load duty assignments." />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load duty assignments." />);
+            toast(<CustomToast id={`error-load-${Date.now()}`} type="error" message="Failed to load duty assignments." />, {
+                toastId: 'load-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -92,7 +98,10 @@ const StaffManagement = () => {
         if (!dutyFormData.user_id || !dutyFormData.duty_date || !dutyFormData.shift_name) {
             setError('Please fill in all required fields (Staff, Date, Shift).');
             // toast.error('Please fill in all required fields.');
-            toast(<CustomToast id="123" type="error" message="Please fill in all required fields." />);
+            // toast(<CustomToast id="123" type="error" message="Please fill in all required fields." />);
+            toast(<CustomToast id={`error-require-${Date.now()}`} type="error" message="Please fill in all required fields." />, {
+                toastId: 'require-error'
+            });
             setSubmitting(false);
             return;
         }
@@ -104,14 +113,20 @@ const StaffManagement = () => {
                 });
                 setSuccessMessage('Duty assignment updated successfully!');
                 // toast.success('Duty assignment updated successfully!');
-                toast(<CustomToast id="123" type="success" message="Duty assignment updated successfully!" />);
+                // toast(<CustomToast id="123" type="success" message="Duty assignment updated successfully!" />);
+                toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="Duty assignment updated successfully!" />, {
+                    toastId: 'update-success'
+                });
             } else {
                 await axios.post(`${API_BASE_URL}/staff/duties`, dutyFormData, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
                 });
                 setSuccessMessage('Duty assignment created successfully!');
                 // toast.success('Duty assignment created successfully!');
-                toast(<CustomToast id="123" type="success" message="Duty assignment created successfully!" />);
+                // toast(<CustomToast id="123" type="success" message="Duty assignment created successfully!" />);
+                toast(<CustomToast id={`success-created-${Date.now()}`} type="success" message="Duty assignment created successfully!" />, {
+                    toastId: 'created-success'
+                });
             }
             fetchDuties();
             handleCancelEdit();
@@ -119,7 +134,10 @@ const StaffManagement = () => {
             console.error('Error saving duty assignment:', err.response?.data || err.message);
             setError('Failed to save duty assignment. ' + (err.response?.data?.error || err.message));
             // toast.error('Failed to save duty assignment.');
-            toast(<CustomToast id="123" type="error" message="Failed to save duty assignment." />);
+            // toast(<CustomToast id="123" type="error" message="Failed to save duty assignment." />);
+            toast(<CustomToast id={`error-duty-${Date.now()}`} type="error" message="Failed to save duty assignment." />, {
+                toastId: 'duty-error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -148,13 +166,19 @@ const StaffManagement = () => {
                 });
                 setSuccessMessage('Duty assignment deleted successfully!');
                 // toast.success('Duty assignment deleted successfully!');
-                toast(<CustomToast id="123" type="success" message="Duty assignment deleted successfully!" />);
+                // toast(<CustomToast id="123" type="success" message="Duty assignment deleted successfully!" />);
+                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Duty assignment deleted successfully!" />, {
+                    toastId: 'delete-success'
+                });
                 fetchDuties();
             } catch (err) {
                 console.error('Error deleting duty assignment:', err.response?.data || err.message);
                 setError('Failed to delete duty assignment. ' + (err.response?.data?.details || err.message));
                 // toast.error('Failed to delete duty assignment.');
-                toast(<CustomToast id="123" type="error" message="Failed to delete duty assignment." />);
+                // toast(<CustomToast id="123" type="error" message="Failed to delete duty assignment." />);
+                toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete duty assignment." />, {
+                    toastId: 'delete-error'
+                });
             }
         }
     };
@@ -186,14 +210,20 @@ const StaffManagement = () => {
             shiftName: '',
         });
         // toast.info('Filters cleared');
-        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-cleared-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'cleared-info'
+        });
     };
 
     const handleRefresh = () => {
         fetchDuties();
         fetchUsers();
         // toast.info('Data refreshed');
-        toast(<CustomToast id="123" type="info" message="Data refreshed" />);
+        // toast(<CustomToast id="123" type="info" message="Data refreshed" />);
+        toast(<CustomToast id={`info-refresh-${Date.now()}`} type="info" message="Data refreshed" />, {
+            toastId: 'refresh-info'
+        });
     };
 
     const getShiftBadgeVariant = (shift) => {

@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import "../assets/styles/raw-inventory.css";
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const RawMaterialManagement = () => {
     const [rawMaterials, setRawMaterials] = useState([]);
@@ -47,12 +47,18 @@ const RawMaterialManagement = () => {
             const response = await axios.get(`${API_BASE_URL}/raw-materials`, { params });
             setRawMaterials(response.data);
             // toast.success('Materials loaded successfully');
-            toast(<CustomToast id="raws" type="success" message="Materials loaded successfully" />);
+            // toast(<CustomToast id="raws" type="success" message="Materials loaded successfully" />);
+            toast(<CustomToast id={`success-material-${Date.now()}`} type="success" message="Materials loaded successfully" />, {
+                toastId: 'material-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to load raw materials. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -81,13 +87,19 @@ const RawMaterialManagement = () => {
                 const successMsg = `Raw material "${response.data.name}" updated successfully!`;
                 setSuccessMessage(successMsg);
                 // toast.success(successMsg);
-                toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                    toastId: 's-success'
+                });
             } else {
                 const response = await axios.post(`${API_BASE_URL}/raw-materials`, formData);
                 const successMsg = `Raw material "${response.data.name}" created successfully!`;
                 setSuccessMessage(successMsg);
                 // toast.success(successMsg);
-                toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                    toastId: 's-success'
+                });
             }
             fetchRawMaterials();
             handleCancelEdit();
@@ -95,7 +107,10 @@ const RawMaterialManagement = () => {
             const errorMsg = 'Failed to save raw material. ' + (err.response?.data?.error || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         }
     };
 
@@ -114,7 +129,10 @@ const RawMaterialManagement = () => {
         setError('');
         setSuccessMessage('');
         // toast.info(`Editing ${material.name}`);
-        toast(<CustomToast id="raw" type="info" message={`Editing ${material.name}`} />);
+        // toast(<CustomToast id="raw" type="info" message={`Editing ${material.name}`} />);
+        toast(<CustomToast id={`info-edit-${Date.now()}`} type="success" message={`Editing ${material.name}`} />, {
+            toastId: 'edit-info'
+        });
     };
 
     const handleDelete = async (materialId, materialName) => {
@@ -126,13 +144,19 @@ const RawMaterialManagement = () => {
                 const successMsg = `Raw material "${materialName}" deleted successfully!`;
                 setSuccessMessage(successMsg);
                 // toast.success(successMsg);
-                toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
+                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                    toastId: 's-success'
+                });
                 fetchRawMaterials();
             } catch (err) {
                 const errorMsg = 'Failed to delete raw material. ' + (err.response?.data?.error || err.message);
                 setError(errorMsg);
                 // toast.error(errorMsg);
-                toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+                // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'e-error'
+                });
             }
         }
     };
@@ -152,7 +176,10 @@ const RawMaterialManagement = () => {
         setError('');
         setSuccessMessage('');
         // toast.info('Edit cancelled');
-        toast(<CustomToast id="raw" type="info" message="Edit cancelled" />);
+        // toast(<CustomToast id="raw" type="info" message="Edit cancelled" />);
+        toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Edit cancelled" />, {
+            toastId: 'edit-info'
+        });
     };
 
     const clearFilters = () => {
@@ -161,7 +188,10 @@ const RawMaterialManagement = () => {
         setFilterMinStock('');
         setFilterMaxStock('');
         // toast.info('Filters cleared');
-        toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'clear-info'
+        });
     };
 
     const getStockStatus = (current, min) => {

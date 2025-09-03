@@ -15,13 +15,15 @@ import "react-toastify/dist/ReactToastify.css";
 import CustomToast from "../components/CustomToast";
 import EditCustomerPage from "./EditCustomerPage";
 import "../assets/styles/customers.css";
+import { IoIosTransgender } from "react-icons/io";
 
-const API_BASE_URL = "http://10.116.242.21:5000/api";
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const CustomersPage = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
+    const [gender, setGender] = useState('');
 
     // search
     const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +34,7 @@ const CustomersPage = () => {
         fullname: "",
         email: "",
         phone: "",
+        gender: "",
         address: "",
         credit_limit: 0,
         due_date: "",
@@ -48,10 +51,17 @@ const CustomersPage = () => {
         try {
             const res = await axios.get(`${API_BASE_URL}/customers`);
             setCustomers(Array.isArray(res.data) ? res.data : []);
-            if (!silent) toast(<CustomToast type="success" message="Customers loaded." />);
+            if (!silent)
+                // toast(<CustomToast type="success" message="Customers loaded." />);
+                toast(<CustomToast id={`success-customer-${Date.now()}`} type="success" message="Customers loaded." />, {
+                    toastId: 'customer-success'
+                });
         } catch (e) {
             setErr("Failed to load customers.");
-            toast(<CustomToast type="error" message="Failed to load customers." />);
+            // toast(<CustomToast type="error" message="Failed to load customers." />);
+            toast(<CustomToast id={`error-customer-${Date.now()}`} type="error" message="Failed to load customers." />, {
+                toastId: 'customer-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -73,19 +83,26 @@ const CustomersPage = () => {
                 ...newCustomer,
                 credit_limit: Number(newCustomer.credit_limit || 0),
             });
-            toast(<CustomToast type="success" message="Customer added successfully." />);
+            // toast(<CustomToast type="success" message="Customer added successfully." />);
+            toast(<CustomToast id={`success-add-${Date.now()}`} type="success" message="Customer added successfully." />, {
+                toastId: 'add-success'
+            });
             setShowAddModal(false);
             setNewCustomer({
                 fullname: "",
                 email: "",
                 phone: "",
+                gender: "",
                 address: "",
                 credit_limit: 0,
                 due_date: "",
             });
             fetchCustomers({ silent: true });
         } catch (e) {
-            toast(<CustomToast type="error" message="Failed to add customer." />);
+            // toast(<CustomToast type="error" message="Failed to add customer." />);
+            toast(<CustomToast id={`error-add-${Date.now()}`} type="error" message="Failed to add customer." />, {
+                toastId: 'add-error'
+            });
         }
     };
 
@@ -93,10 +110,16 @@ const CustomersPage = () => {
         if (!window.confirm("Delete this customer?")) return;
         try {
             await axios.delete(`${API_BASE_URL}/customers/${id}`);
-            toast(<CustomToast type="success" message="Customer deleted." />);
+            // toast(<CustomToast type="success" message="Customer deleted." />);
+            toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Customer deleted." />, {
+                toastId: 'delete-success'
+            });
             fetchCustomers({ silent: true });
         } catch (e) {
-            toast(<CustomToast type="error" message="Delete failed." />);
+            // toast(<CustomToast type="error" message="Delete failed." />);
+            toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Delete failed." />, {
+                toastId: 'delete-error'
+            });
         }
     };
 
@@ -159,6 +182,7 @@ const CustomersPage = () => {
                                 <th>Name</th>
                                 <th className="th-hide-sm">Email</th>
                                 <th>Phone</th>
+                                <th>Gender</th>
                                 <th className="th-hide-sm">Address</th>
                                 <th>Credit Limit</th>
                                 <th className="th-hide-sm">Balance</th>
@@ -174,6 +198,7 @@ const CustomersPage = () => {
                                     <td>{c.fullname || "—"}</td>
                                     <td className="td-hide-sm">{c.email || "—"}</td>
                                     <td>{c.phone || "—"}</td>
+                                    <td>{c.gender || "—"}</td>
                                     <td className="td-hide-sm">{c.address || "—"}</td>
                                     <td>&#8358;{Number(c.credit_limit || 0).toFixed(2)}</td>
                                     <td className="td-hide-sm">&#8358;{Number(c.balance || 0).toFixed(2)}</td>
@@ -218,6 +243,10 @@ const CustomersPage = () => {
                                     <div className="custs-line">
                                         <Phone size={14} />
                                         <span>{c.phone || "—"}</span>
+                                    </div>
+                                    <div className="custs-line">
+                                        <IoIosTransgender size={14} />
+                                        <span>{c.gender || "—"}</span>
                                     </div>
                                     {c.address ? (
                                         <div className="custs-line">
@@ -288,6 +317,19 @@ const CustomersPage = () => {
                                 value={newCustomer.phone}
                                 onChange={handleAddInput}
                             />
+                            <label className="ppb-label">Gender</label>
+                            <select
+                                className="ppb-input"
+                                name="gender"
+                                value={gender}
+                                onChange={(e) => setGender(e.target.value)}
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                                <option value="Prefer not to say">Prefer not to say</option>
+                            </select>
 
                             <label className="ppb-label">Address</label>
                             <input

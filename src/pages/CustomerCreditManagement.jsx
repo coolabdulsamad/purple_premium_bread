@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import '../assets/styles/credit-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const CustomerCreditManagement = () => {
     const [customers, setCustomers] = useState([]);
@@ -37,12 +37,18 @@ const CustomerCreditManagement = () => {
             const response = await axios.get(`${API_BASE_URL}/customers`);
             setCustomers(response.data);
             // toast.success('Customers loaded successfully');
-            toast(<CustomToast id="123" type="success" message="Customers loaded successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Customers loaded successfully" />);
+            toast(<CustomToast id={`success-customer-${Date.now()}`} type="success" message="Customers loaded successfully" />, {
+                toastId: 'customer-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to load customers.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         }
     };
 
@@ -67,12 +73,18 @@ const CustomerCreditManagement = () => {
             setPaymentHistory(paymentHistoryRes.data);
 
             // toast.success('Customer details loaded successfully');
-            toast(<CustomToast id="123" type="success" message="Customer details loaded successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Customer details loaded successfully" />);
+            toast(<CustomToast id={`success-customer-${Date.now()}`} type="success" message="Customer details loaded successfully" />, {
+                toastId: 'customer-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to load customer details. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -126,7 +138,10 @@ const CustomerCreditManagement = () => {
             document.getElementById('receiptImageUpload').value = '';
         }
         // toast.info('Receipt image cleared');
-        toast(<CustomToast id="123" type="info" message="Receipt image cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Receipt image cleared" />);
+        toast(<CustomToast id={`info-receipt-${Date.now()}`} type="info" message="Receipt image cleared" />, {
+            toastId: 'receipt-info'
+        });
     };
 
     const handleRecordPayment = async (e) => {
@@ -139,7 +154,10 @@ const CustomerCreditManagement = () => {
             const errorMsg = 'Please select a customer, an outstanding transaction, and enter a positive payment amount.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             return;
         }
 
@@ -159,12 +177,18 @@ const CustomerCreditManagement = () => {
                     });
                     finalProof = uploadResponse.data.url;
                     // toast.success('Receipt image uploaded successfully');
-                    toast(<CustomToast id="123" type="success" message="Receipt image uploaded successfully" />);
+                    // toast(<CustomToast id="123" type="success" message="Receipt image uploaded successfully" />);
+                    toast(<CustomToast id={`success-receipt-${Date.now()}`} type="success" message="Receipt image uploaded successfully" />, {
+                        toastId: 'receipt-success'
+                    });
                 } catch (uploadError) {
                     const errorMsg = 'Failed to upload receipt image. ' + (uploadError.response?.data?.details || '');
                     setError(errorMsg);
                     // toast.error(errorMsg);
-                    toast(<CustomToast id="123" type="error" message={errorMsg} />);
+                    // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+                    toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message={errorMsg} />, {
+                        toastId: 'e-error'
+                    });
                     setUploadingImage(false);
                     return;
                 } finally {
@@ -174,7 +198,10 @@ const CustomerCreditManagement = () => {
                 const errorMsg = 'Please provide either a payment reference or upload a receipt image for non-cash payments.';
                 setError(errorMsg);
                 // toast.error(errorMsg);
-                toast(<CustomToast id="123" type="error" message={errorMsg} />);
+                // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'e-error'
+                });
                 return;
             }
         }
@@ -193,7 +220,10 @@ const CustomerCreditManagement = () => {
             const successMsg = `Payment of ₦${Number(response.data.payment.amount).toFixed(2)} recorded successfully!`;
             setSuccessMessage(successMsg);
             // toast.success(successMsg);
-            toast(<CustomToast id="123" type="success" message={successMsg} />);
+            // toast(<CustomToast id="123" type="success" message={successMsg} />);
+            toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                toastId: 's-success'
+            });
             fetchCustomerDetails();
             resetPaymentForm();
             clearImage();
@@ -201,7 +231,10 @@ const CustomerCreditManagement = () => {
             const errorMsg = 'Failed to record payment. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         }
     };
 

@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/product-management.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const ProductManagementPage = () => {
     const [products, setProducts] = useState([]);
@@ -68,12 +68,18 @@ const ProductManagementPage = () => {
             const response = await axios.get(`${API_BASE_URL}/products`, { params });
             setProducts(response.data);
             // toast.success(`Loaded ${response.data.length} products successfully`);
-            toast(<CustomToast id="tab-switched" type="success" message={`Loaded ${response.data.length} products successfully`} />);
+            // toast(<CustomToast id="tab-switched" type="success" message={`Loaded ${response.data.length} products successfully`} />);
+            toast(<CustomToast id={`success-tab-${Date.now()}`} type="success" message={`Loaded ${response.data.length} products successfully`} />, {
+                toastId: 'tab-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to fetch products: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'tab-error'
+            });
             console.error('Error fetching products:', err);
         } finally {
             setLoading(false);
@@ -155,7 +161,10 @@ const ProductManagementPage = () => {
             const errorMsg = 'At least one unit is required for the product.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'tab-error'
+            });
             return;
         }
 
@@ -164,7 +173,10 @@ const ProductManagementPage = () => {
             const errorMsg = 'All unit types and display values must be filled.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'tab-error'
+            });
             return;
         }
 
@@ -177,12 +189,18 @@ const ProductManagementPage = () => {
                 });
                 dataToSubmit.image_url = uploadRes.data.url;
                 // toast.success('Image uploaded successfully');
-                toast(<CustomToast id="tab-switched" type="success" message="Image uploaded successfully" />);
+                // toast(<CustomToast id="tab-switched" type="success" message="Image uploaded successfully" />);
+                toast(<CustomToast id={`success-image-${Date.now()}`} type="success" message="Image uploaded successfully" />, {
+                    toastId: 'image-success'
+                });
             } catch (err) {
                 const errorMsg = 'Failed to upload image: ' + (err.response?.data?.details || err.message);
                 setError(errorMsg);
                 // toast.error(errorMsg);
-                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'error-e'
+                });
                 console.error('Image upload error:', err);
                 return;
             }
@@ -194,11 +212,17 @@ const ProductManagementPage = () => {
             if (editingProduct) {
                 await axios.put(`${API_BASE_URL}/products/${editingProduct.id}`, dataToSubmit);
                 // toast.success('Product updated successfully!');
-                toast(<CustomToast id="tab-switched" type="success" message="Product updated successfully!" />);
+                // toast(<CustomToast id="tab-switched" type="success" message="Product updated successfully!" />);
+                toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="Product updated successfully!" />, {
+                    toastId: 'update-success'
+                });
             } else {
                 await axios.post(`${API_BASE_URL}/products`, dataToSubmit);
-                toast.success('Product created successfully!');
-                toast(<CustomToast id="tab-switched" type="error" message="Product created successfully" />);
+                // toast.success('Product created successfully!');
+                // toast(<CustomToast id="tab-switched" type="error" message="Product created successfully" />);
+                toast(<CustomToast id={`error-created-${Date.now()}`} type="error" message="Product created successfully" />, {
+                    toastId: 'created-error'
+                });
             }
             fetchProducts();
             setEditingProduct(null);
@@ -217,7 +241,10 @@ const ProductManagementPage = () => {
             const errorMsg = 'Failed to save product: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             console.error('Product save error:', err);
         }
     };
@@ -236,7 +263,10 @@ const ProductManagementPage = () => {
             units: product.units && product.units.length > 0 ? product.units : [{ type: 'pcs', display: '1 pcs' }],
         });
         // toast.info('Editing product: ' + product.name);
-        toast(<CustomToast id="tab-switched" type="info" message={'Editing product: ' + product.name} />);
+        // toast(<CustomToast id="tab-switched" type="info" message={'Editing product: ' + product.name} />);
+        toast(<CustomToast id={`info-product-${Date.now()}`} type="info" message={`Editing product: ` + product.name} />, {
+            toastId: 'product-info'
+        });
     };
 
     const handleDeleteProduct = async (productId) => {
@@ -245,13 +275,19 @@ const ProductManagementPage = () => {
             try {
                 await axios.delete(`${API_BASE_URL}/products/${productId}`);
                 // toast.success('Product deleted successfully!');
-                toast(<CustomToast id="tab-switched" type="success" message='Product deleted successfully!' />);
+                // toast(<CustomToast id="tab-switched" type="success" message='Product deleted successfully!' />);
+                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Product deleted successfully!" />, {
+                    toastId: 'delete-success'
+                });
                 fetchProducts();
             } catch (err) {
                 const errorMsg = 'Failed to delete product: ' + (err.response?.data?.details || err.message);
                 setError(errorMsg);
                 // toast.error(errorMsg);
-                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'e-error'
+                });
                 console.error('Product delete error:', err);
             }
         }
@@ -263,7 +299,10 @@ const ProductManagementPage = () => {
             name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
         });
         // toast.info('Cancelled product editing');
-        toast(<CustomToast id="tab-switched" type="info" message='Cancelled product editing' />);
+        // toast(<CustomToast id="tab-switched" type="info" message='Cancelled product editing' />);
+        toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Cancelled product editing" />, {
+            toastId: 'edit-info'
+        });
     };
 
     // --- Category Handlers ---
@@ -282,11 +321,17 @@ const ProductManagementPage = () => {
             if (editingCategory) {
                 await axios.put(`${API_BASE_URL}/products/categories/${editingCategory.id}`, categoryFormData);
                 // toast.success('Category updated successfully!');
-                toast(<CustomToast id="tab-switched" type="success" message='Category updated successfully!' />);
+                // toast(<CustomToast id="tab-switched" type="success" message='Category updated successfully!' />);
+                toast(<CustomToast id={`success-updated-${Date.now()}`} type="success" message="Category updated successfully!" />, {
+                    toastId: 'updated-success'
+                });
             } else {
                 await axios.post(`${API_BASE_URL}/products/categories`, categoryFormData);
                 // toast.success('Category created successfully!');
-                toast(<CustomToast id="tab-switched" type="success" message='Category created successfully!' />);
+                // toast(<CustomToast id="tab-switched" type="success" message='Category created successfully!' />);
+                toast(<CustomToast id={`success-created-${Date.now()}`} type="success" message="Category created successfully!" />, {
+                    toastId: 'created-success'
+                });
             }
             fetchCategories();
             setEditingCategory(null);
@@ -295,7 +340,10 @@ const ProductManagementPage = () => {
             const errorMsg = 'Failed to save category: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             console.error('Category save error:', err);
         }
     };
@@ -307,7 +355,10 @@ const ProductManagementPage = () => {
             description: category.description,
         });
         // toast.info('Editing category: ' + category.name);
-        toast(<CustomToast id="tab-switched" type="success" message={'Editing category: ' + category.name} />);
+        // toast(<CustomToast id="tab-switched" type="success" message={'Editing category: ' + category.name} />);
+        toast(<CustomToast id={`success-edit-${Date.now()}`} type="success" message={`Editing category: ` + category.name} />, {
+            toastId: 'edit-success'
+        });
     };
 
     const handleDeleteCategory = async (categoryId) => {
@@ -316,13 +367,19 @@ const ProductManagementPage = () => {
             try {
                 await axios.delete(`${API_BASE_URL}/products/categories/${categoryId}`);
                 // toast.success('Category deleted successfully!');
-                toast(<CustomToast id="tab-switched" type="success" message='Category deleted successfully!' />);
+                // toast(<CustomToast id="tab-switched" type="success" message='Category deleted successfully!' />);
+                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Category deleted successfully!" />, {
+                    toastId: 'delete-success'
+                });
                 fetchCategories();
             } catch (err) {
                 const errorMsg = 'Failed to delete category: ' + (err.response?.data?.details || err.message);
                 setError(errorMsg);
                 // toast.error(errorMsg);
-                toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
+                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                    toastId: 'e-error'
+                });
                 console.error('Category delete error:', err);
             }
         }
@@ -332,7 +389,10 @@ const ProductManagementPage = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: '', description: '' });
         // toast.info('Cancelled category editing');
-        toast(<CustomToast id="tab-switched" type="info" message='Cancelled category editing' />);
+        // toast(<CustomToast id="tab-switched" type="info" message='Cancelled category editing' />);
+        toast(<CustomToast id={`info-cancelled-${Date.now()}`} type="info" message="Cancelled category editing" />, {
+            toastId: 'cancelled-info'
+        });
     };
 
     // Helper for filter submission
@@ -340,14 +400,20 @@ const ProductManagementPage = () => {
         e.preventDefault();
         fetchProducts();
         // toast.info('Applying product filters...');
-        toast(<CustomToast id="tab-switched" type="info" message='Applying product filters...' />);
+        // toast(<CustomToast id="tab-switched" type="info" message='Applying product filters...' />);
+        toast(<CustomToast id={`info-apply-${Date.now()}`} type="info" message="Applying product filters..." />, {
+            toastId: 'apply-info'
+        });
     };
 
     const handleCategoryFilterSubmit = (e) => {
         e.preventDefault();
         fetchCategories();
         // toast.info('Searching categories...');
-        toast(<CustomToast id="tab-switched" type="info" message='Searching categories...' />);
+        // toast(<CustomToast id="tab-switched" type="info" message='Searching categories...' />);
+        toast(<CustomToast id={`info-search-${Date.now()}`} type="info" message="Searching categories..." />, {
+            toastId: 'search-info'
+        });
     };
 
     return (

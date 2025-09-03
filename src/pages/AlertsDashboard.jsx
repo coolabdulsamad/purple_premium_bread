@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/alerts-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const AlertsDashboard = () => {
     const [alerts, setAlerts] = useState([]);
@@ -38,7 +38,10 @@ const AlertsDashboard = () => {
             console.error('Error fetching alerts:', err.response?.data || err.message);
             setError('Failed to load alerts. ' + (err.response?.data?.details || err.message));
             toast.error('Failed to load alerts.');
-            toast(<CustomToast id="123" type="success" message="Failed to load alerts." />);
+            // toast(<CustomToast id="123" type="success" message="Failed to load alerts." />);
+            toast(<CustomToast id={`error-alert-${Date.now()}`} type="error" message="Failed to load alerts." />, {
+                toastId: 'alert-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -63,13 +66,19 @@ const AlertsDashboard = () => {
                 });
                 setSuccessMessage('Alert resolved successfully!');
                 // toast.success('Alert resolved successfully!');
-                toast(<CustomToast id="123" type="success" message="Alert resolved successfully!" />);
+                // toast(<CustomToast id="123" type="success" message="Alert resolved successfully!" />);
+                toast(<CustomToast id={`success-alert-${Date.now()}`} type="success" message="Alert resolved succeessfully!" />, {
+                    toastId: 'alert-success'
+                });
                 fetchAlerts();
             } catch (err) {
                 console.error('Error resolving alert:', err.response?.data || err.message);
                 setError('Failed to resolve alert. ' + (err.response?.data?.details || err.message));
                 // toast.error('Failed to resolve alert.');
-                toast(<CustomToast id="123" type="error" message="Failed to resolve alert." />);
+                // toast(<CustomToast id="123" type="error" message="Failed to resolve alert." />);
+                toast(<CustomToast id={`error-resolve-${Date.now()}`} type="error" message="Failed to resolve alert." />, {
+                    toastId: 'resolve-error'
+                });
             } finally {
                 setResolving(false);
             }
@@ -89,13 +98,19 @@ const AlertsDashboard = () => {
             searchTerm: '',
         });
         // toast.info('Filters cleared');
-        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-filter-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'filter-info'
+        });
     };
 
     const handleRefresh = () => {
         fetchAlerts();
         // toast.info('Alerts refreshed');
-        toast(<CustomToast id="123" type="info" message="Alerts refreshed" />);
+        // toast(<CustomToast id="123" type="info" message="Alerts refreshed" />);
+        toast(<CustomToast id={`info-refreshed-${Date.now()}`} type="info" message="Alerts refreshed" />, {
+            toastId: 'refreshed-info'
+        });
     };
 
     const getAlertTypeIcon = (type) => {

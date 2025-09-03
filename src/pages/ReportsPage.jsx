@@ -13,7 +13,7 @@ import '../assets/styles/forms.css';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const ReportsPage = () => {
     const [reportType, setReportType] = useState('profit-loss');
@@ -76,12 +76,18 @@ const ReportsPage = () => {
             setAllBranches(branchesRes.data);
             setAllRawMaterials(rawMaterialsRes.data);
             // toast.success('Filter options loaded successfully');
-            toast(<CustomToast id="123" type="success" message="Filter options loaded successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Filter options loaded successfully" />);
+            toast(<CustomToast id={`success-dropdown-${Date.now()}`} type="success" message="Filter options loaded successfully" />, {
+                toastId: 'dropdown-success'
+            });
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
             setError('Failed to load filter options. Some filters may not work.');
             // toast.error('Failed to load filter options');
-            toast(<CustomToast id="123" type="error" message="Failed to load filter options" />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load filter options" />);
+            toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message="Failed to load filter options" />, {
+                toastId: 'dropdown-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -127,7 +133,10 @@ const ReportsPage = () => {
             groupBy: 'staff',
         });
         // toast.info('Filters cleared');
-        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'clear-filters'
+        });
     };
 
     const generateReport = useCallback(async () => {
@@ -161,12 +170,18 @@ const ReportsPage = () => {
             setReportResult(response.data);
             setLastUpdated(new Date().toLocaleTimeString());
             // toast.success('Report generated successfully');
-            toast(<CustomToast id="123" type="success" message="Report generated successfully" />);
+            // toast(<CustomToast id="123" type="success" message="Report generated successfully" />);
+            toast(<CustomToast id={`success-report-${Date.now()}`} type="success" message="Report generated successfully" />, {
+                toastId: 'report-success'
+            });
         } catch (err) {
             console.error('Error generating report:', err.response?.data || err.message);
             setError('Failed to generate report. ' + (err.response?.data?.details || err.message));
             // toast.error('Failed to generate report');
-            toast(<CustomToast id="123" type="error" message="Failed to generate report" />);
+            // toast(<CustomToast id="123" type="error" message="Failed to generate report" />);
+            toast(<CustomToast id={`error-report-${Date.now()}`} type="error" message="Failed to generate report" />, {
+                toastId: 'report-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -237,7 +252,10 @@ const ReportsPage = () => {
         const printContent = reportContentRef.current;
         if (!printContent) {
             // toast.warning("No report content to print");
-            toast(<CustomToast id="123" type="warning" message="No report content to print" />);
+            // toast(<CustomToast id="123" type="warning" message="No report content to print" />);
+            toast(<CustomToast id={`warning-print-${Date.now()}`} type="warning" message="No report content to print" />, {
+                toastId: 'print-warning'
+            });
             return;
         }
 
@@ -309,13 +327,19 @@ const ReportsPage = () => {
             printWindow.close();
         });
         // toast.info('Preparing report for printing');
-        toast(<CustomToast id="123" type="info" message="Preparing report for printing" />);
+        // toast(<CustomToast id="123" type="info" message="Preparing report for printing" />);
+        toast(<CustomToast id={`info-print-${Date.now()}`} type="info" message="Preparing report for printing" />, {
+            toastId: 'print-info'
+        });
     };
 
     const exportToCSV = () => {
         if (!reportResult || !reportResult.reportData) {
             // toast.warning('No data to export');
-            toast(<CustomToast id="123" type="warning" message="No data to export" />);
+            // toast(<CustomToast id="123" type="warning" message="No data to export" />);
+            toast(<CustomToast id={`warning-export-${Date.now()}`} type="warning" message="No data to export" />, {
+                toastId: 'export-warning'
+            });
             return;
         }
 
@@ -368,11 +392,17 @@ const ReportsPage = () => {
             document.body.removeChild(link);
 
             // toast.success('CSV exported successfully');
-            toast(<CustomToast id="123" type="success" message="CSV exported successfully" />);
+            // toast(<CustomToast id="123" type="success" message="CSV exported successfully" />);
+            toast(<CustomToast id={`success-export-${Date.now()}`} type="success" message="CSV exported successfully" />, {
+                toastId: 'export-success'
+            });
         } catch (err) {
             console.error('Error exporting CSV:', err);
             // toast.error('Failed to export CSV');
-            toast(<CustomToast id="123" type="error" message="Failed to export CSV" />);
+            // toast(<CustomToast id="123" type="error" message="Failed to export CSV" />);
+            toast(<CustomToast id={`error-export-${Date.now()}`} type="error" message="Failed to export CSV" />, {
+                toastId: 'export-error'
+            });
         }
     };
 

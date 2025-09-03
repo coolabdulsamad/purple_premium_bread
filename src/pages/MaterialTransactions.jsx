@@ -6,7 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
@@ -56,7 +56,10 @@ const MaterialTransactions = () => {
             console.error('Error fetching raw materials for form:', err);
             setError('Failed to load raw materials for restock form.');
             // toast.error('Failed to load raw materials');
-            toast(<CustomToast id="raw" type="error" message="Failed to load raw materials" />);
+            // toast(<CustomToast id="raw" type="error" message="Failed to load raw materials" />);
+            toast(<CustomToast id={`error-material-${Date.now()}`} type="error" message="Failed to load raw materials" />, {
+                toastId: 'material-error'
+            });
         }
     };
 
@@ -67,7 +70,10 @@ const MaterialTransactions = () => {
         } catch (err) {
             console.error('Error fetching users for filters:', err);
             // toast.error('Failed to load users');
-            toast(<CustomToast id="raw" type="error" message="Failed to load users" />);
+            // toast(<CustomToast id="raw" type="error" message="Failed to load users" />);
+            toast(<CustomToast id={`error-users-${Date.now()}`} type="error" message="Failed to load users" />, {
+                toastId: 'users-error'
+            });
         }
     };
 
@@ -79,12 +85,18 @@ const MaterialTransactions = () => {
             const response = await axios.get(`${API_BASE_URL}/material-transactions?${queryParams}`);
             setTransactions(response.data);
             // toast.success('Transactions loaded successfully');
-            toast(<CustomToast id="raw" type="success" message="Transactions loaded successfully" />);
+            // toast(<CustomToast id="raw" type="success" message="Transactions loaded successfully" />);
+            toast(<CustomToast id={`success-transaction-${Date.now()}`} type="success" message="Transactions loaded successfully" />, {
+                toastId: 'transaction-success'
+            });
         } catch (err) {
             const errorMsg = 'Failed to load material transaction history. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -116,7 +128,10 @@ const MaterialTransactions = () => {
             const errorMsg = 'Please select a raw material and enter valid positive quantities and unit cost.';
             setError(errorMsg);
             // toast.error(errorMsg);
-            toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
             return;
         }
 
@@ -127,15 +142,21 @@ const MaterialTransactions = () => {
             const successMsg = `Restock of "${response.data.rawMaterial.name}" successful! New stock: ${response.data.rawMaterial.current_stock} ${response.data.rawMaterial.unit}`;
             setSuccessMessage(successMsg);
             // toast.success(successMsg);
-            toast(<CustomToast id="raw" type="success" message={successMsg} />);
+            // toast(<CustomToast id="raw" type="success" message={successMsg} />);
+            toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                toastId: 's-success'
+            });
             fetchTransactions();
             fetchRawMaterials();
             resetRestockForm();
         } catch (err) {
             const errorMsg = 'Failed to record restock. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            toast.error(errorMsg);
-            toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            // toast.error(errorMsg);
+            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
         }
     };
 
@@ -162,7 +183,10 @@ const MaterialTransactions = () => {
             recordedByUserId: '',
         });
         // toast.info('Filters cleared');
-        toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-filter-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'filter-info'
+        });
     };
 
     const formatTransactionType = (type) => {

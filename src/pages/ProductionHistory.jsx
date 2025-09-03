@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast";
 import "../assets/styles/productionHistory.css";
 
-const API_BASE_URL = 'http://10.116.242.21:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const ProductionHistory = () => {
     const [logs, setLogs] = useState([]);
@@ -30,7 +30,10 @@ const ProductionHistory = () => {
             const res = await axios.get(`${API_BASE_URL}/production/history?${queryParams}`);
             setLogs(res.data);
         } catch (err) {
-            toast.error(<CustomToast message="Failed to fetch production history." type="error" />);
+            // toast.error(<CustomToast message="Failed to fetch production history." type="error" />);
+            toast(<CustomToast id={`error-history-${Date.now()}`} type="error" message="Failed to fetch production history." />, {
+                toastId: 'history-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -47,7 +50,10 @@ const ProductionHistory = () => {
             const batchesRes = await axios.get(`${API_BASE_URL}/production/batches`);
             setBatches(batchesRes.data);
         } catch (err) {
-            toast.error(<CustomToast message="Failed to fetch filter data." type="error" />);
+            // toast.error(<CustomToast message="Failed to fetch filter data." type="error" />);
+            toast(<CustomToast id={`error-filter-${Date.now()}`} type="error" message="Failed to fetch filter data." />, {
+                toastId: 'filter-error'
+            });
         }
     };
 

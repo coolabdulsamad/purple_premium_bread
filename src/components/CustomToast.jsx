@@ -14,7 +14,7 @@ const icons = {
   info: <Info size={18} />,
 };
 
-export default function CustomToast({ type, message }) {
+export default function CustomToast({ id, type, message }) {
   return (
     <div className={`toast toast--${type}`}>
       <span className="toast__icon">{icons[type]}</span>

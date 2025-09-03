@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import '../assets/styles/inventory.css';
 
-const API_BASE_URL = 'http://10.116.242.21:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const InventoryPage = () => {
     const [inventory, setInventory] = useState([]);

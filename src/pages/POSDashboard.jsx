@@ -18,7 +18,10 @@ const POSDashboard = () => {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            toast.error("You must be logged in to access POS");
+            // toast.error("You must be logged in to access POS");
+            toast(<CustomToast id={`error-pos-${Date.now()}`} type="error" message="You must be logged in to access POS" />, {
+                toastId: 'pos-error'
+            });
             navigate('/');
         }
     }, [isAuthenticated, navigate]);

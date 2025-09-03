@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/recipe-management.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const RecipeManagement = () => {
     const [products, setProducts] = useState([]);
@@ -31,12 +31,15 @@ const RecipeManagement = () => {
             console.error('Error fetching products:', err);
             setError('Failed to load products.');
             // toast.error('Failed to load products');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Failed to load products"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Failed to load products"
+            //     />
+            // );
+            toast(<CustomToast id={`error-product-${Date.now()}`} type="error" message="Failed to load products" />, {
+                toastId: 'product-error'
+            });
         }
     };
 
@@ -48,12 +51,15 @@ const RecipeManagement = () => {
             console.error('Error fetching raw materials:', err);
             setError('Failed to load raw materials.');
             // toast.error('Failed to load raw materials');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Failed to load raw materials"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Failed to load raw materials"
+            //     />
+            // );
+            toast(<CustomToast id={`error-material-${Date.now()}`} type="error" message="Failed to load raw materials" />, {
+                toastId: 'material-error'
+            });
         }
     };
 
@@ -90,48 +96,60 @@ const RecipeManagement = () => {
     const addIngredientToTempList = () => {
         if (!selectedMaterial || !quantity || quantity <= 0) {
             // toast.error('Please select a raw material and enter a valid quantity');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Please select a raw material and enter a valid quantity"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Please select a raw material and enter a valid quantity"
+            //     />
+            // );
+            toast(<CustomToast id={`error-quantity-${Date.now()}`} type="error" message="Please select a raw material and enter a valid quantity" />, {
+                toastId: 'quantity-error'
+            });
             return;
         }
 
         const material = rawMaterials.find(rm => rm.id === parseInt(selectedMaterial));
         if (!material) {
             // toast.error('Selected material not found');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Selected material not found"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Selected material not found"
+            //     />
+            // );
+            toast(<CustomToast id={`error-select-${Date.now()}`} type="error" message="Selected material not found" />, {
+                toastId: 'select-error'
+            });
             return;
         }
 
         // Check if already in temp list
         if (tempIngredients.some(item => item.raw_material_id === selectedMaterial)) {
             // toast.error('This material is already in your list');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="This material is already in your list"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="This material is already in your list"
+            //     />
+            // );
+            toast(<CustomToast id={`error-list-${Date.now()}`} type="error" message="This material is already in your list" />, {
+                toastId: 'list-error'
+            });
             return;
         }
 
         // Check if already in existing recipes
         if (recipes.some(item => item.raw_material_id === parseInt(selectedMaterial))) {
             // toast.error('This material is already in the recipe');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="This material is already in the recipe"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="This material is already in the recipe"
+            //     />
+            // );
+            toast(<CustomToast id={`error-recipe-${Date.now()}`} type="error" message="This material is already in the recipe" />, {
+                toastId: 'recipe-error'
+            });
             return;
         }
 
@@ -145,12 +163,15 @@ const RecipeManagement = () => {
         setSelectedMaterial('');
         setQuantity('');
         // toast.info('Ingredient added to list');
-        toast(
-            <CustomToast
-                type="info"
-                message="Ingredient added to list"
-            />
-        );
+        // toast(
+        //     <CustomToast
+        //         type="info"
+        //         message="Ingredient added to list"
+        //     />
+        // );
+        toast(<CustomToast id={`info-add-${Date.now()}`} type="info" message="Ingredient added to list" />, {
+            toastId: 'add-info'
+        });
     };
 
     const removeIngredientFromTempList = (indexToRemove) => {
@@ -162,34 +183,43 @@ const RecipeManagement = () => {
 
         if (!selectedProductId) {
             // toast.error('Please select a product first');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Please select a product first"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Please select a product first"
+            //     />
+            // );
+            toast(<CustomToast id={`error-product-${Date.now()}`} type="error" message="Please select a product first" />, {
+                toastId: 'product-error'
+            });
             return;
         }
 
         if (tempIngredients.length === 0) {
             // toast.error('Please add at least one ingredient to the list');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Please add at least one ingredient to the list"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Please add at least one ingredient to the list"
+            //     />
+            // );
+            toast(<CustomToast id={`error-add-${Date.now()}`} type="error" message="Please add at least one ingredient to the list" />, {
+                toastId: 'add-error'
+            });
             return;
         }
 
         if (batchSize <= 0) {
             // toast.error('Batch size must be greater than 0');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Batch size must be greater than 0"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Batch size must be greater than 0"
+            //     />
+            // );
+            toast(<CustomToast id={`error-batch-${Date.now()}`} type="error" message="Batch size must be greater than 0" />, {
+                toastId: 'batch-error'
+            });
             return;
         }
 
@@ -205,24 +235,30 @@ const RecipeManagement = () => {
             }
 
             // toast.success(`Recipe saved successfully!`);
-            toast(
-                <CustomToast
-                    type="success"
-                    message="Recipe saved successfully!"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="success"
+            //         message="Recipe saved successfully!"
+            //     />
+            // );
+            toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="Recipe saved successfully!" />, {
+                toastId: 'recipe-success'
+            });
             setTempIngredients([]);
             setBatchSize(1);
             fetchRecipes();
         } catch (err) {
             console.error('Error saving recipe:', err);
             // toast.error('Failed to save recipe');
-            toast(
-                <CustomToast
-                    type="error"
-                    message="Failed to save recipe"
-                />
-            );
+            // toast(
+            //     <CustomToast
+            //         type="error"
+            //         message="Failed to save recipe"
+            //     />
+            // );
+            toast(<CustomToast id={`error-recipe-${Date.now()}`} type="error" message="Failed to save recipe" />, {
+                toastId: 'recipe-error'
+            });
         }
     };
 
@@ -233,22 +269,28 @@ const RecipeManagement = () => {
             try {
                 await axios.delete(`${API_BASE_URL}/recipes/${selectedProductId}/${rawMaterialId}`);
                 // toast.success(`"${rawMaterialName}" removed from recipe`);
-                toast(
-                    <CustomToast
-                        type="success"
-                        message={`"${rawMaterialName}" removed from recipe`}
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="success"
+                //         message={`"${rawMaterialName}" removed from recipe`}
+                //     />
+                // );
+                toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="removed from recipe" />, {
+                    toastId: 'recipe-success'
+                });
                 fetchRecipes();
             } catch (err) {
                 console.error('Error deleting recipe item:', err);
                 // toast.error('Failed to remove ingredient');
-                toast(
-                    <CustomToast
-                        type="error"
-                        message="Failed to remove ingredient"
-                    />
-                );
+                // toast(
+                //     <CustomToast
+                //         type="error"
+                //         message="Failed to remove ingredient"
+                //     />
+                // );
+                toast(<CustomToast id={`error-remove-${Date.now()}`} type="error" message="Failed to remove ingredient" />, {
+                    toastId: 'remove-error'
+                });
             }
         }
     };

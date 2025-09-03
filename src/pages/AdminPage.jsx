@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/admin.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const roles = ['admin', 'manager', 'sales', 'baker'];
 
@@ -48,7 +48,10 @@ const AdminPage = () => {
             console.error('Error fetching users:', err.response?.data || err.message);
             setError('Failed to load users. ' + (err.response?.data?.details || err.message));
             // toast.error('Failed to load users.');
-            toast(<CustomToast id="123" type="error" message="Failed to load users." />);
+            // toast(<CustomToast id="123" type="error" message="Failed to load users." />);
+            toast(<CustomToast id={`error-fetching-${Date.now()}`} type="error" message="Failed to load users." />, {
+                toastId: 'fetching-error'
+            });
         } finally {
             setLoading(false);
         }
@@ -78,12 +81,18 @@ const AdminPage = () => {
                 const response = await axios.put(`${API_BASE_URL}/users/${formData.id}`, payload);
                 setSuccessMessage(`User "${response.data.fullname}" updated successfully!`);
                 // toast.success(`User "${response.data.fullname}" updated successfully!`);
-                toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" updated successfully!`} />);
+                // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" updated successfully!`} />);
+                toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="update successfully!" />, {
+                    toastId: 'update-success'
+                });
             } else {
                 const response = await axios.post(`${API_BASE_URL}/users`, formData);
                 setSuccessMessage(`User "${response.data.fullname}" created successfully!`);
                 // toast.success(`User "${response.data.fullname}" created successfully!`);
-                toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" created successfully!`} />);
+                // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" created successfully!`} />);
+                toast(<CustomToast id={`success-created-${Date.now()}`} type="success" message="created successfully!" />, {
+                    toastId: 'created-success'
+                });
             }
             fetchUsers();
             handleCancelEdit();
@@ -91,7 +100,10 @@ const AdminPage = () => {
             console.error('Error submitting user data:', err.response?.data || err.message);
             setError('Failed to save user. ' + (err.response?.data?.error || err.message));
             // toast.error('Failed to save user.');
-            toast(<CustomToast id="123" type="error" message="Failed to save user." />);
+            // toast(<CustomToast id="123" type="error" message="Failed to save user." />);
+            toast(<CustomToast id={`error-save-${Date.now()}`} type="error" message="Failed to save user." />, {
+                toastId: 'save-error'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -121,13 +133,19 @@ const AdminPage = () => {
                 await axios.delete(`${API_BASE_URL}/users/${userId}`);
                 setSuccessMessage(`User "${userFullname}" deleted successfully!`);
                 // toast.success(`User "${userFullname}" deleted successfully!`);
-                toast(<CustomToast id="123" type="success" message={`User "${userFullname}" deleted successfully!`} />);
+                // toast(<CustomToast id="123" type="success" message={`User "${userFullname}" deleted successfully!`} />);
+                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message={`User "${userFullname}" deleted succeessfully!`} />, {
+                    toastId: 'delete-success'
+                });
                 fetchUsers();
             } catch (err) {
                 console.error('Error deleting user:', err.response?.data || err.message);
                 setError('Failed to delete user. ' + (err.response?.data?.message || err.message));
                 // toast.error('Failed to delete user.');
-                toast(<CustomToast id="123" type="error" message="Failed to delete user." />);
+                // toast(<CustomToast id="123" type="error" message="Failed to delete user." />);
+                toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete user." />, {
+                    toastId: 'delete-error'
+                });
             }
         }
     };
@@ -152,13 +170,19 @@ const AdminPage = () => {
         setFilterRole('');
         setSearchTerm('');
         // toast.info('Filters cleared');
-        toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
+        toast(<CustomToast id={`info-cleared-${Date.now()}`} type="info" message="Filters cleared" />, {
+            toastId: 'cleared-info'
+        });
     };
 
     const handleRefresh = () => {
         fetchUsers();
         // toast.info('Users list refreshed');
-        toast(<CustomToast id="123" type="info" message="Users list refreshed" />);
+        // toast(<CustomToast id="123" type="info" message="Users list refreshed" />);
+        toast(<CustomToast id={`info-refresh-${Date.now()}`} type="info" message="Users list refreshed" />, {
+            toastId: 'refresh-info'
+        });
     };
 
     const getRoleBadgeVariant = (role) => {

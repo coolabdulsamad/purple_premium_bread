@@ -34,7 +34,7 @@ ChartJS.register(
   BarElement
 );
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const ProductionAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -74,7 +74,10 @@ const ProductionAnalytics = () => {
       setUsers((usersRes.data || []).filter((u) => u.role === 'baker'));
       setBatches(batchesRes.data || []);
     } catch (err) {
-      toast.error(<CustomToast message="Failed to load filter choices." type="error" />);
+      // toast.error(<CustomToast message="Failed to load filter choices." type="error" />);
+      toast(<CustomToast id={`error-filter-${Date.now()}`} type="error" message="Failed to load filter choices." />, {
+        toastId: 'filter-error'
+      });
     }
   };
 
@@ -97,12 +100,18 @@ const ProductionAnalytics = () => {
 
       const toastKey = JSON.stringify(filters);
       if (empty && toastKey !== lastToastKey) {
-        toast.info(<CustomToast message="No analytics for the selected filters." type="info" />);
+        // toast.info(<CustomToast message="No analytics for the selected filters." type="info" />);
+        toast(<CustomToast id={`info-analytics-${Date.now()}`} type="info" message="No analytics for the selected filters." />, {
+          toastId: 'analytics-info'
+        });
         setLastToastKey(toastKey);
       }
     } catch (err) {
       setError('Failed to load analytics data.');
-      toast.error(<CustomToast message="Failed to load analytics data." type="error" />);
+      // toast.error(<CustomToast message="Failed to load analytics data." type="error" />);
+      toast(<CustomToast id={`error-analytics-${Date.now()}`} type="error" message="Failed to load analytics data." />, {
+        toastId: 'analytics-error'
+      });
     } finally {
       setLoading(false);
     }
@@ -132,7 +141,10 @@ const ProductionAnalytics = () => {
       userId: '',
       batchNumber: '',
     });
-    toast(<CustomToast message="Filters cleared." type="success" />);
+    // toast(<CustomToast message="Filters cleared." type="success" />);
+    toast(<CustomToast id={`success-filteres-${Date.now()}`} type="success" message="Filters cleared." />, {
+      toastId: 'filteres-success'
+    });
   };
 
   // Loading

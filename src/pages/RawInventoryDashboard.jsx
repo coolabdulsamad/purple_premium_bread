@@ -13,7 +13,10 @@ const RawInventoryDashboard = () => {
     const handleTabChange = (tabName) => {
         setActiveTab(tabName);
         // toast.info(`Switched to ${tabName === 'rawMaterials' ? 'Raw Materials' : 'Transactions'} tab`);
-        toast(<CustomToast id="tab-switched" type="info" message={`Switched to ${tabName === 'rawMaterials' ? 'Raw Materials' : 'Transactions'} tab`} />);
+        // toast(<CustomToast id="tab-switched" type="info" message={`Switched to ${tabName === 'rawMaterials' ? 'Raw Materials' : 'Transactions'} tab`} />);
+        toast(<CustomToast id={`info-switch-${Date.now()}`} type="info" message={`Switched to ${tabName === 'rawMaterials' ? 'Raw Materials' : 'Transactions'} tab`} />, {
+            toastId: 'switch-info'
+        });
     };
 
     return (
@@ -30,7 +33,7 @@ const RawInventoryDashboard = () => {
                 pauseOnHover
                 theme="light"
             /> */}
-            
+
             <div className="dashboard-header">
                 <div className="header-content">
                     <FaWarehouse className="header-icon" />

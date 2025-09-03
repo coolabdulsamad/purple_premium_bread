@@ -26,13 +26,13 @@ const ReportDashboard = () => {
     return (
         <div className="report-dashboard-container">
             <div className="dashboard-header">
-                <h1 className="dashboard-title">
+                <h2 className="dashboard-title">
                     <span className="icon-wrapper">
                         {/* <i className="fas fa-chart-line"></i> */}
                         <img src={ASSETS['logo']} alt="" srcset="" />
                     </span>
                     Reports & Analytics Center
-                </h1>
+                </h2>
                 <p className="dashboard-subtitle">Comprehensive financial insights and performance metrics</p>
             </div>
             

@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import '../assets/styles/credit-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 const CreditDashboard = () => {
     const [activeTab, setActiveTab] = useState('creditManagement');
@@ -27,7 +27,10 @@ const CreditDashboard = () => {
     const handleTabChange = (tabName) => {
         setActiveTab(tabName);
         // toast.info(`Switched to ${tabName === 'creditManagement' ? 'Credit Management' : 'All Payments'} tab`);
-        toast(<CustomToast id="123" type="info" message={`Switched to ${tabName === 'creditManagement' ? 'Credit Management' : 'All Payments'} tab`} />);
+        // toast(<CustomToast id="123" type="info" message={`Switched to ${tabName === 'creditManagement' ? 'Credit Management' : 'All Payments'} tab`} />);
+        toast(<CustomToast id={`info-switch-${Date.now()}`} type="info" message={`Switched to ${tabName === 'creditManagement' ? 'Credit Management' : 'All Payments'} tab`} />, {
+            toastId: 'switch-info'
+        });
     };
 
     if (!isAuthenticated) return null;
