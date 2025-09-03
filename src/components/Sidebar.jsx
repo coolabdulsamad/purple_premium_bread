@@ -5,9 +5,8 @@ import useAuth from '../hooks/useAuth';
 import { FaBuilding } from 'react-icons/fa6';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill } from 'react-icons/ri';
-import '../assets/styles/sidebar.css';
+import '../assets/styles/Sidebar.css';
 import { ASSETS } from '../assets';
-import { Alert } from 'react-bootstrap';
 import { HiMiniBellAlert } from 'react-icons/hi2';
 
 const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
