@@ -6,8 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/login.css';
 
-// const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api/auth';
-const API_BASE_URL = process.env.REACT_APP_API_URL_AU;
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api/auth';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');

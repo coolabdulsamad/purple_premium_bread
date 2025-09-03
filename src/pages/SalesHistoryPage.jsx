@@ -8,7 +8,7 @@ import { FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign, FiList } fro
 import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const SalesHistoryPage = () => {
     const [sales, setSales] = useState([]);

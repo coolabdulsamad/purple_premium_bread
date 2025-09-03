@@ -35,7 +35,7 @@ ChartJS.register(
     Filler
 );
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const AnalysisPage = () => {
     const [loading, setLoading] = useState(true);

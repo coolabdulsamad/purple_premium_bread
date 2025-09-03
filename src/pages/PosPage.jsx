@@ -6,7 +6,7 @@ import useAuth from '../hooks/useAuth';
 import '../assets/styles/pos.css';
 import { FaShoppingCart, FaPlus, FaMinus } from 'react-icons/fa';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const POSPage = () => {
     const [products, setProducts] = useState([]);

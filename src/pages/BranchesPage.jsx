@@ -26,7 +26,7 @@ const BranchesPage = () => {
     const [deleting, setDeleting] = useState(false);
 
     // API base URL - adjust this to match your backend
-    const API_BASE_URL = process.env.REACT_APP_API_URL;
+    const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
     useEffect(() => {
         fetchBranches();

@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/alerts-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const AlertsDashboard = () => {
     const [alerts, setAlerts] = useState([]);

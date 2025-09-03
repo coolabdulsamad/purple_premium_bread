@@ -13,7 +13,7 @@ import '../assets/styles/forms.css';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const ReportsPage = () => {
     const [reportType, setReportType] = useState('profit-loss');
