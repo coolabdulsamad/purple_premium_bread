@@ -10,7 +10,7 @@ import '../assets/styles/dashboard.css';
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
 
 
 const Dashboard = () => {
@@ -31,14 +31,14 @@ const Dashboard = () => {
         setError('');
         try {
             const [kpisRes, salesOverTimeRes, topSellingProductsRes, lowStockProductsRes, salesByPaymentMethodRes, rawMaterialUsageTrendRes, customersByGenderRes, productionOverTimeRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/api/dashboard/kpis`),
-                axios.get(`${API_BASE_URL}/api/dashboard/sales-over-time?period=month&limit=6`),
-                axios.get(`${API_BASE_URL}/api/dashboard/top-selling-products?orderBy=amount&limit=5`),
-                axios.get(`${API_BASE_URL}/api/dashboard/stock-levels`),
-                axios.get(`${API_BASE_URL}/api/dashboard/sales-by-payment-method`),
-                axios.get(`${API_BASE_URL}/api/dashboard/raw-material-usage-trend?period=month&limit=6`),
-                axios.get(`${API_BASE_URL}/api/dashboard/customers-by-gender`),
-                axios.get(`${API_BASE_URL}/api/dashboard/production-over-time?limit=14`),
+                axios.get(`${API_BASE_URL}/dashboard/kpis`),
+                axios.get(`${API_BASE_URL}/dashboard/sales-over-time?period=month&limit=6`),
+                axios.get(`${API_BASE_URL}/dashboard/top-selling-products?orderBy=amount&limit=5`),
+                axios.get(`${API_BASE_URL}/dashboard/stock-levels`),
+                axios.get(`${API_BASE_URL}/dashboard/sales-by-payment-method`),
+                axios.get(`${API_BASE_URL}/dashboard/raw-material-usage-trend?period=month&limit=6`),
+                axios.get(`${API_BASE_URL}/dashboard/customers-by-gender`),
+                axios.get(`${API_BASE_URL}/dashboard/production-over-time?limit=14`),
             ]);
             setKpis(kpisRes.data);
             setSalesOverTime(salesOverTimeRes.data);
