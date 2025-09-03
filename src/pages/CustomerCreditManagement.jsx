@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import '../assets/styles/credit-dashboard.css';
 import CustomToast from '../components/CustomToast';
 
-const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const CustomerCreditManagement = () => {
     const [customers, setCustomers] = useState([]);

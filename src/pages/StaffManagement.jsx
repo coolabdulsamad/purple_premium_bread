@@ -6,7 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/staff-management.css';
 
-const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);

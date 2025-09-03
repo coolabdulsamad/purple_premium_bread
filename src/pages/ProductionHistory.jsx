@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import CustomToast from "../components/CustomToast";
 import "../assets/styles/productionHistory.css";
 
-const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const ProductionHistory = () => {
     const [logs, setLogs] = useState([]);

@@ -4,7 +4,7 @@ import '../assets/styles/header.css';
 import { ASSETS } from '../assets';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const Header = ({ toggleSidebar }) => {
 

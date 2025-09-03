@@ -19,7 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import CustomToast from '../components/CustomToast';
 import '../assets/styles/salesOut.css';
 
-const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const getCashierIdFromToken = () => {
   const token = localStorage.getItem('token');
