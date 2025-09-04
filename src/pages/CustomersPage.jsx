@@ -19,11 +19,53 @@ import { IoIosTransgender } from "react-icons/io";
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    customerName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Delete</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete customer <strong>"{customerName}"</strong>? This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Customer
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CustomersPage = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
     const [gender, setGender] = useState('');
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        customerId: null,
+        customerName: ""
+    });
 
     // search
     const [searchTerm, setSearchTerm] = useState("");
@@ -106,19 +148,23 @@ const CustomersPage = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Delete this customer?")) return;
+    const handleDelete = async (id, name) => {
         try {
             await axios.delete(`${API_BASE_URL}/customers/${id}`);
-            // toast(<CustomToast type="success" message="Customer deleted." />);
             toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Customer deleted." />, {
                 toastId: 'delete-success'
             });
             fetchCustomers({ silent: true });
         } catch (e) {
-            // toast(<CustomToast type="error" message="Delete failed." />);
             toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Delete failed." />, {
                 toastId: 'delete-error'
+            });
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                customerId: null,
+                customerName: ""
             });
         }
     };
@@ -145,6 +191,17 @@ const CustomersPage = () => {
         <div className="custs-page">
             {/* Toasts for this page */}
             <ToastContainer position="top-right" autoClose={3000} icon={false} />
+
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    customerId: null,
+                    customerName: ""
+                })}
+                onConfirm={() => handleDelete(deleteDialog.customerId, deleteDialog.customerName)}
+                customerName={deleteDialog.customerName}
+            />
 
             <div className="custs-header">
                 <h2 className="custs-title">
@@ -212,7 +269,14 @@ const CustomersPage = () => {
                                         <button className="ppb-iconbtn ppb-iconbtn--edit" onClick={() => openEdit(c)}>
                                             <Edit size={14} />
                                         </button>
-                                        <button className="ppb-iconbtn ppb-iconbtn--danger" onClick={() => handleDelete(c.id)}>
+                                        <button
+                                            className="ppb-iconbtn ppb-iconbtn--danger"
+                                            onClick={() => setDeleteDialog({
+                                                isOpen: true,
+                                                customerId: c.id,
+                                                customerName: c.fullname || "this customer"
+                                            })}
+                                        >
                                             <Trash2 size={14} />
                                         </button>
                                     </td>
@@ -268,7 +332,14 @@ const CustomersPage = () => {
                                     <button className="ppb-iconbtn ppb-iconbtn--edit" onClick={() => openEdit(c)}>
                                         <Edit size={14} />
                                     </button>
-                                    <button className="ppb-iconbtn ppb-iconbtn--danger" onClick={() => handleDelete(c.id)}>
+                                    <button
+                                        className="ppb-iconbtn ppb-iconbtn--danger"
+                                        onClick={() => setDeleteDialog({
+                                            isOpen: true,
+                                            customerId: c.id,
+                                            customerName: c.fullname || "this customer"
+                                        })}
+                                    >
                                         <Trash2 size={14} />
                                     </button>
                                 </div>

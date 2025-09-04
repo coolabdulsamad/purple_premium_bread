@@ -52,7 +52,7 @@ const ProductionDashboard = () => {
       {/* Tabs */}
       <div className="tab-container">
         <button
-          className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
+          className={`tab-btns ${activeTab === 'log' ? 'active' : ''}`}
           onClick={() => setActiveTab('log')}
           aria-current={activeTab === 'log' ? 'page' : undefined}
         >
@@ -61,7 +61,7 @@ const ProductionDashboard = () => {
         </button>
 
         <button
-          className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+          className={`tab-btns ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
           aria-current={activeTab === 'history' ? 'page' : undefined}
         >
@@ -71,7 +71,7 @@ const ProductionDashboard = () => {
 
         {canViewAnalytics && (
           <button
-            className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+            className={`tab-btns ${activeTab === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveTab('analytics')}
             aria-current={activeTab === 'analytics' ? 'page' : undefined}
           >

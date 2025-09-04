@@ -8,30 +8,72 @@ import { RiSecurePaymentFill } from 'react-icons/ri';
 import '../assets/styles/Sidebar.css';
 import { ASSETS } from '../assets';
 import { HiMiniBellAlert } from 'react-icons/hi2';
+import { useState } from 'react';
+
+// Logout Confirmation Dialog Component
+const LogoutConfirmationDialog = ({
+  isOpen,
+  onClose,
+  onConfirm
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="ppb-dialog__overlay" onClick={onClose}>
+      <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="ppb-dialog__header">
+          <h3 className="ppb-dialog__title">Confirm Logout</h3>
+        </div>
+        <div className="ppb-dialog__body">
+          <p>Are you sure you want to logout from Purple Premium Bread?</p>
+          <p className="ppb-dialog__warning">You will need to login again to access the system.</p>
+        </div>
+        <div className="ppb-dialog__footer">
+          <button
+            className="ppb-btn ppb-btn--ghost"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className="ppb-btn ppb-btn--danger"
+            onClick={onConfirm}
+          >
+            <FaSignOutAlt className="me-1" /> Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
   const { userRole, logout } = useAuth();
   const isMobile = window.innerWidth <= 768;
+
+  const [logoutDialog, setLogoutDialog] = useState(false);
 
   const navGroups = [
     [
       { name: 'Dashboard', path: '/dashboard', icon: <FaHome />, roles: ['admin', 'manager'] },
       { name: 'POS', path: '/pos', icon: <FaShoppingCart />, roles: ['admin', 'sales'] },
       { name: 'Production', path: '/production', icon: <FaBreadSlice />, roles: ['admin', 'baker'] },
+      { name: 'Products', path: '/products', icon: <FaBreadSlice />, roles: ['admin', 'manager'] },
     ],
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager'] },
       { name: 'Sales History', path: '/sales-history', icon: <FaSalesforce />, roles: ['admin', 'sales'] },
     ],
     [
-      { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
-      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin'] },
-      { name: 'Products', path: '/products', icon: <FaBreadSlice />, roles: ['admin', 'manager'] },
-      { name: 'Branches', path: '/branches', icon: <FaBuilding />, roles: ['admin', 'manager'] },
       { name: 'Recipes', path: '/recipes', icon: <FaBuilding />, roles: ['admin', 'manager'] },
       { name: 'Raw Materials', path: '/raw_materials_inventory', icon: <MdInventory />, roles: ['admin', 'manager'] },
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales'] },
-      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin','manager','sales']}
+      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales'] }
+    ],
+    [
+      { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
+      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin'] },
+      { name: 'Branches', path: '/branches', icon: <FaBuilding />, roles: ['admin', 'manager'] },
     ]
   ];
 
@@ -72,11 +114,19 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
         ))}
       </nav>
       <div className="sidebar-footer">
-        <button onClick={logout} className="logout-button">
+        <button onClick={() => setLogoutDialog(true)} className="logout-button">
           <span className="nav-icon"><FaSignOutAlt /></span>
           <span className="nav-name">Logout</span>
         </button>
       </div>
+      <LogoutConfirmationDialog
+        isOpen={logoutDialog}
+        onClose={() => setLogoutDialog(false)}
+        onConfirm={() => {
+          setLogoutDialog(false);
+          logout();
+        }}
+      />
     </div>
   );
 };

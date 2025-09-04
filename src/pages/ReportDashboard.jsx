@@ -38,14 +38,14 @@ const ReportDashboard = () => {
             
             <div className="tab-navigation">
                 <button
-                    className={`tab-button ${activeTab === 'reportPage' ? 'active' : ''}`}
+                    className={`tab-btns ${activeTab === 'reportPage' ? 'active' : ''}`}
                     onClick={() => setActiveTab('reportPage')}
                 >
                     <i className="fas fa-file-alt"></i>
                     Financial Reports
                 </button>
                 <button
-                    className={`tab-button ${activeTab === 'analysisPage' ? 'active' : ''}`}
+                    className={`tab-btns ${activeTab === 'analysisPage' ? 'active' : ''}`}
                     onClick={() => setActiveTab('analysisPage')}
                 >
                     <i className="fas fa-chart-pie"></i>

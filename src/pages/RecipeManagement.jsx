@@ -9,6 +9,44 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    materialName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Removal</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to remove <strong>"{materialName}"</strong> from the recipe?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Remove Ingredient
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const RecipeManagement = () => {
     const [products, setProducts] = useState([]);
     const [rawMaterials, setRawMaterials] = useState([]);
@@ -22,6 +60,12 @@ const RecipeManagement = () => {
     const [tempIngredients, setTempIngredients] = useState([]);
     const [selectedMaterial, setSelectedMaterial] = useState('');
     const [quantity, setQuantity] = useState('');
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        materialId: null,
+        materialName: ""
+    });
 
     const fetchProducts = async () => {
         try {
@@ -265,33 +309,24 @@ const RecipeManagement = () => {
     const handleDeleteRecipeItem = async (rawMaterialId, rawMaterialName) => {
         if (!selectedProductId) return;
 
-        if (window.confirm(`Remove "${rawMaterialName}" from recipe?`)) {
-            try {
-                await axios.delete(`${API_BASE_URL}/recipes/${selectedProductId}/${rawMaterialId}`);
-                // toast.success(`"${rawMaterialName}" removed from recipe`);
-                // toast(
-                //     <CustomToast
-                //         type="success"
-                //         message={`"${rawMaterialName}" removed from recipe`}
-                //     />
-                // );
-                toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="removed from recipe" />, {
-                    toastId: 'recipe-success'
-                });
-                fetchRecipes();
-            } catch (err) {
-                console.error('Error deleting recipe item:', err);
-                // toast.error('Failed to remove ingredient');
-                // toast(
-                //     <CustomToast
-                //         type="error"
-                //         message="Failed to remove ingredient"
-                //     />
-                // );
-                toast(<CustomToast id={`error-remove-${Date.now()}`} type="error" message="Failed to remove ingredient" />, {
-                    toastId: 'remove-error'
-                });
-            }
+        try {
+            await axios.delete(`${API_BASE_URL}/recipes/${selectedProductId}/${rawMaterialId}`);
+            toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="removed from recipe" />, {
+                toastId: 'recipe-success'
+            });
+            fetchRecipes();
+        } catch (err) {
+            console.error('Error deleting recipe item:', err);
+            toast(<CustomToast id={`error-remove-${Date.now()}`} type="error" message="Failed to remove ingredient" />, {
+                toastId: 'remove-error'
+            });
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                materialId: null,
+                materialName: ""
+            });
         }
     };
 
@@ -560,7 +595,11 @@ const RecipeManagement = () => {
                                                     <Button
                                                         variant="outline-primary"
                                                         size="sm"
-                                                        onClick={() => handleDeleteRecipeItem(item.raw_material_id, item.raw_material_name)}
+                                                        onClick={() => setDeleteDialog({
+                                                            isOpen: true,
+                                                            materialId: item.raw_material_id,
+                                                            materialName: item.raw_material_name
+                                                        })}
                                                         title="Delete"
                                                     >
                                                         <FaTrash />
@@ -575,6 +614,16 @@ const RecipeManagement = () => {
                     </div>
                 </Card>
             )}
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    materialId: null,
+                    materialName: ""
+                })}
+                onConfirm={() => handleDeleteRecipeItem(deleteDialog.materialId, deleteDialog.materialName)}
+                materialName={deleteDialog.materialName}
+            />
         </div>
     );
 };

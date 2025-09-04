@@ -9,6 +9,44 @@ import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/branches.css';
 import CustomToast from '../components/CustomToast';
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    branchName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Branch Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete the branch <strong>"{branchName}"</strong>?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Branch
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const BranchesPage = () => {
     const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,6 +62,12 @@ const BranchesPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        branchId: null,
+        branchName: ""
+    });
 
     // API base URL - adjust this to match your backend
     const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
@@ -151,37 +195,26 @@ const BranchesPage = () => {
     };
 
     const handleDelete = async (branchId, branchName) => {
-        if (window.confirm(`Are you sure you want to delete "${branchName}"? This action cannot be undone.`)) {
-            setDeleting(true);
-            try {
-                await axios.delete(`${API_BASE_URL}/branches/${branchId}`);
-                // toast.success('Branch deleted successfully!');
-                // toast(
-                //     <CustomToast
-                //         type="success"
-                //         message="Branch deleted successfully!"
-                //     />
-                // );
-                toast(<CustomToast id={`success-deleted-${Date.now()}`} type="success" message="Branch deleted successfully!" />, {
-                    toastId: 'deleted-success'
-                });
-                fetchBranches();
-            } catch (err) {
-                const errorMsg = err.response?.data?.error || 'Failed to delete branch. Please check your backend connection.';
-                // toast.error(errorMsg);
-                // toast(
-                //     <CustomToast
-                //         type="error"
-                //         message={errorMsg}
-                //     />
-                // );
-                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                    toastId: 'e-error'
-                });
-                console.error('Error deleting branch:', err);
-            } finally {
-                setDeleting(false);
-            }
+        try {
+            await axios.delete(`${API_BASE_URL}/branches/${branchId}`);
+            toast(<CustomToast id={`success-deleted-${Date.now()}`} type="success" message="Branch deleted successfully!" />, {
+                toastId: 'deleted-success'
+            });
+            fetchBranches();
+        } catch (err) {
+            const errorMsg = err.response?.data?.error || 'Failed to delete branch. Please check your backend connection.';
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
+            console.error('Error deleting branch:', err);
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                branchId: null,
+                branchName: ""
+            });
+            setDeleting(false);
         }
     };
 
@@ -450,7 +483,11 @@ const BranchesPage = () => {
                                                             </Button>
                                                             <Button
                                                                 className="btn-action delete"
-                                                                onClick={() => handleDelete(branch.id, branch.name)}
+                                                                onClick={() => setDeleteDialog({
+                                                                    isOpen: true,
+                                                                    branchId: branch.id,
+                                                                    branchName: branch.name
+                                                                })}
                                                                 title="Delete Branch"
                                                                 disabled={deleting}
                                                             >
@@ -468,6 +505,19 @@ const BranchesPage = () => {
                     </Card>
                 </Col>
             </Row>
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    branchId: null,
+                    branchName: ""
+                })}
+                onConfirm={() => {
+                    setDeleting(true);
+                    handleDelete(deleteDialog.branchId, deleteDialog.branchName);
+                }}
+                branchName={deleteDialog.branchName}
+            />
         </div>
     );
 };

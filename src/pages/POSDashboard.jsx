@@ -43,7 +43,7 @@ const POSDashboard = () => {
             <nav className="pos-tabs">
                 {canManageSales && (
                     <button
-                        className={`tab-btn ${activeTab === 'newSale' ? 'active' : ''}`}
+                        className={`tab-btns ${activeTab === 'newSale' ? 'active' : ''}`}
                         onClick={() => setActiveTab('newSale')}
                     >
                         <FaCashRegister className="tab-icon" /> New Sale
@@ -51,7 +51,7 @@ const POSDashboard = () => {
                 )}
                 {canManageSales && (
                     <button
-                        className={`tab-btn ${activeTab === 'salesOut' ? 'active' : ''}`}
+                        className={`tab-btns ${activeTab === 'salesOut' ? 'active' : ''}`}
                         onClick={() => setActiveTab('salesOut')}
                     >
                         <FaTruck className="tab-icon" /> Sales Out
@@ -59,7 +59,7 @@ const POSDashboard = () => {
                 )}
                 {canViewInventory && (
                     <button
-                        className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`}
+                        className={`tab-btns ${activeTab === 'inventory' ? 'active' : ''}`}
                         onClick={() => setActiveTab('inventory')}
                     >
                         <FaBoxes className="tab-icon" /> Inventory
@@ -67,7 +67,7 @@ const POSDashboard = () => {
                 )}
                 {canViewCustomers && (
                     <button
-                        className={`tab-btn ${activeTab === 'customers' ? 'active' : ''}`}
+                        className={`tab-btns ${activeTab === 'customers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('customers')}
                     >
                         <FaUsers className="tab-icon" /> Customers

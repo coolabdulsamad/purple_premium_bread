@@ -11,6 +11,43 @@ const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const roles = ['admin', 'manager', 'sales', 'baker'];
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    userName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm User Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete user <strong>"{userName}"</strong>? This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete User
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AdminPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,6 +69,12 @@ const AdminPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [filterRole, setFilterRole] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        userId: null,
+        userName: ""
+    });
 
     // --- Data Fetching ---
     const fetchUsers = async () => {
@@ -125,28 +168,27 @@ const AdminPage = () => {
         setSuccessMessage('');
     };
 
-    const handleDelete = async (userId, userFullname) => {
-        if (window.confirm(`Are you sure you want to delete user "${userFullname}"? This action cannot be undone.`)) {
-            setError('');
-            setSuccessMessage('');
-            try {
-                await axios.delete(`${API_BASE_URL}/users/${userId}`);
-                setSuccessMessage(`User "${userFullname}" deleted successfully!`);
-                // toast.success(`User "${userFullname}" deleted successfully!`);
-                // toast(<CustomToast id="123" type="success" message={`User "${userFullname}" deleted successfully!`} />);
-                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message={`User "${userFullname}" deleted succeessfully!`} />, {
-                    toastId: 'delete-success'
-                });
-                fetchUsers();
-            } catch (err) {
-                console.error('Error deleting user:', err.response?.data || err.message);
-                setError('Failed to delete user. ' + (err.response?.data?.message || err.message));
-                // toast.error('Failed to delete user.');
-                // toast(<CustomToast id="123" type="error" message="Failed to delete user." />);
-                toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete user." />, {
-                    toastId: 'delete-error'
-                });
-            }
+    const handleDelete = async (id, name) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/users/${id}`);
+            setSuccessMessage(`User "${name}" deleted successfully!`);
+            toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message={`User "${name}" deleted successfully!`} />, {
+                toastId: 'delete-success'
+            });
+            fetchUsers();
+        } catch (err) {
+            console.error('Error deleting user:', err.response?.data || err.message);
+            setError('Failed to delete user. ' + (err.response?.data?.message || err.message));
+            toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete user." />, {
+                toastId: 'delete-error'
+            });
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                userId: null,
+                userName: ""
+            });
         }
     };
 
@@ -554,7 +596,11 @@ const AdminPage = () => {
                                                         variant="outline-danger"
                                                         size="sm"
                                                         className="btn-action delete"
-                                                        onClick={() => handleDelete(user.id, user.fullname)}
+                                                        onClick={() => setDeleteDialog({
+                                                            isOpen: true,
+                                                            userId: user.id,
+                                                            userName: user.fullname
+                                                        })}
                                                         title="Delete User"
                                                     >
                                                         <FaTrash />
@@ -569,6 +615,17 @@ const AdminPage = () => {
                     )}
                 </Card.Body>
             </Card>
+                        {/* Add the Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    userId: null,
+                    userName: ""
+                })}
+                onConfirm={() => handleDelete(deleteDialog.userId, deleteDialog.userName)}
+                userName={deleteDialog.userName}
+            />
         </div>
     );
 };

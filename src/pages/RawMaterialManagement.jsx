@@ -8,6 +8,44 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    materialName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Raw Material Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete the raw material <strong>"{materialName}"</strong>?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone and may affect existing recipes.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Material
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const RawMaterialManagement = () => {
     const [rawMaterials, setRawMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +69,12 @@ const RawMaterialManagement = () => {
     const [filterMinStock, setFilterMinStock] = useState('');
     const [filterMaxStock, setFilterMaxStock] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'ascending' });
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        materialId: null,
+        materialName: ""
+    });
 
     const units = ['kg', 'g', 'pcs', 'liter', 'ml', 'bags', 'rolls', 'boxes'];
 
@@ -136,28 +180,27 @@ const RawMaterialManagement = () => {
     };
 
     const handleDelete = async (materialId, materialName) => {
-        if (window.confirm(`Are you sure you want to delete raw material "${materialName}"? This action cannot be undone.`)) {
-            setError('');
-            setSuccessMessage('');
-            try {
-                await axios.delete(`${API_BASE_URL}/raw-materials/${materialId}`);
-                const successMsg = `Raw material "${materialName}" deleted successfully!`;
-                setSuccessMessage(successMsg);
-                // toast.success(successMsg);
-                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
-                toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
-                    toastId: 's-success'
-                });
-                fetchRawMaterials();
-            } catch (err) {
-                const errorMsg = 'Failed to delete raw material. ' + (err.response?.data?.error || err.message);
-                setError(errorMsg);
-                // toast.error(errorMsg);
-                // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
-                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                    toastId: 'e-error'
-                });
-            }
+        try {
+            await axios.delete(`${API_BASE_URL}/raw-materials/${materialId}`);
+            const successMsg = `Raw material "${materialName}" deleted successfully!`;
+            setSuccessMessage(successMsg);
+            toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
+                toastId: 's-success'
+            });
+            fetchRawMaterials();
+        } catch (err) {
+            const errorMsg = 'Failed to delete raw material. ' + (err.response?.data?.error || err.message);
+            setError(errorMsg);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                materialId: null,
+                materialName: ""
+            });
         }
     };
 
@@ -467,8 +510,8 @@ const RawMaterialManagement = () => {
                             <p>Try adjusting your filters or add new materials above</p>
                         </div>
                     ) : (
-                        <div className="table-responsive">
-                            <Table hover className="materials-table">
+                        <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                            <Table hover className="materials-table" style={{ minWidth: '100px' }}>
                                 <thead>
                                     <tr>
                                         <th className="sortable" onClick={() => handleSort('id')}>
@@ -535,7 +578,16 @@ const RawMaterialManagement = () => {
                                                         <Button variant="outline-primary" size="sm" onClick={() => handleEdit(material)} title="Edit">
                                                             <FaEdit />
                                                         </Button>
-                                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(material.id, material.name)} title="Delete">
+                                                        <Button
+                                                            variant="outline-danger"
+                                                            size="sm"
+                                                            onClick={() => setDeleteDialog({
+                                                                isOpen: true,
+                                                                materialId: material.id,
+                                                                materialName: material.name
+                                                            })}
+                                                            title="Delete"
+                                                        >
                                                             <FaTrash />
                                                         </Button>
                                                     </div>
@@ -549,6 +601,17 @@ const RawMaterialManagement = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    materialId: null,
+                    materialName: ""
+                })}
+                onConfirm={() => handleDelete(deleteDialog.materialId, deleteDialog.materialName)}
+                materialName={deleteDialog.materialName}
+            />
         </div>
     );
 };

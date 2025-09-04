@@ -8,6 +8,48 @@ import '../assets/styles/staff-management.css';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Delete Confirmation Dialog Component
+const DeleteConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    staffName,
+    dutyDate,
+    shiftName
+}) => {
+    if (!isOpen) return null;
+
+    const formattedDate = new Date(dutyDate).toLocaleDateString();
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Duty Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete the duty for <strong>"{staffName}"</strong> on <strong>{formattedDate}</strong> for the <strong>{shiftName}</strong> shift?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Duty
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const StaffManagement = () => {
     const [users, setUsers] = useState([]);
     const [duties, setDuties] = useState([]);
@@ -35,6 +77,14 @@ const StaffManagement = () => {
     });
 
     const shiftOptions = ['Morning', 'Afternoon', 'Night'];
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        dutyId: null,
+        staffName: "",
+        dutyDate: "",
+        shiftName: ""
+    });
 
     // --- Data Fetching ---
     const fetchUsers = async () => {
@@ -156,30 +206,31 @@ const StaffManagement = () => {
         setSuccessMessage('');
     };
 
-    const handleDeleteDuty = async (dutyId, userName, dutyDate, shiftName) => {
-        if (window.confirm(`Are you sure you want to delete the duty for "${userName}" on ${new Date(dutyDate).toLocaleDateString()} for the ${shiftName} shift? This action cannot be undone.`)) {
-            setError('');
-            setSuccessMessage('');
-            try {
-                await axios.delete(`${API_BASE_URL}/staff/duties/${dutyId}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
-                setSuccessMessage('Duty assignment deleted successfully!');
-                // toast.success('Duty assignment deleted successfully!');
-                // toast(<CustomToast id="123" type="success" message="Duty assignment deleted successfully!" />);
-                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Duty assignment deleted successfully!" />, {
-                    toastId: 'delete-success'
-                });
-                fetchDuties();
-            } catch (err) {
-                console.error('Error deleting duty assignment:', err.response?.data || err.message);
-                setError('Failed to delete duty assignment. ' + (err.response?.data?.details || err.message));
-                // toast.error('Failed to delete duty assignment.');
-                // toast(<CustomToast id="123" type="error" message="Failed to delete duty assignment." />);
-                toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete duty assignment." />, {
-                    toastId: 'delete-error'
-                });
-            }
+    const handleDeleteDuty = async (dutyId, staffName, dutyDate, shiftName) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/staff/duties/${dutyId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setSuccessMessage('Duty assignment deleted successfully!');
+            toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Duty assignment deleted successfully!" />, {
+                toastId: 'delete-success'
+            });
+            fetchDuties();
+        } catch (err) {
+            console.error('Error deleting duty assignment:', err.response?.data || err.message);
+            setError('Failed to delete duty assignment. ' + (err.response?.data?.details || err.message));
+            toast(<CustomToast id={`error-delete-${Date.now()}`} type="error" message="Failed to delete duty assignment." />, {
+                toastId: 'delete-error'
+            });
+        } finally {
+            // Close the dialog
+            setDeleteDialog({
+                isOpen: false,
+                dutyId: null,
+                staffName: "",
+                dutyDate: "",
+                shiftName: ""
+            });
         }
     };
 
@@ -470,7 +521,13 @@ const StaffManagement = () => {
                                                         variant="outline-danger"
                                                         size="sm"
                                                         className="btn-action delete"
-                                                        onClick={() => handleDeleteDuty(duty.id, duty.user_fullname, duty.duty_date, duty.shift_name)}
+                                                        onClick={() => setDeleteDialog({
+                                                            isOpen: true,
+                                                            dutyId: duty.id,
+                                                            staffName: duty.user_fullname,
+                                                            dutyDate: duty.duty_date,
+                                                            shiftName: duty.shift_name
+                                                        })}
                                                         title="Delete Duty"
                                                     >
                                                         <FaTrash />
@@ -485,6 +542,25 @@ const StaffManagement = () => {
                     )}
                 </Card.Body>
             </Card>
+            <DeleteConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={() => setDeleteDialog({
+                    isOpen: false,
+                    dutyId: null,
+                    staffName: "",
+                    dutyDate: "",
+                    shiftName: ""
+                })}
+                onConfirm={() => handleDeleteDuty(
+                    deleteDialog.dutyId,
+                    deleteDialog.staffName,
+                    deleteDialog.dutyDate,
+                    deleteDialog.shiftName
+                )}
+                staffName={deleteDialog.staffName}
+                dutyDate={deleteDialog.dutyDate}
+                shiftName={deleteDialog.shiftName}
+            />
         </div>
     );
 };

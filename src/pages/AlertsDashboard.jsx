@@ -9,6 +9,47 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Resolve Confirmation Dialog Component
+const ResolveConfirmationDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    alertMessage
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Alert Resolution</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to mark this alert as resolved?</p>
+                    <div className="alert-message-preview">
+                        <FaInfoCircle className="text-info me-2" />
+                        <span>{alertMessage}</span>
+                    </div>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--success"
+                        onClick={onConfirm}
+                    >
+                        <FaCheckCircle className="me-1" /> Mark as Resolved
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AlertsDashboard = () => {
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,6 +66,12 @@ const AlertsDashboard = () => {
 
     const alertTypes = ['low_stock_material', 'overdue_customer_payment', 'low_stock_product'];
     const alertStatuses = ['active', 'resolved'];
+
+    const [resolveDialog, setResolveDialog] = useState({
+        isOpen: false,
+        alertId: null,
+        alertMessage: ""
+    });
 
     // --- Data Fetching ---
     const fetchAlerts = useCallback(async () => {
@@ -56,32 +103,29 @@ const AlertsDashboard = () => {
 
     // --- Actions ---
     const handleResolveAlert = async (alertId, alertMessage) => {
-        if (window.confirm(`Are you sure you want to mark "${alertMessage}" as resolved?`)) {
-            setError('');
-            setSuccessMessage('');
-            setResolving(true);
-            try {
-                await axios.put(`${API_BASE_URL}/alerts/${alertId}/resolve`, {}, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
-                setSuccessMessage('Alert resolved successfully!');
-                // toast.success('Alert resolved successfully!');
-                // toast(<CustomToast id="123" type="success" message="Alert resolved successfully!" />);
-                toast(<CustomToast id={`success-alert-${Date.now()}`} type="success" message="Alert resolved succeessfully!" />, {
-                    toastId: 'alert-success'
-                });
-                fetchAlerts();
-            } catch (err) {
-                console.error('Error resolving alert:', err.response?.data || err.message);
-                setError('Failed to resolve alert. ' + (err.response?.data?.details || err.message));
-                // toast.error('Failed to resolve alert.');
-                // toast(<CustomToast id="123" type="error" message="Failed to resolve alert." />);
-                toast(<CustomToast id={`error-resolve-${Date.now()}`} type="error" message="Failed to resolve alert." />, {
-                    toastId: 'resolve-error'
-                });
-            } finally {
-                setResolving(false);
-            }
+        try {
+            await axios.put(`${API_BASE_URL}/alerts/${alertId}/resolve`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setSuccessMessage('Alert resolved successfully!');
+            toast(<CustomToast id={`success-alert-${Date.now()}`} type="success" message="Alert resolved successfully!" />, {
+                toastId: 'alert-success'
+            });
+            fetchAlerts();
+        } catch (err) {
+            console.error('Error resolving alert:', err.response?.data || err.message);
+            setError('Failed to resolve alert. ' + (err.response?.data?.details || err.message));
+            toast(<CustomToast id={`error-resolve-${Date.now()}`} type="error" message="Failed to resolve alert." />, {
+                toastId: 'resolve-error'
+            });
+        } finally {
+            // Close the dialog
+            setResolveDialog({
+                isOpen: false,
+                alertId: null,
+                alertMessage: ""
+            });
+            setResolving(false);
         }
     };
 
@@ -378,7 +422,11 @@ const AlertsDashboard = () => {
                                                     <Button
                                                         variant="outline-success"
                                                         size="sm"
-                                                        onClick={() => handleResolveAlert(alert.id, alert.message)}
+                                                        onClick={() => setResolveDialog({
+                                                            isOpen: true,
+                                                            alertId: alert.id,
+                                                            alertMessage: alert.message
+                                                        })}
                                                         disabled={resolving}
                                                         className="resolve-btn"
                                                     >
@@ -400,6 +448,19 @@ const AlertsDashboard = () => {
                     )}
                 </Card.Body>
             </Card>
+            <ResolveConfirmationDialog
+                isOpen={resolveDialog.isOpen}
+                onClose={() => setResolveDialog({
+                    isOpen: false,
+                    alertId: null,
+                    alertMessage: ""
+                })}
+                onConfirm={() => {
+                    setResolving(true);
+                    handleResolveAlert(resolveDialog.alertId, resolveDialog.alertMessage);
+                }}
+                alertMessage={resolveDialog.alertMessage}
+            />
         </div>
     );
 };

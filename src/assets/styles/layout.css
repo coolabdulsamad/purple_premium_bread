@@ -11,62 +11,73 @@
   --sidebar-width-collapsed: 80px;
 }
 
+/* STOP HORIZONTAL SCROLL FOR THE ENTIRE PAGE */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-white);
   color: var(--text-dark);
+  overflow-x: hidden; /* <-- THIS IS THE MAIN FIX */
 }
 
 .app-container {
   display: grid;
   grid-template-areas:
     "header header"
-    "sidebar main";
+    "main main";
   grid-template-rows: var(--header-height) 1fr;
-  grid-template-columns: var(--sidebar-width-expanded) 1fr;
+  grid-template-columns: 1fr;
   min-height: 100vh;
-  min-width: 100vw;
-  transition: grid-template-columns 0.3s ease-in-out;
-}
-
-.app-container.sidebar-collapsed {
-  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
-}
-
-.app-container.sidebar-expanded {
-  grid-template-columns: var(--sidebar-width-expanded) 1fr;
+  width: 100vw;
 }
 
 .app-container .app-header {
   grid-area: header;
   position: sticky;
   top: 0;
-  z-index: 999;
-}
-
-.app-container .sidebar-container {
-  grid-area: sidebar;
-  position: relative;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  width: 100vw; /* Ensure header spans full viewport width */
+  background-color: var(--bg-white); /* Optional: ensure it covers content */
 }
 
 .app-container .main-content {
   grid-area: main;
-  flex: 1; /* This change is important */
   overflow-y: auto;
+  height: calc(100vh - var(--header-height));
 }
 
 .content-area {
   padding: 1.5rem;
   min-height: calc(100vh - var(--header-height));
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .content-area::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, and Opera */
+  display: none;
 }
+
+/* --- DESKTOP SIDEBAR (FIXED POSITION) --- */
+.app-container .sidebar-container {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  height: calc(100vh - var(--header-height));
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Adjust main content to not be hidden behind fixed sidebar */
+.app-container.sidebar-expanded .main-content {
+  margin-left: var(--sidebar-width-expanded);
+  width: calc(100vw - var(--sidebar-width-expanded)); /* Correct width calculation */
+}
+.app-container.sidebar-collapsed .main-content {
+  margin-left: var(--sidebar-width-collapsed);
+  width: calc(100vw - var(--sidebar-width-collapsed)); /* Correct width calculation */
+}
+/* --- END DESKTOP SIDEBAR --- */
 
 /* Mobile styles */
 @media (max-width: 768px) {
@@ -74,23 +85,30 @@ body {
     grid-template-areas:
       "header header"
       "main main";
-    grid-template-columns: 1fr;
   }
-  
-  .app-container.sidebar-expanded .sidebar-container {
-    transform: translateX(0);
-  }
-  
-  .app-container.sidebar-collapsed .sidebar-container {
-    transform: translateX(-100%);
-  }
-  
+
   .app-container .sidebar-container {
     position: fixed;
     height: 100%;
     width: var(--sidebar-width-expanded);
     z-index: 1000;
+    transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
+    top: 0;
+  }
+
+  .app-container.sidebar-expanded .sidebar-container {
+    transform: translateX(0);
+  }
+
+  .app-container.sidebar-collapsed .sidebar-container {
+    transform: translateX(-100%);
+  }
+
+  /* Remove the desktop margin on mobile */
+  .app-container .main-content {
+    margin-left: 0 !important;
+    width: 100vw !important; /* Full width on mobile */
   }
 
   .content-area {

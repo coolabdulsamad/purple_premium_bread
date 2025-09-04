@@ -683,7 +683,7 @@ const ReportsPage = () => {
     return (
         <div className="reports-page-container">
             <div className="page-header">
-                <h1 className="main-header"><FaFileInvoiceDollar className="me-2" /> Financial Reports</h1>
+                <h1 className="main-headers"><FaFileInvoiceDollar className="me-2" /> Financial Reports</h1>
                 {lastUpdated && <div className="last-updated">Last updated: {lastUpdated}</div>}
             </div>
 
@@ -691,7 +691,7 @@ const ReportsPage = () => {
 
             <Card className="form-card mb-4">
                 <div className="card-header">
-                    <h2 className="card-title">Select Report Type</h2>
+                    <h2 className="card-titlesd">Select Report Type</h2>
                     <Button variant="outline-primary" size="sm" onClick={fetchDropdownData} disabled={loading}>
                         <FaSync className="me-1" /> Refresh Data
                     </Button>
@@ -716,7 +716,7 @@ const ReportsPage = () => {
 
             <Card className="filter-card mb-4">
                 <div className="card-header">
-                    <h2 className="card-title">Report Filters <FaFilter className="ms-2 text-muted" /></h2>
+                    <h2 className="card-titless">Report Filters <FaFilter className="ms-2 text-muted" /></h2>
                     <Button variant="outline-secondary" size="sm" onClick={clearFilters}>
                         <FaTrashAlt className="me-1" /> Clear All
                     </Button>
@@ -904,12 +904,12 @@ const ReportsPage = () => {
 
             <Card className="table-card mb-4">
                 <div className="card-header">
-                    <h2 className="card-title">Report Results</h2>
+                    <h2 className="card-titless">Report Results</h2>
                     <div className="action-buttons">
                         <Button variant="outline-primary" size="sm" onClick={exportToCSV} disabled={!reportResult || loading}>
                             <FaDownload className="me-1" /> Export CSV
                         </Button>
-                        <Button variant="primary" size="sm" onClick={handlePrint} disabled={!reportResult || loading || (Array.isArray(reportResult.reportData) && reportResult.reportData.length === 0 && reportType !== 'profit-loss')}>
+                        <Button variant="primary" className='okay' size="sm" onClick={handlePrint} disabled={!reportResult || loading || (Array.isArray(reportResult.reportData) && reportResult.reportData.length === 0 && reportType !== 'profit-loss')}>
                             <FaPrint className="me-1" /> Print Report
                         </Button>
                     </div>

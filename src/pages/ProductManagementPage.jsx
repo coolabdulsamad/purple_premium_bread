@@ -9,6 +9,82 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Delete Confirmation Dialog Component for Products
+const ProductDeleteDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    productName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Product Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete the product <strong>"{productName}"</strong>?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Product
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Delete Confirmation Dialog Component for Categories
+const CategoryDeleteDialog = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    categoryName
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="ppb-dialog__overlay" onClick={onClose}>
+            <div className="ppb-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="ppb-dialog__header">
+                    <h3 className="ppb-dialog__title">Confirm Category Deletion</h3>
+                </div>
+                <div className="ppb-dialog__body">
+                    <p>Are you sure you want to delete the category <strong>"{categoryName}"</strong>?</p>
+                    <p className="ppb-dialog__warning">This action cannot be undone and may fail if products are linked to this category.</p>
+                </div>
+                <div className="ppb-dialog__footer">
+                    <button
+                        className="ppb-btn ppb-btn--ghost"
+                        onClick={onClose}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="ppb-btn ppb-btn--danger"
+                        onClick={onConfirm}
+                    >
+                        Delete Category
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ProductManagementPage = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -49,6 +125,18 @@ const ProductManagementPage = () => {
         description: '',
     });
     const [editingCategory, setEditingCategory] = useState(null);
+
+    const [productDeleteDialog, setProductDeleteDialog] = useState({
+        isOpen: false,
+        productId: null,
+        productName: ""
+    });
+
+    const [categoryDeleteDialog, setCategoryDeleteDialog] = useState({
+        isOpen: false,
+        categoryId: null,
+        categoryName: ""
+    });
 
     // --- Data Fetching ---
     const fetchProducts = async () => {
@@ -269,27 +357,27 @@ const ProductManagementPage = () => {
         });
     };
 
-    const handleDeleteProduct = async (productId) => {
-        if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-            setError('');
-            try {
-                await axios.delete(`${API_BASE_URL}/products/${productId}`);
-                // toast.success('Product deleted successfully!');
-                // toast(<CustomToast id="tab-switched" type="success" message='Product deleted successfully!' />);
-                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Product deleted successfully!" />, {
-                    toastId: 'delete-success'
-                });
-                fetchProducts();
-            } catch (err) {
-                const errorMsg = 'Failed to delete product: ' + (err.response?.data?.details || err.message);
-                setError(errorMsg);
-                // toast.error(errorMsg);
-                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
-                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                    toastId: 'e-error'
-                });
-                console.error('Product delete error:', err);
-            }
+    const handleDeleteProduct = async (productId, productName) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/products/${productId}`);
+            toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Product deleted successfully!" />, {
+                toastId: 'delete-success'
+            });
+            fetchProducts();
+        } catch (err) {
+            const errorMsg = 'Failed to delete product: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
+            console.error('Product delete error:', err);
+        } finally {
+            // Close the dialog
+            setProductDeleteDialog({
+                isOpen: false,
+                productId: null,
+                productName: ""
+            });
         }
     };
 
@@ -361,27 +449,27 @@ const ProductManagementPage = () => {
         });
     };
 
-    const handleDeleteCategory = async (categoryId) => {
-        if (window.confirm('Are you sure you want to delete this category? This action cannot be undone and may fail if products are linked.')) {
-            setError('');
-            try {
-                await axios.delete(`${API_BASE_URL}/products/categories/${categoryId}`);
-                // toast.success('Category deleted successfully!');
-                // toast(<CustomToast id="tab-switched" type="success" message='Category deleted successfully!' />);
-                toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Category deleted successfully!" />, {
-                    toastId: 'delete-success'
-                });
-                fetchCategories();
-            } catch (err) {
-                const errorMsg = 'Failed to delete category: ' + (err.response?.data?.details || err.message);
-                setError(errorMsg);
-                // toast.error(errorMsg);
-                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
-                toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                    toastId: 'e-error'
-                });
-                console.error('Category delete error:', err);
-            }
+    const handleDeleteCategory = async (categoryId, categoryName) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/products/categories/${categoryId}`);
+            toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Category deleted successfully!" />, {
+                toastId: 'delete-success'
+            });
+            fetchCategories();
+        } catch (err) {
+            const errorMsg = 'Failed to delete category: ' + (err.response?.data?.details || err.message);
+            setError(errorMsg);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
+                toastId: 'e-error'
+            });
+            console.error('Category delete error:', err);
+        } finally {
+            // Close the dialog
+            setCategoryDeleteDialog({
+                isOpen: false,
+                categoryId: null,
+                categoryName: ""
+            });
         }
     };
 
@@ -700,7 +788,15 @@ const ProductManagementPage = () => {
                                                                 <Button variant='outline-primary' className="btn-action edit" onClick={() => handleEditProduct(product)} title="Edit">
                                                                     <FaEdit />
                                                                 </Button>
-                                                                <Button className="btn-action delete" onClick={() => handleDeleteProduct(product.id)} title="Delete">
+                                                                <Button
+                                                                    className="btn-action delete"
+                                                                    onClick={() => setProductDeleteDialog({
+                                                                        isOpen: true,
+                                                                        productId: product.id,
+                                                                        productName: product.name
+                                                                    })}
+                                                                    title="Delete"
+                                                                >
                                                                     <FaTrash />
                                                                 </Button>
                                                             </div>
@@ -809,7 +905,15 @@ const ProductManagementPage = () => {
                                                                 <Button variant='outline-primary' className="btn-action edit" onClick={() => handleEditCategory(category)} title="Edit">
                                                                     <FaEdit />
                                                                 </Button>
-                                                                <Button className="btn-action delete" onClick={() => handleDeleteCategory(category.id)} title="Delete">
+                                                                <Button
+                                                                    className="btn-action delete"
+                                                                    onClick={() => setCategoryDeleteDialog({
+                                                                        isOpen: true,
+                                                                        categoryId: category.id,
+                                                                        categoryName: category.name
+                                                                    })}
+                                                                    title="Delete"
+                                                                >
                                                                     <FaTrash />
                                                                 </Button>
                                                             </div>
@@ -825,6 +929,27 @@ const ProductManagementPage = () => {
                     )}
                 </div>
             </div>
+            <ProductDeleteDialog
+                isOpen={productDeleteDialog.isOpen}
+                onClose={() => setProductDeleteDialog({
+                    isOpen: false,
+                    productId: null,
+                    productName: ""
+                })}
+                onConfirm={() => handleDeleteProduct(productDeleteDialog.productId, productDeleteDialog.productName)}
+                productName={productDeleteDialog.productName}
+            />
+
+            <CategoryDeleteDialog
+                isOpen={categoryDeleteDialog.isOpen}
+                onClose={() => setCategoryDeleteDialog({
+                    isOpen: false,
+                    categoryId: null,
+                    categoryName: ""
+                })}
+                onConfirm={() => handleDeleteCategory(categoryDeleteDialog.categoryId, categoryDeleteDialog.categoryName)}
+                categoryName={categoryDeleteDialog.categoryName}
+            />
         </div>
     );
 };
