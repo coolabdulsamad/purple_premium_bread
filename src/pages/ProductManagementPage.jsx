@@ -89,6 +89,7 @@ const ProductManagementPage = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('products');
 
@@ -155,16 +156,12 @@ const ProductManagementPage = () => {
 
             const response = await axios.get(`${API_BASE_URL}/products`, { params });
             setProducts(response.data);
-            // toast.success(`Loaded ${response.data.length} products successfully`);
-            // toast(<CustomToast id="tab-switched" type="success" message={`Loaded ${response.data.length} products successfully`} />);
             toast(<CustomToast id={`success-tab-${Date.now()}`} type="success" message={`Loaded ${response.data.length} products successfully`} />, {
                 toastId: 'tab-success'
             });
         } catch (err) {
             const errorMsg = 'Failed to fetch products: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'tab-error'
             });
@@ -176,37 +173,46 @@ const ProductManagementPage = () => {
 
     const fetchCategories = async () => {
         setError('');
+        setCategoriesLoading(true);
         try {
             const params = {};
             if (categorySearchTerm) params.searchTerm = categorySearchTerm;
             const response = await axios.get(`${API_BASE_URL}/products/categories`, { params });
             setCategories(response.data);
         } catch (err) {
-            const errorMsg = 'Failed to fetch categories: ' + (err.response?.data?.details || err.message);
+            const errorMsg = 'Fetching categories: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             console.error('Error fetching categories:', err);
+        } finally {
+            setCategoriesLoading(false);
         }
     };
 
+    // Fetch categories when component mounts
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    // Fetch products when products tab is active
     useEffect(() => {
         if (activeTab === 'products') {
             fetchProducts();
-        } else if (activeTab === 'categories') {
-            fetchCategories();
         }
     }, [activeTab]);
 
+    // Fetch products when filters change (only if products tab is active)
     useEffect(() => {
         if (activeTab === 'products') {
             fetchProducts();
         }
     }, [filterName, filterCategory, filterMinPrice, filterMaxPrice, filterMinStock, filterMaxStock, filterIsActive, filterProductId]);
 
+    // Fetch categories when categories tab is active or search term changes
     useEffect(() => {
         if (activeTab === 'categories') {
             fetchCategories();
         }
-    }, [categorySearchTerm]);
+    }, [activeTab, categorySearchTerm]);
 
     // --- Product Handlers ---
     const handleProductChange = (e) => {
@@ -248,8 +254,6 @@ const ProductManagementPage = () => {
         if (dataToSubmit.units.length === 0) {
             const errorMsg = 'At least one unit is required for the product.';
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'tab-error'
             });
@@ -260,8 +264,6 @@ const ProductManagementPage = () => {
         if (invalidUnit) {
             const errorMsg = 'All unit types and display values must be filled.';
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-tab-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'tab-error'
             });
@@ -276,16 +278,12 @@ const ProductManagementPage = () => {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 dataToSubmit.image_url = uploadRes.data.url;
-                // toast.success('Image uploaded successfully');
-                // toast(<CustomToast id="tab-switched" type="success" message="Image uploaded successfully" />);
                 toast(<CustomToast id={`success-image-${Date.now()}`} type="success" message="Image uploaded successfully" />, {
                     toastId: 'image-success'
                 });
             } catch (err) {
                 const errorMsg = 'Failed to upload image: ' + (err.response?.data?.details || err.message);
                 setError(errorMsg);
-                // toast.error(errorMsg);
-                // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
                 toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                     toastId: 'error-e'
                 });
@@ -299,15 +297,11 @@ const ProductManagementPage = () => {
         try {
             if (editingProduct) {
                 await axios.put(`${API_BASE_URL}/products/${editingProduct.id}`, dataToSubmit);
-                // toast.success('Product updated successfully!');
-                // toast(<CustomToast id="tab-switched" type="success" message="Product updated successfully!" />);
                 toast(<CustomToast id={`success-update-${Date.now()}`} type="success" message="Product updated successfully!" />, {
                     toastId: 'update-success'
                 });
             } else {
                 await axios.post(`${API_BASE_URL}/products`, dataToSubmit);
-                // toast.success('Product created successfully!');
-                // toast(<CustomToast id="tab-switched" type="error" message="Product created successfully" />);
                 toast(<CustomToast id={`error-created-${Date.now()}`} type="error" message="Product created successfully" />, {
                     toastId: 'created-error'
                 });
@@ -328,8 +322,6 @@ const ProductManagementPage = () => {
         } catch (err) {
             const errorMsg = 'Failed to save product: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -350,8 +342,6 @@ const ProductManagementPage = () => {
             is_active: product.is_active,
             units: product.units && product.units.length > 0 ? product.units : [{ type: 'pcs', display: '1 pcs' }],
         });
-        // toast.info('Editing product: ' + product.name);
-        // toast(<CustomToast id="tab-switched" type="info" message={'Editing product: ' + product.name} />);
         toast(<CustomToast id={`info-product-${Date.now()}`} type="info" message={`Editing product: ` + product.name} />, {
             toastId: 'product-info'
         });
@@ -386,8 +376,6 @@ const ProductManagementPage = () => {
         setProductFormData({
             name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
         });
-        // toast.info('Cancelled product editing');
-        // toast(<CustomToast id="tab-switched" type="info" message='Cancelled product editing' />);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Cancelled product editing" />, {
             toastId: 'edit-info'
         });
@@ -408,15 +396,11 @@ const ProductManagementPage = () => {
         try {
             if (editingCategory) {
                 await axios.put(`${API_BASE_URL}/products/categories/${editingCategory.id}`, categoryFormData);
-                // toast.success('Category updated successfully!');
-                // toast(<CustomToast id="tab-switched" type="success" message='Category updated successfully!' />);
                 toast(<CustomToast id={`success-updated-${Date.now()}`} type="success" message="Category updated successfully!" />, {
                     toastId: 'updated-success'
                 });
             } else {
                 await axios.post(`${API_BASE_URL}/products/categories`, categoryFormData);
-                // toast.success('Category created successfully!');
-                // toast(<CustomToast id="tab-switched" type="success" message='Category created successfully!' />);
                 toast(<CustomToast id={`success-created-${Date.now()}`} type="success" message="Category created successfully!" />, {
                     toastId: 'created-success'
                 });
@@ -427,8 +411,6 @@ const ProductManagementPage = () => {
         } catch (err) {
             const errorMsg = 'Failed to save category: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="tab-switched" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -442,8 +424,6 @@ const ProductManagementPage = () => {
             name: category.name,
             description: category.description,
         });
-        // toast.info('Editing category: ' + category.name);
-        // toast(<CustomToast id="tab-switched" type="success" message={'Editing category: ' + category.name} />);
         toast(<CustomToast id={`success-edit-${Date.now()}`} type="success" message={`Editing category: ` + category.name} />, {
             toastId: 'edit-success'
         });
@@ -476,8 +456,6 @@ const ProductManagementPage = () => {
     const cancelCategoryEdit = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: '', description: '' });
-        // toast.info('Cancelled category editing');
-        // toast(<CustomToast id="tab-switched" type="info" message='Cancelled category editing' />);
         toast(<CustomToast id={`info-cancelled-${Date.now()}`} type="info" message="Cancelled category editing" />, {
             toastId: 'cancelled-info'
         });
@@ -487,8 +465,6 @@ const ProductManagementPage = () => {
     const handleProductFilterSubmit = (e) => {
         e.preventDefault();
         fetchProducts();
-        // toast.info('Applying product filters...');
-        // toast(<CustomToast id="tab-switched" type="info" message='Applying product filters...' />);
         toast(<CustomToast id={`info-apply-${Date.now()}`} type="info" message="Applying product filters..." />, {
             toastId: 'apply-info'
         });
@@ -497,8 +473,6 @@ const ProductManagementPage = () => {
     const handleCategoryFilterSubmit = (e) => {
         e.preventDefault();
         fetchCategories();
-        // toast.info('Searching categories...');
-        // toast(<CustomToast id="tab-switched" type="info" message='Searching categories...' />);
         toast(<CustomToast id={`info-search-${Date.now()}`} type="info" message="Searching categories..." />, {
             toastId: 'search-info'
         });
@@ -567,9 +541,13 @@ const ProductManagementPage = () => {
                                                 <Form.Label>Category</Form.Label>
                                                 <Form.Control as="select" name="category" value={productFormData.category} onChange={handleProductChange} required>
                                                     <option value="">Select Category</option>
-                                                    {categories.map(cat => (
-                                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                                    ))}
+                                                    {categoriesLoading ? (
+                                                        <option value="" disabled>Loading categories...</option>
+                                                    ) : (
+                                                        categories.map(cat => (
+                                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                        ))
+                                                    )}
                                                 </Form.Control>
                                             </Form.Group>
                                         </Col>
@@ -747,6 +725,7 @@ const ProductManagementPage = () => {
                                                     <th>Image</th>
                                                     <th>Name</th>
                                                     <th>Category</th>
+                                                    <th>Description</th>
                                                     <th>Price</th>
                                                     <th>Units</th>
                                                     <th>Stock</th>
@@ -764,7 +743,8 @@ const ProductManagementPage = () => {
                                                         </td>
                                                         <td className="product-names">{product.name}</td>
                                                         <td className="product-categorys">{product.category}</td>
-                                                        <td className="product-prices">₦{Number(product.price).toFixed(2)}</td>
+                                                        <td>{product.description}</td>
+                                                        <td className="product-pricess">₦{Number(product.price).toFixed(2)}</td>
                                                         <td className="product-unitss">
                                                             {product.units && product.units.length > 0 ? (
                                                                 product.units.map((unit, idx) => (
@@ -874,7 +854,7 @@ const ProductManagementPage = () => {
                                 <div className="card-titles">
                                     <FaTags /> All Categories
                                 </div>
-                                {loading ? (
+                                {categoriesLoading ? (
                                     <div className="text-center my-5">
                                         <Spinner animation="border" variant="primary" />
                                         <p className="mt-2">Loading categories...</p>
