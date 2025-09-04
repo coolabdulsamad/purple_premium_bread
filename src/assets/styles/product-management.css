@@ -129,7 +129,7 @@
     gap: 0.5rem;
 }
 
-.card-titles{
+.card-titles {
     background: linear-gradient(135deg, var(--product-primary-color) 0%, var(--product-primary-light) 100%);
     color: white;
     padding: 1rem 1.5rem;
@@ -139,7 +139,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
+}
 
 /* Forms */
 .product-form,
@@ -212,9 +212,9 @@
     background-color: var(--product-primary-color);
 }
 
-.filter-apply-btn:hover{
-  background-color: var(--product-primary-light);
-  color: white;
+.filter-apply-btn:hover {
+    background-color: var(--product-primary-light);
+    color: white;
 }
 
 /* Buttons */
@@ -234,15 +234,15 @@
     border: none;
 }
 
-.add-primary{
-  background-color: var(--product-primary-color);
-  color: white;
+.add-primary {
+    background-color: var(--product-primary-color);
+    color: white;
 }
 
-.add-primary:hover{
-  background-color: white;
-  border:1px solid var(--product-primary-light);
-  color: var(--product-primary-color);
+.add-primary:hover {
+    background-color: white;
+    border: 1px solid var(--product-primary-light);
+    color: var(--product-primary-color);
 }
 
 .btn-primary:hover {
@@ -295,7 +295,7 @@
 }
 
 .btn-action.delete {
-  background-color: white;
+    background-color: white;
     color: var(--danger-color);
 }
 
@@ -314,6 +314,7 @@
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    border-radius: 0 0 12px 12px;
 }
 
 /* Tables */
@@ -500,12 +501,13 @@ img:hover {
     .filter-grid {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
-    
+
     .products-table,
     .categories-table {
         font-size: 0.85rem;
+        min-width: 900px;
     }
-    
+
     .products-table th,
     .products-table td,
     .categories-table th,
@@ -518,29 +520,35 @@ img:hover {
     .product-management-header h1 {
         font-size: 1.8rem;
     }
-    
+
     .card-title {
         font-size: 1.1rem;
         padding: 0.75rem 1rem;
     }
-    
+
     .filter-grid {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
     }
-    
+
     .product-form,
     .category-form {
         padding: 1rem;
     }
-    
+
     .form-control,
     .form-select {
         font-size: 0.9rem;
         padding: 0.6rem;
     }
+
+    .products-table,
+    .categories-table {
+        min-width: 800px;
+    }
 }
 
+/* Replace the mobile media query section with this: */
 @media (max-width: 768px) {
     .product-management-container {
         padding: 0.5rem;
@@ -600,25 +608,22 @@ img:hover {
         font-size: 0.8rem;
     }
 
-    /* Hide less important columns on mobile */
-    .products-table th:nth-child(4), /* Category */
-    .products-table td:nth-child(4),
-    .products-table th:nth-child(6), /* Units */
-    .products-table td:nth-child(6),
-    .products-table th:nth-child(7), /* Stock */
-    .products-table td:nth-child(7),
-    .products-table th:nth-child(8), /* Min Stock */
-    .products-table td:nth-child(8) {
-        display: none;
+    /* Make tables horizontally scrollable on mobile */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -0.5rem;
+        width: calc(100% + 1rem);
     }
 
-    .categories-table th:nth-child(3), /* Description */
-    .categories-table td:nth-child(3) {
-        display: none;
+    .products-table,
+    .categories-table {
+        min-width: 700px;
+        /* Minimum width to show all content */
     }
 
     /* Stack form elements vertically on mobile */
-    .row > [class*="col-"] {
+    .row>[class*="col-"] {
         margin-bottom: 1rem;
     }
 
@@ -653,10 +658,10 @@ img:hover {
         text-align: center;
     }
 
-    /* Hide more columns on very small screens */
-    .products-table th:nth-child(5), /* Price */
-    .products-table td:nth-child(5) {
-        display: none;
+    /* Ensure tables are scrollable on very small screens */
+    .products-table,
+    .categories-table {
+        min-width: 600px;
     }
 
     .table-container {
@@ -670,6 +675,7 @@ img:hover {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
