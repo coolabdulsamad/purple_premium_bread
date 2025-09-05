@@ -302,8 +302,8 @@ const ProductManagementPage = () => {
                 });
             } else {
                 await axios.post(`${API_BASE_URL}/products`, dataToSubmit);
-                toast(<CustomToast id={`error-created-${Date.now()}`} type="error" message="Product created successfully" />, {
-                    toastId: 'created-error'
+                toast(<CustomToast id={`sucees-created-${Date.now()}`} type="success" message="Product created successfully" />, {
+                    toastId: 'created-sucesss'
                 });
             }
             fetchProducts();
@@ -323,7 +323,7 @@ const ProductManagementPage = () => {
             const errorMsg = 'Failed to save product: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
+                toastId: 'e-errorsdv'
             });
             console.error('Product save error:', err);
         }
@@ -343,7 +343,7 @@ const ProductManagementPage = () => {
             units: product.units && product.units.length > 0 ? product.units : [{ type: 'pcs', display: '1 pcs' }],
         });
         toast(<CustomToast id={`info-product-${Date.now()}`} type="info" message={`Editing product: ` + product.name} />, {
-            toastId: 'product-info'
+            toastId: 'product-infof'
         });
     };
 
@@ -351,16 +351,16 @@ const ProductManagementPage = () => {
         try {
             await axios.delete(`${API_BASE_URL}/products/${productId}`);
             toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Product deleted successfully!" />, {
-                toastId: 'delete-success'
+                toastId: 'delete-successfg'
             });
             fetchProducts();
         } catch (err) {
             const errorMsg = 'Failed to delete product: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
+                toastId: 'e-errorsgn'
             });
-            console.error('Product delete error:', err);
+            // console.error('Product delete error:', err);
         } finally {
             // Close the dialog
             setProductDeleteDialog({
@@ -377,7 +377,7 @@ const ProductManagementPage = () => {
             name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
         });
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Cancelled product editing" />, {
-            toastId: 'edit-info'
+            toastId: 'edit-infosf'
         });
     };
 
@@ -397,12 +397,12 @@ const ProductManagementPage = () => {
             if (editingCategory) {
                 await axios.put(`${API_BASE_URL}/products/categories/${editingCategory.id}`, categoryFormData);
                 toast(<CustomToast id={`success-updated-${Date.now()}`} type="success" message="Category updated successfully!" />, {
-                    toastId: 'updated-success'
+                    toastId: 'updated-successsdb'
                 });
             } else {
                 await axios.post(`${API_BASE_URL}/products/categories`, categoryFormData);
                 toast(<CustomToast id={`success-created-${Date.now()}`} type="success" message="Category created successfully!" />, {
-                    toastId: 'created-success'
+                    toastId: 'created-successseb'
                 });
             }
             fetchCategories();
@@ -412,7 +412,7 @@ const ProductManagementPage = () => {
             const errorMsg = 'Failed to save category: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
+                toastId: 'e-erroresrh'
             });
             console.error('Category save error:', err);
         }
@@ -425,7 +425,7 @@ const ProductManagementPage = () => {
             description: category.description,
         });
         toast(<CustomToast id={`success-edit-${Date.now()}`} type="success" message={`Editing category: ` + category.name} />, {
-            toastId: 'edit-success'
+            toastId: 'edit-successseths'
         });
     };
 
@@ -433,14 +433,14 @@ const ProductManagementPage = () => {
         try {
             await axios.delete(`${API_BASE_URL}/products/categories/${categoryId}`);
             toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message="Category deleted successfully!" />, {
-                toastId: 'delete-success'
+                toastId: 'delete-succesehss'
             });
             fetchCategories();
         } catch (err) {
             const errorMsg = 'Failed to delete category: ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
+                toastId: 'e-erstror'
             });
             console.error('Category delete error:', err);
         } finally {
@@ -457,7 +457,7 @@ const ProductManagementPage = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: '', description: '' });
         toast(<CustomToast id={`info-cancelled-${Date.now()}`} type="info" message="Cancelled category editing" />, {
-            toastId: 'cancelled-info'
+            toastId: 'cancelledrst-info'
         });
     };
 
@@ -466,7 +466,7 @@ const ProductManagementPage = () => {
         e.preventDefault();
         fetchProducts();
         toast(<CustomToast id={`info-apply-${Date.now()}`} type="info" message="Applying product filters..." />, {
-            toastId: 'apply-info'
+            toastId: 'apply-rsinfo'
         });
     };
 
@@ -474,7 +474,7 @@ const ProductManagementPage = () => {
         e.preventDefault();
         fetchCategories();
         toast(<CustomToast id={`info-search-${Date.now()}`} type="info" message="Searching categories..." />, {
-            toastId: 'search-info'
+            toastId: 'searsch-info'
         });
     };
 
