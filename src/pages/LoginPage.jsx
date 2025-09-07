@@ -16,6 +16,7 @@ import { Form, Input, Button, Typography, Spin } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import "../assets/styles/login.css";
 import { ASSETS } from "../assets";
+import CustomToast from "../components/CustomToast";
 
 const { Title, Paragraph } = Typography;
 
@@ -41,9 +42,12 @@ const LoginPage = () => {
         localStorage.setItem("userRole", response.data.role);
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
-        toast.success(
-          `Welcome back, ${response.data.user.fullname || username}!`
-        );
+        // toast.success(
+        // `Welcome back, ${response.data.user.fullname || username}!`
+        // );
+        toast(<CustomToast id={`success-data-${Date.now()}`} type="success" message={`Welcome back, ${response.data.user.fullname || username}!`} />, {
+          toastId: 'data-success'
+        });
 
         setTimeout(() => {
           switch (response.data.role) {
@@ -61,7 +65,10 @@ const LoginPage = () => {
           }
         }, 1500);
       } else {
-        toast.error("Invalid response from server.");
+        // toast.error("Invalid response from server.");
+        toast(<CustomToast id={`error-server-${Date.now()}`} type="error" message="Invalid response from server." />, {
+          toastId: 'server-error'
+        });
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -69,7 +76,10 @@ const LoginPage = () => {
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
-      toast.error(errorMessage);
+      // toast.error(errorMessage);
+      toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMessage} />, {
+        toastId: 'error-e'
+      });
     } finally {
       setLoading(false);
     }
@@ -77,7 +87,7 @@ const LoginPage = () => {
 
   return (
     <div className="login-page">
-      <ToastContainer position="top-right" autoClose={3000} theme="light" />
+      {/* <ToastContainer position="top-right" autoClose={3000} theme="light" /> */}
 
       <div className="login-container">
         {/* Left Side (Form) */}
@@ -99,7 +109,7 @@ const LoginPage = () => {
             name="loginForm"
             layout="vertical"
             onFinish={handleLogin}
-            // style={{ maxWidth: 500, margin: "0 auto" }}
+          // style={{ maxWidth: 500, margin: "0 auto" }}
           >
             {/* Username */}
             <Form.Item
