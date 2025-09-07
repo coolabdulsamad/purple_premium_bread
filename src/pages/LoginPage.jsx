@@ -90,7 +90,7 @@ const LoginPage = () => {
       {/* <ToastContainer position="top-right" autoClose={3000} theme="light" /> */}
 
       <div className="login-container">
-        {/* Left Side (Form) */}
+        {/* Left Side (Form) */} 
         <div className="login-card">
           <div className="logo-container">
             <div className="logo-icon-container">
