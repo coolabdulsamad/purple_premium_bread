@@ -25,6 +25,7 @@ import AnalysisPage from './pages/AnalysisPage';
 import RawInventoryDashboard from './pages/RawInventoryDashboard';
 import CreditDashboard from './pages/CreditDashboard';
 import ReportDashboard from './pages/ReportDashboard';
+import WasteStock from './pages/WasteStock'
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -55,6 +56,7 @@ function App() {
         <Route path="/staff" element={<Layout><StaffManagement /></Layout>} />
         <Route path="/reports" element={<Layout><ReportDashboard /></Layout>} />
         <Route path="/raw_materials_inventory" element={<Layout><RawInventoryDashboard /></Layout>} />
+        <Route path='/wastestock' element={<Layout><WasteStock /></Layout>} />
       </Routes>
 
       {/* ✅ Global Toast Container (always mounted) */}

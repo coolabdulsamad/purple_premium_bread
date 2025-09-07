@@ -435,14 +435,15 @@
     
     .report-table {
         font-size: 0.85rem;
-        display: block;
-        overflow-x: auto;
+        /* display: block; */
+        /* overflow-x: auto; */
     }
     
     .report-table th, 
     .report-table td {
-        padding: 0.5rem;
+        /* padding: 0.5rem; */
         white-space: nowrap;
+        width: 50%;
     }
     
     .form-card .row,

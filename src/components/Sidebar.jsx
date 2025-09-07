@@ -4,7 +4,7 @@ import { FaHome, FaShoppingCart, FaBreadSlice, FaChartBar, FaUserCog, FaSignOutA
 import useAuth from '../hooks/useAuth';
 import { FaBuilding } from 'react-icons/fa6';
 import { MdInventory } from 'react-icons/md';
-import { RiSecurePaymentFill } from 'react-icons/ri';
+import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
 import '../assets/styles/Sidebar.css';
 import { ASSETS } from '../assets';
 import { HiMiniBellAlert } from 'react-icons/hi2';
@@ -63,6 +63,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager'] },
       { name: 'Sales History', path: '/sales-history', icon: <FaSalesforce />, roles: ['admin', 'sales'] },
+      { name: 'Waste Stock', path: '/wastestock', icon: <RiStockFill />, roles: ['admin', 'sales'] },
     ],
     [
       { name: 'Recipes', path: '/recipes', icon: <FaBuilding />, roles: ['admin', 'manager'] },
