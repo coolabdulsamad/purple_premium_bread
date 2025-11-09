@@ -24,6 +24,7 @@ import SalesManagementDashboard from './pages/SalesManagementDashboard';
 import ExchangeHistoryPage from './pages/ExchangeHistoryPage';
 import OperatingExpensesPage from './pages/OperatingExpensesPage';
 import SalaryManagementPage from './pages/SalaryManagementPage';
+import Services from './pages/Services';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
         <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
         <Route path="/exchanges-history" element={<Layout><ExchangeHistoryPage /></Layout>} />
         <Route path="/salary-management" element={<Layout><SalaryManagementPage /></Layout>} />
+        <Route path="/services" element={<Layout><Services /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 

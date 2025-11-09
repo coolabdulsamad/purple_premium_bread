@@ -35,6 +35,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "../assets/styles/newSale.css";
 import CustomToast from "../components/CustomToast";
 import useAuth from '../hooks/useAuth'; // Add this line if it was missing
+import api from "../api/axiosInstance";
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
@@ -126,9 +127,9 @@ const userId = user?.id;
       // 3. Fetch all data in parallel, using the determined productsEndpoint
       const [productsAndStockRes, customersRes, servicesRes] =
         await Promise.all([
-          axios.get(productsEndpoint),
-          axios.get(`${API_BASE_URL}/customers`),
-          axios.get(`${API_BASE_URL}/services`),
+          api.get(productsEndpoint),
+          api.get(`/customers`),
+          api.get(`/services/newsales`),
         ]);
 
       // 4. Process the Unified Response
@@ -432,7 +433,7 @@ const handleCheckout = async (cartToProcess) => {
     try {
       const fd = new FormData();
       fd.append("receiptImage", cartToProcess.payment.paymentImage);
-      const upload = await axios.post(`${API_BASE_URL}/sales/upload-receipt`, fd, {
+      const upload = await api.post(`/sales/upload-receipt`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       paymentImageUrl = upload.data.url;
@@ -512,7 +513,7 @@ const handleCheckout = async (cartToProcess) => {
   };
 
   try {
-    await axios.post(`${API_BASE_URL}/sales/process`, payload);
+    await api.post(`/sales/process`, payload);
     toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
 
     // ✅ Reset everything properly after success

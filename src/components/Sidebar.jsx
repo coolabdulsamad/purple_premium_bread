@@ -100,6 +100,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin', 'accountant'] },
       { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
       { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales'] },
+      { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager'] },
     ],
   ];
 
