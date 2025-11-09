@@ -29,7 +29,7 @@ const ReportDashboard = () => {
                 <h2 className="dashboard-title">
                     <span className="icon-wrapper">
                         {/* <i className="fas fa-chart-line"></i> */}
-                        <img src={ASSETS['logo']} alt="" srcset="" />
+                        <img src={ASSETS['logo']} alt="Purple-foods Logo" />
                     </span>
                     Reports & Analytics Center
                 </h2>

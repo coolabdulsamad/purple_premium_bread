@@ -17,6 +17,7 @@ import {
   FaFileUpload,
   FaCartPlus,
   FaBoxOpen,
+  FaGift, // NEW ICON: for Free Stock/Incentive
 } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -27,11 +28,13 @@ import {
   Spinner,
   InputGroup,
   Badge,
+  FormCheck, // NEW: Import FormCheck
 } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../assets/styles/newSale.css";
 import CustomToast from "../components/CustomToast";
+import useAuth from '../hooks/useAuth'; // Add this line if it was missing
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
@@ -82,42 +85,119 @@ const NewSalePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
 
+  // NEW STATE: For Free Stock Feature
+  const [isFreeStockChecked, setIsFreeStockChecked] = useState(false);
+  const [freeStockQuantities, setFreeStockQuantities] = useState({});
+  const [freeStockReason, setFreeStockReason] = useState("");
+  // END NEW STATE
+
+  // const { userRole, userId } = useAuth(); // Assuming useAuth provides userId
+  const { user, userRole } = useAuth();
+const userId = user?.id;
+
+
   const activeCart = carts.find((c) => c.id === activeCartId);
 
-  /* ========= Data Fetch ========= */
+  /* ========= Data Fetch (CORRECTED for Sales User ID Timing) ========= */
   const fetchAllData = async () => {
-    setLoading(true);
+
+    // 1. CRITICAL GUARD: Sales users MUST have a userId to fetch their specific stock.
+    if (userRole === 'sales' && !userId) {
+      // If the ID is not available yet, we return immediately.
+      // The component remains in the initial state (loading=true), showing the spinner.
+      // useEffect will re-run when userId changes.
+      return;
+    }
+
+    setLoading(true); // Start loading state (or keep it if it was already true)
+
     try {
-      const [productsRes, inventoryRes, customersRes, servicesRes] =
+      let productsEndpoint;
+
+      // 2. Determine the correct product/stock endpoint based on role
+      if (userRole === 'sales') {
+        // Use the dynamic endpoint for sales users (now safe because userId is guaranteed)
+        productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
+      } else {
+        // For Admin/Manager/etc., use the detailed main inventory endpoint
+        productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+      }
+
+      // 3. Fetch all data in parallel, using the determined productsEndpoint
+      const [productsAndStockRes, customersRes, servicesRes] =
         await Promise.all([
-          axios.get(`${API_BASE_URL}/products`),
-          axios.get(`${API_BASE_URL}/inventory`),
+          axios.get(productsEndpoint),
           axios.get(`${API_BASE_URL}/customers`),
           axios.get(`${API_BASE_URL}/services`),
         ]);
 
-      setProducts(productsRes.data.filter((p) => p.is_active));
+      // 4. Process the Unified Response
+      const productsData = (productsAndStockRes.data || [])
+        .filter((p) => p.name || p.product_name) // ✅ FIX: Simplified filter to check for any name field, improving robustness across different API endpoints.
+        .map(p => ({
+          id: p.id || p.product_id,
+          name: p.name || p.product_name,
+          price: p.price,
+          category: p.category || p.product_category,
+          image_url: p.image_url,
+          quantity: p.quantity // The unified stock quantity
+        }));
+
+      // 5. Update states (Success)
+      setProducts(productsData);
       setCustomers(customersRes.data);
       setServices(servicesRes.data);
 
-      const inventoryMap = inventoryRes.data.reduce((map, item) => {
-        map[item.product_id] = item.quantity;
+      // Map the stock for the POS quantity checker
+      const inventoryMap = productsData.reduce((map, item) => {
+        map[item.id] = item.quantity;
         return map;
       }, {});
       setInventory(inventoryMap);
-    } catch {
-      // toast.error("Failed to load POS data.");
-      toast(<CustomToast id={`error-pos-${Date.now()}`} type="error" message="Failed to load POS data." />, {
+
+      // 6. Stop Loading
+      setLoading(false);
+
+    } catch (error) {
+      console.error("POS Data Fetch Error:", error.response?.data || error.message);
+      toast(<CustomToast type="error" message={`Failed to load POS data: ${error.response?.data?.error || 'Server Error'}`} />, {
         toastId: 'pos-error'
       });
-    } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading even on error
     }
   };
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
+  // REMOVED REDUNDANT useEffect BLOCK (Original lines 214-219)
+
+useEffect(() => {
+  let mounted = true;
+
+  const safeFetch = async () => {
+    if (userRole === 'sales' && !userId) return;
+    if (!mounted) return;
+    await fetchAllData();
+  };
+
+  safeFetch();
+  return () => { mounted = false; };
+}, [userId, userRole]);
+
+
+  // (The rest of the component remains unchanged)
+
+useEffect(() => {
+  let mounted = true;
+
+  const safeFetch = async () => {
+    if (userRole === 'sales' && !userId) return;
+    if (!mounted) return;
+    await fetchAllData();
+  };
+
+  safeFetch();
+  return () => { mounted = false; };
+}, [userId, userRole]);
+
 
   /* ========= Totals ========= */
   const getTotals = (cart) => {
@@ -132,7 +212,7 @@ const NewSalePage = () => {
 
     const subtotalAfterDiscount = subtotal - discountAmount;
     const taxService = services.find((s) => s.name?.toLowerCase() === "tax");
-    const taxRate = taxService ? Number(taxService.rate) / 100 : 0.08;
+    const taxRate = taxService ? Number(taxService.rate) / 100 : 0.00;
     const tax = subtotalAfterDiscount * taxRate;
     const total = subtotalAfterDiscount + tax;
 
@@ -173,18 +253,21 @@ const NewSalePage = () => {
     });
   }, [products, searchTerm, category]);
 
-  /* ========= Cart Ops ========= */
+
+
+
+  /* ========= Cart Ops (Updated for Stock Check) ========= */
   const addToCart = (product, cartId) => {
     setCarts((prev) =>
       prev.map((cart) => {
         if (cart.id !== cartId) return cart;
         const existing = cart.items.find((i) => i.id === product.id);
+        // Ensure we always use the dynamic inventory map
         const stock = inventory[product.id] || 0;
 
         if (existing) {
           if (existing.quantity + 1 > stock) {
-            // toast.warn("Inventory limit reached.");
-            toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warn" message="Inventory limit reached." />, {
+            toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warning" message="Inventory limit reached." />, {
               toastId: 'inventory-warn'
             });
             return cart;
@@ -201,7 +284,6 @@ const NewSalePage = () => {
           };
         } else {
           if (stock <= 0) {
-            // toast.error("Out of stock.");
             toast(<CustomToast id={`error-stock-${Date.now()}`} type="error" message="Out of stock." />, {
               toastId: 'stock-error'
             });
@@ -239,7 +321,7 @@ const NewSalePage = () => {
             const qty = Math.max(0, Number(nextQty) || 0);
             if (qty > productStock) {
               // toast.warn("Inventory limit reached.");
-              toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warn" message="Inventory limit reached." />, {
+              toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warning" message="Inventory limit reached." />, {
                 toastId: 'inventory-warn'
               });
               return i;
@@ -286,7 +368,7 @@ const NewSalePage = () => {
   const removeCart = (cartId) => {
     if (carts.length === 1) {
       // toast.warn("At least one group is required.");
-      toast(<CustomToast id={`warn-group-${Date.now()}`} type="warn" message="At least one group is required." />, {
+      toast(<CustomToast id={`warn-group-${Date.now()}`} type="warning" message="At least one group is required." />, {
         toastId: 'group-warn'
       });
       return;
@@ -304,138 +386,168 @@ const NewSalePage = () => {
     });
   };
 
-  /* ========= Checkout ========= */
-  const handleCheckout = async (cartToProcess) => {
-    if (!cartToProcess || cartToProcess.items.length === 0) {
-      // toast.warn("Cart is empty.");
-      toast(<CustomToast id={`warn-cart-${Date.now()}`} type="warn" message="Cart is empty." />, {
-        toastId: 'cart-warn'
+
+
+
+
+  /* ========= Checkout (UPDATED to include Free Stock) ========= */
+const handleCheckout = async (cartToProcess) => {
+  if (!cartToProcess || cartToProcess.items.length === 0) {
+    toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
+    return;
+  }
+
+  // Free stock validation
+  if (isFreeStockChecked) {
+    let isValid = true;
+    Object.entries(freeStockQuantities).forEach(([productId, freeQty]) => {
+      const item = cartToProcess.items.find(i => i.id === parseInt(productId));
+      if (freeQty > (item?.quantity || 0)) {
+        toast(<CustomToast type="error" message={`Free stock for ${item?.name || 'an item'} exceeds the quantity sold.`} />, {
+          toastId: 'free-stock-exceed-error'
+        });
+        isValid = false;
+      }
+    });
+    if (!isValid) return;
+
+    if (!freeStockReason.trim()) {
+      toast(<CustomToast type="error" message="Please provide a reason for the free stock/incentive." />, {
+        toastId: 'free-stock-reason-error'
       });
       return;
     }
+  }
 
-    const cashierId = getCashierIdFromToken();
-    if (!cashierId) {
-      // toast.error("You must be logged in to process a sale.");
-      toast(<CustomToast id={`error-sale-${Date.now()}`} type="error" message="You must be logged in to process a sale." />, {
-        toastId: 'sale-error'
-      });
-      return;
-    }
+  const cashierId = getCashierIdFromToken();
+  if (!cashierId) {
+    toast(<CustomToast type="error" message="You must be logged in to process a sale." />, {
+      toastId: 'sale-error'
+    });
+    return;
+  }
 
-    // Upload receipt image if provided
-    let paymentImageUrl = null;
-    if (cartToProcess.payment.paymentImage) {
-      try {
-        const fd = new FormData();
-        fd.append("receiptImage", cartToProcess.payment.paymentImage);
-        const upload = await axios.post(
-          `${API_BASE_URL}/sales/upload-receipt`,
-          fd,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        paymentImageUrl = upload.data.url;
-      } catch {
-        // toast.error("Failed to upload receipt image.");
-        toast(<CustomToast id={`error-receipt-${Date.now()}`} type="error" message="Failed to upload receipt image." />, {
-          toastId: 'receipt-error'
-        });
-        return;
-      }
-    }
-
-    const { subtotal, tax, total, discountAmount } = getTotals(cartToProcess);
-    let amountPaid = 0;
-    let balanceDue = 0;
-    let status = "Paid";
-    let dueDate = null;
-    let customerId = null;
-
-    if (cartToProcess.payment.paymentMethod === "Credit") {
-      if (!cartToProcess.payment.customer) {
-        // toast.error("Select a customer for credit sales.");
-        toast(<CustomToast id={`error-sales-${Date.now()}`} type="error" message="Select a customer for credit sales." />, {
-          toastId: 'sales-error'
-        });
-        return;
-      }
-      customerId = cartToProcess.payment.customer.id;
-      amountPaid = Number(cartToProcess.payment.amountPaid || 0);
-      balanceDue = total - amountPaid;
-
-      // credit limit check
-      const remainingLimit =
-        Number(cartToProcess.payment.customer.credit_limit || 0) -
-        Number(cartToProcess.payment.customer.balance || 0);
-      if (balanceDue > remainingLimit && amountPaid < total) {
-        // toast.error("Exceeds customer remaining credit limit.");
-        toast(<CustomToast id={`error-credit-${Date.now()}`} type="error" message="Exceeds customer remaining credit limit." />, {
-          toastId: 'credit-error'
-        });
-        return;
-      }
-
-      if (balanceDue > 0 && balanceDue < total) status = "Partially Paid";
-      if (balanceDue === total) status = "Unpaid";
-      if (balanceDue <= 0) {
-        status = "Paid";
-        balanceDue = 0;
-      }
-
-      dueDate = cartToProcess.payment.dueDate || null;
-      if (!dueDate && balanceDue > 0) {
-        // toast.warn("Choose a due date for outstanding balance.");
-        toast(<CustomToast id={`warn-balance-${Date.now()}`} type="warn" message="Choose a date for outstanding balance." />, {
-          toastId: 'balance-warn'
-        });
-        return;
-      }
-    } else {
-      amountPaid = total;
-      balanceDue = 0;
-      status = "Paid";
-    }
-
-    const payload = {
-      cart: cartToProcess.items,
-      subtotal,
-      tax,
-      total,
-      discountAmount,
-      cashierId,
-      paymentMethod: cartToProcess.payment.paymentMethod,
-      customerId,
-      note: cartToProcess.note,
-      paymentReference: cartToProcess.payment.paymentReference,
-      paymentImageUrl,
-      status,
-      amountPaid,
-      balanceDue,
-      dueDate,
-    };
-
+  let paymentImageUrl = null;
+  if (cartToProcess.payment.paymentImage) {
     try {
-      await axios.post(`${API_BASE_URL}/sales/process`, payload);
-      // toast.success("Sale completed successfully.");
-      toast(<CustomToast id={`success-sales-${Date.now()}`} type="success" message="Sale completed successfully." />, {
-        toastId: 'sales-success'
+      const fd = new FormData();
+      fd.append("receiptImage", cartToProcess.payment.paymentImage);
+      const upload = await axios.post(`${API_BASE_URL}/sales/upload-receipt`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
-      // remove processed cart
-      const remaining = carts.filter((c) => c.id !== cartToProcess.id);
-      if (remaining.length === 0) addCart();
-      else {
-        setCarts(remaining);
-        setActiveCartId(remaining[0].id);
-      }
-      fetchAllData();
+      paymentImageUrl = upload.data.url;
     } catch {
-      // toast.error("Failed to process sale.");
-      toast(<CustomToast id={`error-sales-${Date.now()}`} type="error" message="Failed to process sale." />, {
-        toastId: 'sales-error'
+      toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
+        toastId: 'receipt-error'
       });
+      return;
     }
+  }
+
+  const { subtotal, tax, total, discountAmount } = getTotals(cartToProcess);
+  let amountPaid = 0;
+  let balanceDue = 0;
+  let status = "Paid";
+  let dueDate = null;
+  let customerId = null;
+
+  if (cartToProcess.payment.paymentMethod === "Credit") {
+    if (!cartToProcess.payment.customer) {
+      toast(<CustomToast type="error" message="Select a customer for credit sales." />, { toastId: 'sales-error' });
+      return;
+    }
+
+    customerId = cartToProcess.payment.customer.id;
+    amountPaid = Number(cartToProcess.payment.amountPaid || 0);
+    balanceDue = total - amountPaid;
+
+    const remainingLimit =
+      Number(cartToProcess.payment.customer.credit_limit || 0) -
+      Number(cartToProcess.payment.customer.balance || 0);
+
+    if (balanceDue > remainingLimit && amountPaid < total) {
+      toast(<CustomToast type="error" message="Exceeds customer's remaining credit limit." />, { toastId: 'credit-error' });
+      return;
+    }
+
+    if (balanceDue > 0 && balanceDue < total) status = "Partially Paid";
+    if (balanceDue === total) status = "Unpaid";
+    if (balanceDue <= 0) {
+      status = "Paid";
+      balanceDue = 0;
+    }
+
+    dueDate = cartToProcess.payment.dueDate || null;
+    if (!dueDate && balanceDue > 0) {
+      toast(<CustomToast type="warning" message="Choose a due date for outstanding balance." />, {
+        toastId: 'balance-warn'
+      });
+      return;
+    }
+  } else {
+    amountPaid = total;
+    balanceDue = 0;
+    status = "Paid";
+  }
+
+  const payload = {
+    cart: cartToProcess.items,
+    subtotal,
+    tax,
+    total,
+    discountAmount,
+    cashierId,
+    paymentMethod: cartToProcess.payment.paymentMethod,
+    customerId,
+    note: cartToProcess.note,
+    paymentReference: cartToProcess.payment.paymentReference,
+    paymentImageUrl,
+    status,
+    amountPaid,
+    balanceDue,
+    dueDate,
+    freeStock: isFreeStockChecked
+      ? { quantities: freeStockQuantities, reason: freeStockReason }
+      : null,
   };
+
+  try {
+    await axios.post(`${API_BASE_URL}/sales/process`, payload);
+    toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
+
+    // ✅ Reset everything properly after success
+    setIsFreeStockChecked(false);
+    setFreeStockQuantities({});
+    setFreeStockReason("");
+
+    // ✅ Remove the processed cart and create a fresh new one
+    setCarts([
+      {
+        id: 1,
+        name: "Group 1",
+        items: [],
+        payment: {
+          paymentMethod: "Cash",
+          paymentReference: "",
+          paymentImage: null,
+          customer: null,
+          amountPaid: 0,
+          dueDate: "",
+        },
+        total: 0,
+        discount: 0,
+        note: "",
+      },
+    ]);
+    setActiveCartId(1);
+
+    // ✅ Refresh stock data to reflect deduction
+    fetchAllData();
+  } catch (error) {
+    console.error("Sale Processing Error:", error.response?.data || error.message);
+    toast(<CustomToast type="error" message="Failed to process sale." />, { toastId: 'sales-error' });
+  }
+};
 
   /* ========= Discount Options ========= */
   const discountOptions = useMemo(
@@ -635,6 +747,58 @@ const NewSalePage = () => {
                     />
                   </div>
                 </div>
+
+                {/* NEW FREE STOCK SECTION */}
+                <div className="ppb-free-stock mt-3 p-3 border rounded">
+                  <FormCheck
+                    type="checkbox"
+                    id="free-stock-check"
+                    label={
+                      <>
+                        <FaGift className="me-2" />
+                        Add Free Stock / Incentive
+                      </>
+                    }
+                    checked={isFreeStockChecked}
+                    onChange={(e) => setIsFreeStockChecked(e.target.checked)}
+                  />
+
+                  {isFreeStockChecked && activeCart.items.length > 0 && (
+                    <div className="mt-3">
+                      <label className="fw-bold mb-1">Reason for Free Stock</label>
+                      <FormControl
+                        type="text"
+                        placeholder="e.g., Promotion, Compensation, Incentive"
+                        value={freeStockReason}
+                        onChange={(e) => setFreeStockReason(e.target.value)}
+                        className="mb-3"
+                      />
+
+                      <label className="fw-bold mb-1">Quantity Free (Cannot exceed quantity sold)</label>
+                      {activeCart.items.map((item) => (
+                        <InputGroup key={item.id} className="mb-2">
+                          <InputGroup.Text>{item.name}</InputGroup.Text>
+                          <FormControl
+                            type="number"
+                            min="0"
+                            max={item.quantity} // Max free stock is the quantity sold in the current cart
+                            placeholder={`Qty Free (Max: ${item.quantity})`}
+                            value={freeStockQuantities[item.id] || ''}
+                            onChange={(e) => {
+                              const qty = parseInt(e.target.value) || 0;
+                              setFreeStockQuantities(prev => ({
+                                ...prev,
+                                // Cap the input at the quantity currently sold
+                                [item.id]: Math.min(qty, item.quantity)
+                              }));
+                            }}
+                          />
+                        </InputGroup>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* END NEW FREE STOCK SECTION */}
 
                 {/* payment segmented */}
                 <div className="ppb-payment">
@@ -850,7 +1014,6 @@ const NewSalePage = () => {
                     </div>
                   )}
                 </div>
-
                 <Button
                   className="ppb-checkout"
                   onClick={() => handleCheckout(activeCart)}

@@ -5,6 +5,7 @@ import { FaUserPlus, FaCalendarAlt, FaEdit, FaTrash, FaSearch, FaTimes, FaUser, 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/staff-management.css';
+import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 

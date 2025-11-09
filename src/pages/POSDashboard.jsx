@@ -10,6 +10,8 @@ import { FaCashRegister, FaTruck, FaBoxes, FaUsers } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/pos.css';
+import SalesUserStockManagement from './SalesUserStockManagement';
+import NewExchangePage from './NewExchangePage';
 
 const POSDashboard = () => {
     const [activeTab, setActiveTab] = useState('newSale');
@@ -30,7 +32,8 @@ const POSDashboard = () => {
 
     const canViewInventory = ['admin', 'manager', 'baker'].includes(userRole);
     const canManageSales = ['admin', 'manager', 'sales'].includes(userRole);
-    const canViewCustomers = ['admin', 'manager'].includes(userRole);
+    const canManageExchange = ['admin', 'manager', 'sales'].includes(userRole);
+    // const canViewCustomers = ['admin', 'manager', 'sales'].includes(userRole);
 
     return (
         <div className="pos-dashboard">
@@ -49,6 +52,15 @@ const POSDashboard = () => {
                         <FaCashRegister className="tab-icon" /> New Sale
                     </button>
                 )}
+                {/* NEW TAB: Bread Exchange - Only for Manager/Admin */}
+                {canManageExchange && (
+                    <button
+                        className={`tab-btns ${activeTab === 'breadexchange' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('breadexchange')}
+                    >
+                        <FaUsers className="tab-icon" /> New Exchange
+                    </button>
+                )}
                 {canManageSales && (
                     <button
                         className={`tab-btns ${activeTab === 'salesOut' ? 'active' : ''}`}
@@ -65,21 +77,22 @@ const POSDashboard = () => {
                         <FaBoxes className="tab-icon" /> Inventory
                     </button>
                 )}
-                {canViewCustomers && (
+                {/* {canViewCustomers && (
                     <button
                         className={`tab-btns ${activeTab === 'customers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('customers')}
                     >
                         <FaUsers className="tab-icon" /> Customers
                     </button>
-                )}
+                )} */}
             </nav>
 
             <main className="tab-content">
                 {activeTab === 'newSale' && <NewSalePage />}
+                {activeTab === 'breadexchange' && canManageExchange && <NewExchangePage />}
                 {activeTab === 'salesOut' && <SalesOutPage />}
                 {activeTab === 'inventory' && canViewInventory && <InventoryPage />}
-                {activeTab === 'customers' && canViewCustomers && <CustomersPage />}
+                {/* {activeTab === 'customers' && canViewCustomers && <CustomersPage />} */}
             </main>
         </div>
     );

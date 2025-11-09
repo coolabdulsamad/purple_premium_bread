@@ -30,6 +30,15 @@
   background: #ffb020;
   color: #fff;
 }
+
+.Toastify__toast--warn {
+  background: #ffb020;
+  color: #fff;
+}
+.Toastify__toast--warn .Toastify__progress-bar {
+  background: #fff;
+}
+
 .Toastify__toast--warning .Toastify__progress-bar {
   background: #fff;
 }

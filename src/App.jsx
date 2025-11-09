@@ -3,25 +3,16 @@ import { Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout'; 
-import PosPage from './pages/PosPage';
-import ProductionPage from './pages/ProductionLogForm';
 import AdminPage from './pages/AdminPage';
 import ProductManagementPage from './pages/ProductManagementPage';
 import ProductionDashboard from './pages/ProductionDashboard'; 
 import CustomersPage from './pages/CustomersPage'; 
 import POSDashboard from './pages/POSDashboard'; 
-import EditCustomerPage from './pages/EditCustomerPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import BranchesPage from './pages/BranchesPage';
-import RawMaterialManagement from './pages/RawMaterialManagement';
 import RecipeManagement from './pages/RecipeManagement'; 
-import MaterialTransactions from './pages/MaterialTransactions'; 
-import CustomerCreditManagement from './pages/CustomerCreditManagement'; 
-import AllPayments from './pages/AllPayments'; 
 import AlertsDashboard from './pages/AlertsDashboard'; 
 import StaffManagement from './pages/StaffManagement'; 
-import ReportsPage from './pages/ReportsPage'; 
-import AnalysisPage from './pages/AnalysisPage'; 
 import RawInventoryDashboard from './pages/RawInventoryDashboard';
 import CreditDashboard from './pages/CreditDashboard';
 import ReportDashboard from './pages/ReportDashboard';
@@ -29,6 +20,10 @@ import WasteStock from './pages/WasteStock'
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SalesManagementDashboard from './pages/SalesManagementDashboard';
+import ExchangeHistoryPage from './pages/ExchangeHistoryPage';
+import OperatingExpensesPage from './pages/OperatingExpensesPage';
+import SalaryManagementPage from './pages/SalaryManagementPage';
 
 function App() {
   return (
@@ -54,9 +49,15 @@ function App() {
         <Route path="/payments" element={<Layout><CreditDashboard /></Layout>} />
         <Route path="/alerts" element={<Layout><AlertsDashboard /></Layout>} />
         <Route path="/staff" element={<Layout><StaffManagement /></Layout>} />
+        <Route path="/operating-expenses" element={<Layout><OperatingExpensesPage /></Layout>} />
         <Route path="/reports" element={<Layout><ReportDashboard /></Layout>} />
         <Route path="/raw_materials_inventory" element={<Layout><RawInventoryDashboard /></Layout>} />
         <Route path='/wastestock' element={<Layout><WasteStock /></Layout>} />
+        <Route path='/sales_management' element={<Layout><SalesManagementDashboard /></Layout>} />
+        <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
+        <Route path="/exchanges-history" element={<Layout><ExchangeHistoryPage /></Layout>} />
+        <Route path="/salary-management" element={<Layout><SalaryManagementPage /></Layout>} />
+        <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 
       {/* ✅ Global Toast Container (always mounted) */}

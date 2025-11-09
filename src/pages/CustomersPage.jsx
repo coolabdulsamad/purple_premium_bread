@@ -203,6 +203,10 @@ const CustomersPage = () => {
                 customerName={deleteDialog.customerName}
             />
 
+            <header className="customer-main-header">
+                <h1>🍞 Purple Premium Customers</h1>
+            </header>
+
             <div className="custs-header">
                 <h2 className="custs-title">
                     <User size={20} />

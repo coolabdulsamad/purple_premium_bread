@@ -9,7 +9,7 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
-const roles = ['admin', 'manager', 'sales', 'baker'];
+const roles = ['admin', 'manager', 'accountant', 'sales', 'baker'];
 
 // Delete Confirmation Dialog Component
 const DeleteConfirmationDialog = ({
@@ -233,6 +233,7 @@ const AdminPage = () => {
             case 'manager': return 'warning';
             case 'baker': return 'info';
             case 'sales': return 'primary';
+            case 'accountant': return 'success';
             default: return 'secondary';
         }
     };

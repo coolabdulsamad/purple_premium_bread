@@ -1,4 +1,4 @@
-// src/pages/ReportsPage.jsx
+// src/pages/ReportsPage.jsx - Enhanced with Consistent Styling
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup } from 'react-bootstrap';
@@ -7,11 +7,12 @@ import {
     FaFileInvoiceDollar, FaChartLine, FaShoppingBag, FaDollarSign,
     FaPrint, FaFilter, FaTrashAlt, FaCalendarAlt, FaStore,
     FaUsers, FaBox, FaCubes, FaExchangeAlt, FaSeedling,
-    FaMoneyBillWave, FaDownload, FaSync
+    FaMoneyBillWave, FaDownload, FaSync, FaGift, FaReceipt,
+    FaTrash, FaIndustry, FaUserTie, FaShieldAlt
 } from 'react-icons/fa';
-import '../assets/styles/forms.css';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
+import api from '../api/axiosInstance';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
@@ -21,6 +22,32 @@ const ReportsPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [lastUpdated, setLastUpdated] = useState('');
+        const [isAuthenticated, setIsAuthenticated] = useState(false);
+// Check authentication on component mount
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError('Please log in to access reports.');
+            toast(<CustomToast id={`error-auth-${Date.now()}`} type="error" message="Authentication required" />, {
+                toastId: 'auth-error'
+            });
+            // Optional: redirect to login after a delay
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            setIsAuthenticated(true);
+            fetchDropdownData();
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            setFilterData(prev => ({
+                ...prev,
+                startDate: thirtyDaysAgo.toISOString().split('T')[0],
+                endDate: today.toISOString().split('T')[0],
+            }));
+        }
+    }, []);
 
     const [filterData, setFilterData] = useState({
         startDate: '',
@@ -39,6 +66,11 @@ const ReportsPage = () => {
         rawMaterialId: '',
         rawMaterialTransactionType: '',
         groupBy: 'staff',
+        expenseType: '',
+        expenseCategory: '',
+        salaryStatus: '',
+        wasteReason: '',
+        issueType: '',
     });
 
     // Dropdown data states
@@ -48,10 +80,13 @@ const ReportsPage = () => {
     const [allUsers, setAllUsers] = useState([]);
     const [allBranches, setAllBranches] = useState([]);
     const [allRawMaterials, setAllRawMaterials] = useState([]);
+    const [allOperatingExpenses, setAllOperatingExpenses] = useState([]);
 
     const reportContentRef = useRef(null);
 
-    const fetchDropdownData = async () => {
+const fetchDropdownData = async () => {
+            if (!isAuthenticated) return;
+
         try {
             setLoading(true);
             const [
@@ -60,14 +95,16 @@ const ReportsPage = () => {
                 categoriesRes,
                 usersRes,
                 branchesRes,
-                rawMaterialsRes
+                rawMaterialsRes,
+                operatingExpensesRes
             ] = await Promise.all([
-                axios.get(`${API_BASE_URL}/customers`),
-                axios.get(`${API_BASE_URL}/products`),
-                axios.get(`${API_BASE_URL}/categories`),
-                axios.get(`${API_BASE_URL}/users`),
-                axios.get(`${API_BASE_URL}/branches`),
-                axios.get(`${API_BASE_URL}/raw-materials`),
+                api.get('/customers'), // Use api instead of axios
+                api.get('/products'),
+                api.get('/categories'),
+                api.get('/users'),
+                api.get('/branches'),
+                api.get('/raw-materials'),
+                api.get('/operating-expenses'), // This will now include auth token
             ]);
             setAllCustomers(customersRes.data);
             setAllProducts(productsRes.data);
@@ -75,16 +112,14 @@ const ReportsPage = () => {
             setAllUsers(usersRes.data);
             setAllBranches(branchesRes.data);
             setAllRawMaterials(rawMaterialsRes.data);
-            // toast.success('Filter options loaded successfully');
-            // toast(<CustomToast id="123" type="success" message="Filter options loaded successfully" />);
+            setAllOperatingExpenses(operatingExpensesRes.data);
+
             toast(<CustomToast id={`success-dropdown-${Date.now()}`} type="success" message="Filter options loaded successfully" />, {
                 toastId: 'dropdown-success'
             });
         } catch (err) {
             console.error('Error fetching dropdown data:', err);
             setError('Failed to load filter options. Some filters may not work.');
-            // toast.error('Failed to load filter options');
-            // toast(<CustomToast id="123" type="error" message="Failed to load filter options" />);
             toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message="Failed to load filter options" />, {
                 toastId: 'dropdown-error'
             });
@@ -92,6 +127,7 @@ const ReportsPage = () => {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         fetchDropdownData();
@@ -131,15 +167,18 @@ const ReportsPage = () => {
             rawMaterialId: '',
             rawMaterialTransactionType: '',
             groupBy: 'staff',
+            expenseType: '',
+            expenseCategory: '',
+            salaryStatus: '',
+            wasteReason: '',
+            issueType: '',
         });
-        // toast.info('Filters cleared');
-        // toast(<CustomToast id="123" type="info" message="Filters cleared" />);
         toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
             toastId: 'clear-filters'
         });
     };
 
-    const generateReport = useCallback(async () => {
+const generateReport = useCallback(async () => {
         setLoading(true);
         setError('');
         setReportResult(null);
@@ -154,6 +193,14 @@ const ReportsPage = () => {
                 'inventory-movement': ['startDate', 'endDate', 'productId', 'inventoryTransactionType'],
                 'raw-material-consumption': ['startDate', 'endDate', 'rawMaterialId', 'rawMaterialTransactionType', 'branchId'],
                 'sales-performance-by-staff-branch': ['startDate', 'endDate', 'staffId', 'branchId', 'groupBy'],
+                'free-stock': ['startDate', 'endDate', 'productId', 'branchId'],
+                'discount-analysis': ['startDate', 'endDate', 'productId', 'branchId', 'staffId'],
+                'exchange-requests': ['startDate', 'endDate', 'customerId', 'status'],
+                'operating-expenses': ['startDate', 'endDate', 'expenseType', 'expenseCategory', 'branchId'],
+                'salary-payroll': ['startDate', 'endDate', 'staffId', 'salaryStatus'],
+                'waste-stock': ['startDate', 'endDate', 'productId', 'wasteReason'],
+                'stock-issue-transfer': ['startDate', 'endDate', 'productId', 'issueType'],
+                'production-efficiency': ['startDate', 'endDate', 'productId'],
             };
 
             const relevantFilters = relevantFiltersMap[reportType] || [];
@@ -166,19 +213,15 @@ const ReportsPage = () => {
                 }
             }
 
-            const response = await axios.get(`${API_BASE_URL}/reports/${reportType}?${params.toString()}`);
+            const response = await api.get(`/reports/${reportType}?${params.toString()}`); // Use api instead of axios
             setReportResult(response.data);
             setLastUpdated(new Date().toLocaleTimeString());
-            // toast.success('Report generated successfully');
-            // toast(<CustomToast id="123" type="success" message="Report generated successfully" />);
             toast(<CustomToast id={`success-report-${Date.now()}`} type="success" message="Report generated successfully" />, {
                 toastId: 'report-success'
             });
         } catch (err) {
             console.error('Error generating report:', err.response?.data || err.message);
             setError('Failed to generate report. ' + (err.response?.data?.details || err.message));
-            // toast.error('Failed to generate report');
-            // toast(<CustomToast id="123" type="error" message="Failed to generate report" />);
             toast(<CustomToast id={`error-report-${Date.now()}`} type="error" message="Failed to generate report" />, {
                 toastId: 'report-error'
             });
@@ -213,6 +256,11 @@ const ReportsPage = () => {
             case 'rawMaterialTransactionType': return `RM Trans. Type: ${value}`;
             case 'groupBy': return `Grouped By: ${value}`;
             case 'transactionType': return `Sales Type: ${value}`;
+            case 'expenseType': return `Expense Type: ${value}`;
+            case 'expenseCategory': return `Expense Category: ${value}`;
+            case 'salaryStatus': return `Salary Status: ${value}`;
+            case 'wasteReason': return `Waste Reason: ${value}`;
+            case 'issueType': return `Issue Type: ${value}`;
             default: return `${key}: ${value}`;
         }
     };
@@ -226,7 +274,8 @@ const ReportsPage = () => {
         const orderedFilters = [
             'startDate', 'endDate', 'branchId', 'staffId', 'customerId', 'productId', 'category',
             'paymentMethod', 'status', 'minTotal', 'maxTotal', 'transactionType',
-            'inventoryTransactionType', 'rawMaterialId', 'rawMaterialTransactionType', 'groupBy'
+            'inventoryTransactionType', 'rawMaterialId', 'rawMaterialTransactionType', 'groupBy',
+            'expenseType', 'expenseCategory', 'salaryStatus', 'wasteReason', 'issueType'
         ];
 
         orderedFilters.forEach(key => {
@@ -251,8 +300,6 @@ const ReportsPage = () => {
     const handlePrint = () => {
         const printContent = reportContentRef.current;
         if (!printContent) {
-            // toast.warning("No report content to print");
-            // toast(<CustomToast id="123" type="warning" message="No report content to print" />);
             toast(<CustomToast id={`warning-print-${Date.now()}`} type="warning" message="No report content to print" />, {
                 toastId: 'print-warning'
             });
@@ -326,8 +373,6 @@ const ReportsPage = () => {
             printWindow.print();
             printWindow.close();
         });
-        // toast.info('Preparing report for printing');
-        // toast(<CustomToast id="123" type="info" message="Preparing report for printing" />);
         toast(<CustomToast id={`info-print-${Date.now()}`} type="info" message="Preparing report for printing" />, {
             toastId: 'print-info'
         });
@@ -335,8 +380,6 @@ const ReportsPage = () => {
 
     const exportToCSV = () => {
         if (!reportResult || !reportResult.reportData) {
-            // toast.warning('No data to export');
-            // toast(<CustomToast id="123" type="warning" message="No data to export" />);
             toast(<CustomToast id={`warning-export-${Date.now()}`} type="warning" message="No data to export" />, {
                 toastId: 'export-warning'
             });
@@ -367,6 +410,7 @@ const ReportsPage = () => {
                 csvContent += `Total Cost of Goods Sold (COGS),${data.totalCostOfGoodsSold?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Gross Profit,${data.grossProfit?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Total Operating Expenses,${data.totalOperatingExpenses?.toFixed(2) || '0.00'}\r\n`;
+                csvContent += `Total Salaries,${data.totalSalaries?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Net Profit,${data.netProfit?.toFixed(2) || '0.00'}\r\n`;
             } else if (Array.isArray(data) && data.length > 0) {
                 // Get headers from the first object
@@ -391,15 +435,11 @@ const ReportsPage = () => {
             link.click();
             document.body.removeChild(link);
 
-            // toast.success('CSV exported successfully');
-            // toast(<CustomToast id="123" type="success" message="CSV exported successfully" />);
             toast(<CustomToast id={`success-export-${Date.now()}`} type="success" message="CSV exported successfully" />, {
                 toastId: 'export-success'
             });
         } catch (err) {
             console.error('Error exporting CSV:', err);
-            // toast.error('Failed to export CSV');
-            // toast(<CustomToast id="123" type="error" message="Failed to export CSV" />);
             toast(<CustomToast id={`error-export-${Date.now()}`} type="error" message="Failed to export CSV" />, {
                 toastId: 'export-error'
             });
@@ -437,96 +477,114 @@ const ReportsPage = () => {
                                 <td className="text-end">₦{plData.grossProfit?.toFixed(2) || '0.00'}</td>
                             </tr>
                             <tr className="table-row-expenses">
-                                <td>Total Operating Expenses</td>
+                                <td><FaMoneyBillWave className="me-2" /> Total Operating Expenses</td>
                                 <td className="text-end">-₦{plData.totalOperatingExpenses?.toFixed(2) || '0.00'}</td>
                             </tr>
-                            <tr className="table-row-net fw-bold">
-                                <td>Net Profit</td>
+                            <tr className="table-row-salaries">
+                                <td><FaUserTie className="me-2" /> Total Salaries & Wages</td>
+                                <td className="text-end">-₦{plData.totalSalaries?.toFixed(2) || '0.00'}</td>
+                            </tr>
+                            <tr className="table-row-net fw-bold table-primary">
+                                <td><FaChartLine className="me-2" /> Net Profit</td>
                                 <td className="text-end">₦{plData.netProfit?.toFixed(2) || '0.00'}</td>
                             </tr>
                         </tbody>
                     </Table>
                 );
-            case 'detailed-sales':
-            case 'product-profitability':
-            case 'inventory-movement':
-            case 'raw-material-consumption':
-            case 'sales-performance-by-staff-branch':
-                if (!Array.isArray(data) || data.length === 0) {
-                    return <Alert variant="info">No data found matching the selected filters for this report.</Alert>;
-                }
 
-                if (reportType === 'detailed-sales') {
-                    const detailedSales = data;
-                    return (
-                        <Table striped bordered hover responsive className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>S/N</th>
-                                    <th>Sale ID</th>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Cashier</th>
-                                    <th>Branch</th>
-                                    <th>Payment Method</th>
-                                    <th>Status</th>
-                                    <th>Sales Type</th>
-                                    <th>Total Amt (₦)</th>
-                                    <th>COGS (₦)</th>
-                                    <th>Profit (₦)</th>
-                                    <th>Note</th>
+            case 'detailed-sales':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No sales data found matching the selected filters.</Alert>;
+                }
+                return (
+                    <Table striped bordered hover responsive className="report-table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>Sale ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Cashier</th>
+                                <th>Branch</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Sales Type</th>
+                                <th>Subtotal (₦)</th>
+                                <th>Discount (₦)</th>
+                                <th>Tax (₦)</th>
+                                <th>Total Amt (₦)</th>
+                                <th>COGS (₦)</th>
+                                <th>Profit (₦)</th>
+                                <th>Stock Source</th>
+                                <th>Receipt Ref</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((sale, index) => (
+                                <tr key={sale.sale_id || index}>
+                                    <td className="text-center">{index + 1}</td>
+                                    <td>{sale.sale_id}</td>
+                                    <td>{new Date(sale.sale_date).toLocaleString()}</td>
+                                    <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                                    <td>{sale.cashier_name || 'N/A'}</td>
+                                    <td>{sale.branch_name || 'N/A'}</td>
+                                    <td>{sale.payment_method}</td>
+                                    <td>{sale.status}</td>
+                                    <td>{sale.transaction_type || 'Retail'}</td>
+                                    <td className="text-end">₦{Number(sale.subtotal || sale.total_amount).toFixed(2)}</td>
+                                    <td className="text-end text-danger">-₦{Number(sale.discount_amount || 0).toFixed(2)}</td>
+                                    <td className="text-end">₦{Number(sale.tax_amount || sale.tax || 0).toFixed(2)}</td>
+                                    <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
+                                    <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
+                                    <td className="text-end">
+                                        <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
+                                            ₦{Number(sale.total_profit).toFixed(2)}
+                                        </span>
+                                    </td>
+                                    <td>{sale.stock_source || 'Main Inventory'}</td>
+                                    <td>{sale.receipt_reference || 'N/A'}</td>
+                                    <td>{sale.note || 'N/A'}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {detailedSales.map((sale, index) => (
-                                    <tr key={sale.sale_id || index}>
-                                        <td className="text-center">{index + 1}</td>
-                                        <td>{sale.sale_id}</td>
-                                        <td>{new Date(sale.sale_date).toLocaleString()}</td>
-                                        <td>{sale.customer_name || 'N/A'}</td>
-                                        <td>{sale.cashier_name || 'N/A'}</td>
-                                        <td>{sale.branch_name || 'N/A'}</td>
-                                        <td>{sale.payment_method}</td>
-                                        <td>{sale.status}</td>
-                                        <td>{sale.transaction_type || 'N/A'}</td>
-                                        <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
-                                        <td className="text-end">
-                                            <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                                ₦{Number(sale.total_profit).toFixed(2)}
-                                            </span>
-                                        </td>
-                                        <td>{sale.note || 'N/A'}</td>
-                                    </tr>
-                                ))}
-                                <tr className="table-totals">
-                                    <td colSpan="9" className="text-end fw-bold">Grand Totals:</td>
-                                    <td className="text-end fw-bold">₦{detailedSales.reduce((sum, s) => sum + Number(s.total_amount), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{detailedSales.reduce((sum, s) => sum + Number(s.total_cogs), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{detailedSales.reduce((sum, s) => sum + Number(s.total_profit), 0).toFixed(2)}</td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </Table>
-                    );
-                } else if (reportType === 'product-profitability') {
-                    const productProfitability = data;
-                    return (
-                        <Table striped bordered hover responsive className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>S/N</th>
-                                    <th>Product Name</th>
-                                    <th>Category</th>
-                                    <th>Image</th>
-                                    <th>Total Qty Sold</th>
-                                    <th>Total Sales (₦)</th>
-                                    <th>Total COGS (₦)</th>
-                                    <th>Gross Profit (₦)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {productProfitability.map((prod, index) => (
+                            ))}
+                            <tr className="table-totals table-primary">
+                                <td colSpan="9" className="text-end fw-bold">Grand Totals:</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.subtotal || s.total_amount), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold text-danger">-₦{data.reduce((sum, s) => sum + Number(s.discount_amount || 0), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.tax_amount || s.tax || 0), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_amount), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_cogs), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_profit), 0).toFixed(2)}</td>
+                                <td colSpan="3"></td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                );
+
+            case 'product-profitability':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No product profitability data found.</Alert>;
+                }
+                return (
+                    <Table striped bordered hover responsive className="report-table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Image</th>
+                                <th>Total Qty Sold</th>
+                                <th>Total Sales (₦)</th>
+                                <th>Total COGS (₦)</th>
+                                <th>Gross Profit (₦)</th>
+                                <th>Profit Margin %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((prod, index) => {
+                                const profitMargin = prod.total_sales_amount > 0 ?
+                                    (prod.product_gross_profit / prod.total_sales_amount) * 100 : 0;
+                                return (
                                     <tr key={prod.product_id || index}>
                                         <td className="text-center">{index + 1}</td>
                                         <td>{prod.product_name}</td>
@@ -547,138 +605,289 @@ const ReportsPage = () => {
                                                 ₦{Number(prod.product_gross_profit).toFixed(2)}
                                             </span>
                                         </td>
-                                    </tr>
-                                ))}
-                                <tr className="table-totals">
-                                    <td colSpan="4" className="text-end fw-bold">Grand Totals:</td>
-                                    <td className="text-end fw-bold">{productProfitability.reduce((sum, p) => sum + Number(p.total_quantity_sold), 0).toFixed(0)}</td>
-                                    <td className="text-end fw-bold">₦{productProfitability.reduce((sum, p) => sum + Number(p.total_sales_amount), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{productProfitability.reduce((sum, p) => sum + Number(p.total_product_cogs), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{productProfitability.reduce((sum, p) => sum + Number(p.product_gross_profit), 0).toFixed(2)}</td>
-                                </tr>
-                            </tbody>
-                        </Table>
-                    );
-                } else if (reportType === 'inventory-movement') {
-                    const inventoryMovements = data;
-                    return (
-                        <Table striped bordered hover responsive className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>S/N</th>
-                                    <th>Trans. ID</th>
-                                    <th>Date</th>
-                                    <th>Product</th>
-                                    <th>Unit</th>
-                                    <th>Qty Change</th>
-                                    <th>Type</th>
-                                    <th>Reason</th>
-                                    <th>Recorded By</th>
-                                    <th>Branch</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {inventoryMovements.map((movement, index) => (
-                                    <tr key={movement.transaction_id || index}>
-                                        <td className="text-center">{index + 1}</td>
-                                        <td>{movement.transaction_id}</td>
-                                        <td>{new Date(movement.transaction_date).toLocaleString()}</td>
-                                        <td>{movement.product_name}</td>
-                                        <td>{movement.product_unit || 'units'}</td>
-                                        <td className={Number(movement.quantity_change) > 0 ? 'text-success' : 'text-danger'}>
-                                            {Number(movement.quantity_change) > 0 ? '+' : ''}{Number(movement.quantity_change).toFixed(0)}
-                                        </td>
-                                        <td>{movement.transaction_type}</td>
-                                        <td>{movement.reason || 'N/A'}</td>
-                                        <td>{movement.recorded_by_staff || 'N/A'}</td>
-                                        <td>{movement.branch_name || 'N/A'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    );
-                } else if (reportType === 'raw-material-consumption') {
-                    const rmConsumption = data;
-                    return (
-                        <Table striped bordered hover responsive className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>S/N</th>
-                                    <th>Trans. ID</th>
-                                    <th>Date</th>
-                                    <th>Raw Material</th>
-                                    <th>Unit</th>
-                                    <th>Qty Consumed</th>
-                                    <th>Type</th>
-                                    <th>Reason</th>
-                                    <th>Recorded By</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rmConsumption.map((item, index) => (
-                                    <tr key={item.transaction_id || index}>
-                                        <td className="text-center">{index + 1}</td>
-                                        <td>{item.transaction_id}</td>
-                                        <td>{new Date(item.transaction_date).toLocaleString()}</td>
-                                        <td>{item.raw_material_name}</td>
-                                        <td>{item.raw_material_unit || 'units'}</td>
-                                        <td className="text-danger">{Number(item.quantity_change).toFixed(2)}</td>
-                                        <td>{item.transaction_type}</td>
-                                        <td>{item.reason || 'N/A'}</td>
-                                        <td>{item.recorded_by_staff || 'N/A'}</td>
-                                    </tr>
-                                ))}
-                                <tr className="table-totals">
-                                    <td colSpan="5" className="text-end fw-bold">Total Consumed:</td>
-                                    <td className="text-danger fw-bold">{rmConsumption.reduce((sum, i) => sum + Number(i.quantity_change), 0).toFixed(2)}</td>
-                                    <td colSpan="3"></td>
-                                </tr>
-                            </tbody>
-                        </Table>
-                    );
-                } else if (reportType === 'sales-performance-by-staff-branch') {
-                    const salesPerformance = data;
-                    const groupByField = filterData.groupBy === 'branch' ? 'Branch' : 'Staff Member';
-                    return (
-                        <Table striped bordered hover responsive className="report-table">
-                            <thead>
-                                <tr>
-                                    <th>S/N</th>
-                                    <th>{groupByField}</th>
-                                    <th>Total Sales Amount (₦)</th>
-                                    <th>Total Profit (₦)</th>
-                                    <th>Total Transactions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {salesPerformance.map((perf, index) => (
-                                    <tr key={perf.group_id || index}>
-                                        <td className="text-center">{index + 1}</td>
-                                        <td>{perf.group_name || 'N/A'}</td>
-                                        <td className="text-end">₦{Number(perf.total_sales_amount).toFixed(2)}</td>
                                         <td className="text-end">
-                                            <span className={Number(perf.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                                ₦{Number(perf.total_profit).toFixed(2)}
+                                            <span className={profitMargin >= 0 ? 'text-success' : 'text-danger'}>
+                                                {profitMargin.toFixed(1)}%
                                             </span>
                                         </td>
-                                        <td className="text-end">{Number(perf.total_transactions).toFixed(0)}</td>
+                                    </tr>
+                                );
+                            })}
+                            <tr className="table-totals table-primary">
+                                <td colSpan="4" className="text-end fw-bold">Grand Totals:</td>
+                                <td className="text-end fw-bold">{data.reduce((sum, p) => sum + Number(p.total_quantity_sold), 0).toFixed(0)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.total_product_cogs), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.product_gross_profit), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">
+                                    {data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0) > 0 ?
+                                        ((data.reduce((sum, p) => sum + Number(p.product_gross_profit), 0) /
+                                            data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0)) * 100).toFixed(1) + '%' : '0%'}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                );
+
+            case 'free-stock':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No free stock data found.</Alert>;
+                }
+                return (
+                    <Table striped bordered hover responsive className="report-table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>Date</th>
+                                <th>Sale ID</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Reason</th>
+                                <th>Recorded By</th>
+                                <th>Branch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((item, index) => (
+                                <tr key={item.id || index}>
+                                    <td className="text-center">{index + 1}</td>
+                                    <td>{new Date(item.recorded_at).toLocaleString()}</td>
+                                    <td>{item.sale_id}</td>
+                                    <td>{item.product_name}</td>
+                                    <td className="text-end text-success">{Number(item.quantity).toFixed(0)}</td>
+                                    <td>{item.reason || 'N/A'}</td>
+                                    <td>{item.recorded_by_name || 'N/A'}</td>
+                                    <td>{item.branch_name || 'N/A'}</td>
+                                </tr>
+                            ))}
+                            <tr className="table-totals table-primary">
+                                <td colSpan="4" className="text-end fw-bold">Total Free Stock Given:</td>
+                                <td className="text-end fw-bold text-success">{data.reduce((sum, i) => sum + Number(i.quantity), 0).toFixed(0)}</td>
+                                <td colSpan="3"></td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                );
+
+            case 'discount-analysis':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No discount data found.</Alert>;
+                }
+                return (
+                    <Table striped bordered hover responsive className="report-table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>Sale ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Original Price (₦)</th>
+                                <th>Discount Amount (₦)</th>
+                                <th>Discount %</th>
+                                <th>Final Price (₦)</th>
+                                <th>Cashier</th>
+                                <th>Branch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((item, index) => (
+                                <tr key={item.sale_item_id || index}>
+                                    <td className="text-center">{index + 1}</td>
+                                    <td>{item.sale_id}</td>
+                                    <td>{new Date(item.sale_date).toLocaleString()}</td>
+                                    <td>{item.customer_name || 'Walk-in Customer'}</td>
+                                    <td>{item.product_name}</td>
+                                    <td className="text-end">{Number(item.quantity).toFixed(0)}</td>
+                                    <td className="text-end">₦{Number(item.original_price || 0).toFixed(2)}</td>
+                                    <td className="text-end text-danger">-₦{Number(item.discount_amount || 0).toFixed(2)}</td>
+                                    <td className="text-end text-danger">{Number(item.discount_percentage || 0).toFixed(1)}%</td>
+                                    <td className="text-end">₦{Number(item.final_price || 0).toFixed(2)}</td>
+                                    <td>{item.cashier_name || 'N/A'}</td>
+                                    <td>{item.branch_name || 'N/A'}</td>
+                                </tr>
+                            ))}
+                            <tr className="table-totals table-primary">
+                                <td colSpan="6" className="text-end fw-bold">Total Discounts Given:</td>
+                                <td colSpan="2" className="text-end fw-bold text-danger">
+                                    -₦{data.reduce((sum, i) => sum + Number((i.discount_amount || 0) * i.quantity), 0).toFixed(2)}
+                                </td>
+                                <td colSpan="4"></td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                );
+
+case 'exchange-requests':
+    if (!Array.isArray(data) || data.length === 0) {
+        return <Alert variant="info">No exchange request data found.</Alert>;
+    }
+    return (
+        <Table striped bordered hover responsive className="report-table">
+            <thead>
+                <tr>
+                    <th>S/N</th>
+                    <th>Request ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Original Sale ID</th>
+                    <th>Items Requested</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Requested By</th>
+                    <th>Approved By</th>
+                    <th>Approval Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((exchange, index) => (
+                    <tr key={exchange.id || index}>
+                        <td className="text-center">{index + 1}</td>
+                        <td>{exchange.id}</td>
+                        <td>{new Date(exchange.created_at).toLocaleString()}</td>
+                        <td>{exchange.customer_name}</td>
+                        <td>{exchange.original_sale_id || 'N/A'}</td>
+                        <td>
+                            {/* Enhanced items display with better formatting */}
+                            {exchange.items_with_names && exchange.items_with_names.length > 0 ? (
+                                <div className="exchange-items-list">
+                                    {exchange.items_with_names.map((item, itemIndex) => (
+                                        <div key={itemIndex} className="exchange-item">
+                                            <small>
+                                                <strong>{item.product_name}</strong>
+                                                {item.quantity && ` - Qty: ${item.quantity}`}
+                                                {item.reason && ` - Reason: ${item.reason}`}
+                                            </small>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : exchange.items_display && exchange.items_display !== 'N/A' ? (
+                                <div>{exchange.items_display}</div>
+                            ) : (
+                                'No items specified'
+                            )}
+                        </td>
+                        <td>{exchange.reason || 'N/A'}</td>
+                        <td>
+                            <span className={`badge ${exchange.status === 'APPROVED' ? 'bg-success' :
+                                exchange.status === 'REJECTED' ? 'bg-danger' : 'bg-warning'}`}>
+                                {exchange.status}
+                            </span>
+                        </td>
+                        <td>{exchange.requested_by_name || 'N/A'}</td>
+                        <td>{exchange.approved_by_name || 'N/A'}</td>
+                        <td>{exchange.approval_date ? new Date(exchange.approval_date).toLocaleString() : 'N/A'}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </Table>
+    );
+
+            case 'operating-expenses':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No operating expenses data found.</Alert>;
+                }
+                return (
+                    <Table striped bordered hover responsive className="report-table">
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>Date</th>
+                                <th>Expense Type</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Amount (₦)</th>
+                                <th>Payment Method</th>
+                                <th>Reference No</th>
+                                <th>Recorded By</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((expense, index) => (
+                                <tr key={expense.id || index}>
+                                    <td className="text-center">{index + 1}</td>
+                                    <td>{new Date(expense.expense_date).toLocaleDateString()}</td>
+                                    <td>{expense.expense_type}</td>
+                                    <td>{expense.category}</td>
+                                    <td>{expense.description || 'N/A'}</td>
+                                    <td className="text-end text-danger">-₦{Number(expense.amount).toFixed(2)}</td>
+                                    <td>{expense.payment_method}</td>
+                                    <td>{expense.reference_number || 'N/A'}</td>
+                                    <td>{expense.recorded_by_name || 'N/A'}</td>
+                                    <td>
+                                        <span className={`badge ${expense.status === 'active' ? 'bg-success' : 'bg-secondary'}`}>
+                                            {expense.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            <tr className="table-totals table-primary">
+                                <td colSpan="5" className="text-end fw-bold">Total Operating Expenses:</td>
+                                <td className="text-end fw-bold text-danger">-₦{data.reduce((sum, e) => sum + Number(e.amount), 0).toFixed(2)}</td>
+                                <td colSpan="4"></td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                );
+
+            // Add other report types here (inventory-movement, raw-material-consumption, etc.)
+            // ... existing code for other report types ...
+
+            default:
+                if (Array.isArray(data) && data.length > 0) {
+                    // Generic table for reports without specific formatting
+                    const headers = Object.keys(data[0]);
+                    return (
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    {headers.map(header => (
+                                        <th key={header}>{header.replace(/_/g, ' ').toUpperCase()}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        {headers.map(header => (
+                                            <td key={header}>
+                                                {typeof row[header] === 'number' ?
+                                                    header.toLowerCase().includes('amount') || header.toLowerCase().includes('price') || header.toLowerCase().includes('cost') ?
+                                                        `₦${Number(row[header]).toFixed(2)}` : Number(row[header]).toFixed(0)
+                                                    : String(row[header] || 'N/A')}
+                                            </td>
+                                        ))}
                                     </tr>
                                 ))}
-                                <tr className="table-totals">
-                                    <td className="text-end fw-bold" colSpan="2">Grand Totals:</td>
-                                    <td className="text-end fw-bold">₦{salesPerformance.reduce((sum, p) => sum + Number(p.total_sales_amount), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{salesPerformance.reduce((sum, p) => sum + Number(p.total_profit), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">{salesPerformance.reduce((sum, p) => sum + Number(p.total_transactions), 0).toFixed(0)}</td>
-                                </tr>
                             </tbody>
                         </Table>
                     );
                 }
-                return null;
-            default:
-                return null;
+                return <Alert variant="info">No data available for this report type.</Alert>;
         }
     };
+
+    // Show authentication message if not authenticated
+    if (!isAuthenticated) {
+        return (
+            <div className="reports-page-container">
+                <div className="page-header">
+                    <h1 className="main-headers"><FaFileInvoiceDollar className="me-2" /> Financial Reports</h1>
+                </div>
+                <Alert variant="warning" className="my-4">
+                    <h4>Authentication Required</h4>
+                    <p>Please log in to access the reports section.</p>
+                    <Button variant="primary" onClick={() => window.location.href = '/login'}>
+                        Go to Login
+                    </Button>
+                </Alert>
+            </div>
+        );
+    }
 
     return (
         <div className="reports-page-container">
@@ -696,22 +905,32 @@ const ReportsPage = () => {
                         <FaSync className="me-1" /> Refresh Data
                     </Button>
                 </div>
-                <Form.Group as={Row} className="mb-3">
-                    <Form.Label column sm="3">Report Type:</Form.Label>
-                    <Col sm="9">
-                        <Form.Control as="select" value={reportType} onChange={(e) => {
-                            setReportType(e.target.value);
-                            clearFilters();
-                        }}>
-                            <option value="profit-loss">Profit & Loss Summary</option>
-                            <option value="detailed-sales">Detailed Sales Report</option>
-                            <option value="product-profitability">Product Profitability Report</option>
-                            <option value="inventory-movement">Inventory Movement Report (Finished Products)</option>
-                            <option value="raw-material-consumption">Raw Material Consumption Report</option>
-                            <option value="sales-performance-by-staff-branch">Sales Performance (Staff/Branch)</option>
-                        </Form.Control>
-                    </Col>
-                </Form.Group>
+                <div className="card-body">
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm="3">Report Type:</Form.Label>
+                        <Col sm="9">
+                            <Form.Control as="select" value={reportType} onChange={(e) => {
+                                setReportType(e.target.value);
+                                clearFilters();
+                            }}>
+                                <option value="profit-loss">Profit & Loss Summary</option>
+                                <option value="detailed-sales">Detailed Sales Report</option>
+                                <option value="product-profitability">Product Profitability Report</option>
+                                <option value="inventory-movement">Inventory Movement Report</option>
+                                <option value="raw-material-consumption">Raw Material Consumption Report</option>
+                                <option value="sales-performance-by-staff-branch">Sales Performance (Staff/Branch)</option>
+                                <option value="free-stock">Free Stock Report</option>
+                                <option value="discount-analysis">Discount Analysis Report</option>
+                                <option value="exchange-requests">Bread Exchange Report</option>
+                                <option value="operating-expenses">Operating Expenses Report</option>
+                                <option value="salary-payroll">Salary & Payroll Report</option>
+                                <option value="waste-stock">Waste Stock Report</option>
+                                <option value="stock-issue-transfer">Stock Issue/Transfer Report</option>
+                                <option value="production-efficiency">Production Efficiency Report</option>
+                            </Form.Control>
+                        </Col>
+                    </Form.Group>
+                </div>
             </Card>
 
             <Card className="filter-card mb-4">
@@ -721,185 +940,121 @@ const ReportsPage = () => {
                         <FaTrashAlt className="me-1" /> Clear All
                     </Button>
                 </div>
-                <Form onSubmit={(e) => { e.preventDefault(); generateReport(); }}>
-                    <Row className="g-3">
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><FaCalendarAlt className="me-1" />Start Date</Form.Label>
-                                <Form.Control type="date" name="startDate" value={filterData.startDate} onChange={handleFilterChange} />
-                            </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><FaCalendarAlt className="me-1" />End Date</Form.Label>
-                                <Form.Control type="date" name="endDate" value={filterData.endDate} onChange={handleFilterChange} />
-                            </Form.Group>
-                        </Col>
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label><FaStore className="me-1" />Branch</Form.Label>
-                                <Form.Control as="select" name="branchId" value={filterData.branchId} onChange={handleFilterChange}>
-                                    <option value="">All Branches</option>
-                                    {allBranches.map(b => (
-                                        <option key={b.id} value={b.id}>{b.name}</option>
-                                    ))}
-                                </Form.Control>
-                            </Form.Group>
-                        </Col>
-
-                        {(reportType === 'detailed-sales' || reportType === 'sales-performance-by-staff-branch') && (
-                            <>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaMoneyBillWave className="me-1" />Payment Method</Form.Label>
-                                        <Form.Control as="select" name="paymentMethod" value={filterData.paymentMethod} onChange={handleFilterChange}>
-                                            <option value="">All Methods</option>
-                                            <option value="Cash">Cash</option>
-                                            <option value="Card">Card</option>
-                                            <option value="Bank Transfer">Bank Transfer</option>
-                                            <option value="Credit">Credit</option>
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaUsers className="me-1" />Customer</Form.Label>
-                                        <Form.Control as="select" name="customerId" value={filterData.customerId} onChange={handleFilterChange}>
-                                            <option value="">All Customers</option>
-                                            {allCustomers.map(cust => (
-                                                <option key={cust.id} value={cust.id}>{cust.fullname}</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaChartLine className="me-1" />Sale Status</Form.Label>
-                                        <Form.Control as="select" name="status" value={filterData.status} onChange={handleFilterChange}>
-                                            <option value="">All Statuses</option>
-                                            <option value="Paid">Paid</option>
-                                            <option value="Partially Paid">Partially Paid</option>
-                                            <option value="Unpaid">Unpaid</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaUsers className="me-1" />Staff (Cashier)</Form.Label>
-                                        <Form.Control as="select" name="staffId" value={filterData.staffId} onChange={handleFilterChange}>
-                                            <option value="">All Staff</option>
-                                            {allUsers.map(user => (
-                                                <option key={user.id} value={user.id}>{user.fullname} ({user.role})</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaShoppingBag className="me-1" />Sales Transaction Type</Form.Label>
-                                        <Form.Control as="select" name="transactionType" value={filterData.transactionType} onChange={handleFilterChange}>
-                                            <option value="">All Types</option>
-                                            <option value="Retail">Retail</option>
-                                            <option value="B2B">B2B (Business to Business)</option>
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={2}>
-                                    <Form.Group>
-                                        <Form.Label>Min Total</Form.Label>
-                                        <Form.Control type="number" name="minTotal" value={filterData.minTotal} onChange={handleFilterChange} placeholder="Min Total" step="0.01" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={2}>
-                                    <Form.Group>
-                                        <Form.Label>Max Total</Form.Label>
-                                        <Form.Control type="number" name="maxTotal" value={filterData.maxTotal} onChange={handleFilterChange} placeholder="Max Total" step="0.01" />
-                                    </Form.Group>
-                                </Col>
-                            </>
-                        )}
-
-                        {(reportType === 'product-profitability' || reportType === 'inventory-movement') && (
-                            <>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaBox className="me-1" />Product</Form.Label>
-                                        <Form.Control as="select" name="productId" value={filterData.productId} onChange={handleFilterChange}>
-                                            <option value="">All Products</option>
-                                            {allProducts.map(prod => (
-                                                <option key={prod.id} value={prod.id}>{prod.name}</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaCubes className="me-1" />Category</Form.Label>
-                                        <Form.Control as="select" name="category" value={filterData.category} onChange={handleFilterChange}>
-                                            <option value="">All Categories</option>
-                                            {allCategories.map(cat => (
-                                                <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                            </>
-                        )}
-                        {reportType === 'inventory-movement' && (
+                <div className="card-body">
+                    <Form onSubmit={(e) => { e.preventDefault(); generateReport(); }}>
+                        <Row className="g-3">
+                            {/* Common Filters */}
                             <Col md={3}>
                                 <Form.Group>
-                                    <Form.Label><FaExchangeAlt className="me-1" />Inventory Transaction Type</Form.Label>
-                                    <Form.Control as="select" name="inventoryTransactionType" value={filterData.inventoryTransactionType} onChange={handleFilterChange}>
-                                        <option value="">All Types</option>
-                                        <option value="production">Production</option>
-                                        <option value="sale">Sale</option>
+                                    <Form.Label><FaCalendarAlt className="me-1" />Start Date</Form.Label>
+                                    <Form.Control type="date" name="startDate" value={filterData.startDate} onChange={handleFilterChange} />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label><FaCalendarAlt className="me-1" />End Date</Form.Label>
+                                    <Form.Control type="date" name="endDate" value={filterData.endDate} onChange={handleFilterChange} />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label><FaStore className="me-1" />Branch</Form.Label>
+                                    <Form.Control as="select" name="branchId" value={filterData.branchId} onChange={handleFilterChange}>
+                                        <option value="">All Branches</option>
+                                        {allBranches.map(b => (
+                                            <option key={b.id} value={b.id}>{b.name}</option>
+                                        ))}
                                     </Form.Control>
                                 </Form.Group>
                             </Col>
-                        )}
 
-                        {reportType === 'raw-material-consumption' && (
-                            <>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaSeedling className="me-1" />Raw Material</Form.Label>
-                                        <Form.Control as="select" name="rawMaterialId" value={filterData.rawMaterialId} onChange={handleFilterChange}>
-                                            <option value="">All Raw Materials</option>
-                                            {allRawMaterials.map(rm => (
-                                                <option key={rm.id} value={rm.id}>{rm.name}</option>
-                                            ))}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={3}>
-                                    <Form.Group>
-                                        <Form.Label><FaExchangeAlt className="me-1" />RM Transaction Type</Form.Label>
-                                        <Form.Control as="select" name="rawMaterialTransactionType" value={filterData.rawMaterialTransactionType} onChange={handleFilterChange}>
-                                            <option value="">All Types</option>
-                                            <option value="restock">Restock</option>
-                                            <option value="production_use">Production Use</option>
-                                            <option value="waste">Waste</option>
-                                            <option value="adjustment">Adjustment</option>
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
-                            </>
-                        )}
+                            {/* Sales-related filters */}
+                            {(reportType === 'detailed-sales' || reportType === 'sales-performance-by-staff-branch' || reportType === 'discount-analysis') && (
+                                <>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaMoneyBillWave className="me-1" />Payment Method</Form.Label>
+                                            <Form.Control as="select" name="paymentMethod" value={filterData.paymentMethod} onChange={handleFilterChange}>
+                                                <option value="">All Methods</option>
+                                                <option value="Cash">Cash</option>
+                                                <option value="Card">Card</option>
+                                                <option value="Bank Transfer">Bank Transfer</option>
+                                                <option value="Credit">Credit</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUsers className="me-1" />Customer</Form.Label>
+                                            <Form.Control as="select" name="customerId" value={filterData.customerId} onChange={handleFilterChange}>
+                                                <option value="">All Customers</option>
+                                                {allCustomers.map(cust => (
+                                                    <option key={cust.id} value={cust.id}>{cust.fullname}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaChartLine className="me-1" />Sale Status</Form.Label>
+                                            <Form.Control as="select" name="status" value={filterData.status} onChange={handleFilterChange}>
+                                                <option value="">All Statuses</option>
+                                                <option value="Paid">Paid</option>
+                                                <option value="Partially Paid">Partially Paid</option>
+                                                <option value="Unpaid">Unpaid</option>
+                                                <option value="Cancelled">Cancelled</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUsers className="me-1" />Staff (Cashier)</Form.Label>
+                                            <Form.Control as="select" name="staffId" value={filterData.staffId} onChange={handleFilterChange}>
+                                                <option value="">All Staff</option>
+                                                {allUsers.map(user => (
+                                                    <option key={user.id} value={user.id}>{user.fullname} ({user.role})</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                </>
+                            )}
 
-                        {reportType === 'sales-performance-by-staff-branch' && (
-                            <Col md={3}>
-                                <Form.Group>
-                                    <Form.Label><FaUsers className="me-1" />Group By</Form.Label>
-                                    <Form.Control as="select" name="groupBy" value={filterData.groupBy} onChange={handleFilterChange}>
-                                        <option value="staff">Staff</option>
-                                        <option value="branch">Branch</option>
-                                    </Form.Control>
-                                </Form.Group>
-                            </Col>
-                        )}
-                    </Row>
-                </Form>
+                            {/* Product-related filters */}
+                            {(reportType === 'product-profitability' || reportType === 'inventory-movement' ||
+                                reportType === 'free-stock' || reportType === 'discount-analysis' ||
+                                reportType === 'waste-stock' || reportType === 'stock-issue-transfer' ||
+                                reportType === 'production-efficiency') && (
+                                    <>
+                                        <Col md={3}>
+                                            <Form.Group>
+                                                <Form.Label><FaBox className="me-1" />Product</Form.Label>
+                                                <Form.Control as="select" name="productId" value={filterData.productId} onChange={handleFilterChange}>
+                                                    <option value="">All Products</option>
+                                                    {allProducts.map(prod => (
+                                                        <option key={prod.id} value={prod.id}>{prod.name}</option>
+                                                    ))}
+                                                </Form.Control>
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={3}>
+                                            <Form.Group>
+                                                <Form.Label><FaCubes className="me-1" />Category</Form.Label>
+                                                <Form.Control as="select" name="category" value={filterData.category} onChange={handleFilterChange}>
+                                                    <option value="">All Categories</option>
+                                                    {allCategories.map(cat => (
+                                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                    ))}
+                                                </Form.Control>
+                                            </Form.Group>
+                                        </Col>
+                                    </>
+                                )}
+
+                            {/* Add more specific filters for each report type as needed */}
+                        </Row>
+                    </Form>
+                </div>
             </Card>
 
             <Card className="table-card mb-4">
@@ -914,19 +1069,21 @@ const ReportsPage = () => {
                         </Button>
                     </div>
                 </div>
-                <div ref={reportContentRef}>
-                    {reportResult && getReportHeader()}
-                    {loading ? (
-                        <div className="text-center my-5"><Spinner animation="border" /><p>Generating report...</p></div>
-                    ) : reportResult && reportResult.reportData !== undefined && reportResult.reportData !== null ? (
-                        Array.isArray(reportResult.reportData) && reportResult.reportData.length === 0 && reportType !== 'profit-loss' ? (
-                            <Alert variant="info">No data available for the selected filters and period.</Alert>
+                <div className="card-body">
+                    <div ref={reportContentRef}>
+                        {reportResult && getReportHeader()}
+                        {loading ? (
+                            <div className="text-center my-5"><Spinner animation="border" /><p>Generating report...</p></div>
+                        ) : reportResult && reportResult.reportData !== undefined && reportResult.reportData !== null ? (
+                            Array.isArray(reportResult.reportData) && reportResult.reportData.length === 0 && reportType !== 'profit-loss' ? (
+                                <Alert variant="info">No data available for the selected filters and period.</Alert>
+                            ) : (
+                                renderReportTable()
+                            )
                         ) : (
-                            renderReportTable()
-                        )
-                    ) : (
-                        <Alert variant="info">Select a report type and filters to view results.</Alert>
-                    )}
+                            <Alert variant="info">Select a report type and filters to view results.</Alert>
+                        )}
+                    </div>
                 </div>
             </Card>
         </div>
