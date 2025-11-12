@@ -222,89 +222,57 @@ const RecipeManagement = () => {
         setTempIngredients(prev => prev.filter((_, index) => index !== indexToRemove));
     };
 
-    const handleBatchRecipeSubmit = async (e) => {
-        e.preventDefault();
+// In the handleBatchRecipeSubmit function
+const handleBatchRecipeSubmit = async (e) => {
+    e.preventDefault();
 
-        if (!selectedProductId) {
-            // toast.error('Please select a product first');
-            // toast(
-            //     <CustomToast
-            //         type="error"
-            //         message="Please select a product first"
-            //     />
-            // );
-            toast(<CustomToast id={`error-product-${Date.now()}`} type="error" message="Please select a product first" />, {
-                toastId: 'product-error'
-            });
-            return;
+    if (!selectedProductId) {
+        toast(<CustomToast id={`error-product-${Date.now()}`} type="error" message="Please select a product first" />, {
+            toastId: 'product-error'
+        });
+        return;
+    }
+
+    if (tempIngredients.length === 0) {
+        toast(<CustomToast id={`error-add-${Date.now()}`} type="error" message="Please add at least one ingredient to the list" />, {
+            toastId: 'add-error'
+        });
+        return;
+    }
+
+    if (batchSize <= 0) {
+        toast(<CustomToast id={`error-batch-${Date.now()}`} type="error" message="Batch size must be greater than 0" />, {
+            toastId: 'batch-error'
+        });
+        return;
+    }
+
+    try {
+        for (const item of tempIngredients) {
+            // Use higher precision calculation
+            const quantity_required_per_product = parseFloat((item.totalQuantityUsedInBatch / batchSize).toFixed(6));
+            
+            const payload = {
+                product_id: selectedProductId,
+                raw_material_id: item.raw_material_id,
+                quantity_required: quantity_required_per_product,
+            };
+            await axios.post(`${API_BASE_URL}/recipes`, payload);
         }
 
-        if (tempIngredients.length === 0) {
-            // toast.error('Please add at least one ingredient to the list');
-            // toast(
-            //     <CustomToast
-            //         type="error"
-            //         message="Please add at least one ingredient to the list"
-            //     />
-            // );
-            toast(<CustomToast id={`error-add-${Date.now()}`} type="error" message="Please add at least one ingredient to the list" />, {
-                toastId: 'add-error'
-            });
-            return;
-        }
-
-        if (batchSize <= 0) {
-            // toast.error('Batch size must be greater than 0');
-            // toast(
-            //     <CustomToast
-            //         type="error"
-            //         message="Batch size must be greater than 0"
-            //     />
-            // );
-            toast(<CustomToast id={`error-batch-${Date.now()}`} type="error" message="Batch size must be greater than 0" />, {
-                toastId: 'batch-error'
-            });
-            return;
-        }
-
-        try {
-            for (const item of tempIngredients) {
-                const quantity_required_per_product = item.totalQuantityUsedInBatch / batchSize;
-                const payload = {
-                    product_id: selectedProductId,
-                    raw_material_id: item.raw_material_id,
-                    quantity_required: quantity_required_per_product,
-                };
-                await axios.post(`${API_BASE_URL}/recipes`, payload);
-            }
-
-            // toast.success(`Recipe saved successfully!`);
-            // toast(
-            //     <CustomToast
-            //         type="success"
-            //         message="Recipe saved successfully!"
-            //     />
-            // );
-            toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="Recipe saved successfully!" />, {
-                toastId: 'recipe-success'
-            });
-            setTempIngredients([]);
-            setBatchSize(1);
-            fetchRecipes();
-        } catch (err) {
-            console.error('Error saving recipe:', err);
-            // toast.error('Failed to save recipe');
-            // toast(
-            //     <CustomToast
-            //         type="error"
-            //         message="Failed to save recipe"
-            //     />
-            // );
-            toast(<CustomToast id={`error-recipe-${Date.now()}`} type="error" message="Failed to save recipe" />, {
-                toastId: 'recipe-error'
-            });
-        }
-    };
+        toast(<CustomToast id={`success-recipe-${Date.now()}`} type="success" message="Recipe saved successfully!" />, {
+            toastId: 'recipe-success'
+        });
+        setTempIngredients([]);
+        setBatchSize(1);
+        fetchRecipes();
+    } catch (err) {
+        console.error('Error saving recipe:', err);
+        toast(<CustomToast id={`error-recipe-${Date.now()}`} type="error" message="Failed to save recipe" />, {
+            toastId: 'recipe-error'
+        });
+    }
+};
 
     const handleDeleteRecipeItem = async (rawMaterialId, rawMaterialName) => {
         if (!selectedProductId) return;
@@ -588,7 +556,7 @@ const RecipeManagement = () => {
                                             <tr key={index}>
                                                 <td className="serial-number">{index + 1}</td>
                                                 <td>{item.raw_material_name}</td>
-                                                <td>{Number(item.quantity_required).toFixed(3)}</td>
+                                                <td>{Number(item.quantity_required).toFixed(4)}</td>
                                                 <td>{item.raw_material_unit}</td>
                                                 <td>₦{(Number(item.quantity_required) * Number(item.raw_material_cost_per_unit || 0)).toFixed(2)}</td>
                                                 <td>

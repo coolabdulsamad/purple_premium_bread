@@ -17,7 +17,8 @@ import {
   FaFileUpload,
   FaCartPlus,
   FaBoxOpen,
-  FaGift, // NEW ICON: for Free Stock/Incentive
+  FaGift,
+  FaCrown,
 } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -28,13 +29,13 @@ import {
   Spinner,
   InputGroup,
   Badge,
-  FormCheck, // NEW: Import FormCheck
+  FormCheck,
 } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../assets/styles/newSale.css";
 import CustomToast from "../components/CustomToast";
-import useAuth from '../hooks/useAuth'; // Add this line if it was missing
+import useAuth from '../hooks/useAuth';
 import api from "../api/axiosInstance";
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
@@ -79,6 +80,10 @@ const NewSalePage = () => {
       total: 0,
       discount: 0,
       note: "",
+      // NEW: Advantage sale fields (frontend only)
+      isAdvantageSale: false,
+      advantageAmount: 0,
+      itemAdvantageAmounts: {}, // { productId: amount }
     },
   ]);
   const [activeCartId, setActiveCartId] = useState(1);
@@ -86,126 +91,93 @@ const NewSalePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
 
-  // NEW STATE: For Free Stock Feature
+  // Free Stock Feature State
   const [isFreeStockChecked, setIsFreeStockChecked] = useState(false);
   const [freeStockQuantities, setFreeStockQuantities] = useState({});
   const [freeStockReason, setFreeStockReason] = useState("");
-  // END NEW STATE
 
-  // const { userRole, userId } = useAuth(); // Assuming useAuth provides userId
   const { user, userRole } = useAuth();
-const userId = user?.id;
-
+  const userId = user?.id;
 
   const activeCart = carts.find((c) => c.id === activeCartId);
 
-  /* ========= Data Fetch (CORRECTED for Sales User ID Timing) ========= */
-  const fetchAllData = async () => {
+  /* ========= Data Fetch (Single useEffect - Fixed) ========= */
+  useEffect(() => {
+    let mounted = true;
 
-    // 1. CRITICAL GUARD: Sales users MUST have a userId to fetch their specific stock.
-    if (userRole === 'sales' && !userId) {
-      // If the ID is not available yet, we return immediately.
-      // The component remains in the initial state (loading=true), showing the spinner.
-      // useEffect will re-run when userId changes.
-      return;
-    }
-
-    setLoading(true); // Start loading state (or keep it if it was already true)
-
-    try {
-      let productsEndpoint;
-
-      // 2. Determine the correct product/stock endpoint based on role
-      if (userRole === 'sales') {
-        // Use the dynamic endpoint for sales users (now safe because userId is guaranteed)
-        productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
-      } else {
-        // For Admin/Manager/etc., use the detailed main inventory endpoint
-        productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+    const fetchAllData = async () => {
+      if (userRole === 'sales' && !userId) {
+        return;
       }
 
-      // 3. Fetch all data in parallel, using the determined productsEndpoint
-      const [productsAndStockRes, customersRes, servicesRes] =
-        await Promise.all([
-          api.get(productsEndpoint),
-          api.get(`/customers`),
-          api.get(`/services/newsales`),
-        ]);
+      setLoading(true);
 
-      // 4. Process the Unified Response
-      const productsData = (productsAndStockRes.data || [])
-        .filter((p) => p.name || p.product_name) // ✅ FIX: Simplified filter to check for any name field, improving robustness across different API endpoints.
-        .map(p => ({
-          id: p.id || p.product_id,
-          name: p.name || p.product_name,
-          price: p.price,
-          category: p.category || p.product_category,
-          image_url: p.image_url,
-          quantity: p.quantity // The unified stock quantity
-        }));
+      try {
+        let productsEndpoint;
 
-      // 5. Update states (Success)
-      setProducts(productsData);
-      setCustomers(customersRes.data);
-      setServices(servicesRes.data);
+        if (userRole === 'sales') {
+          productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
+        } else {
+          productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+        }
 
-      // Map the stock for the POS quantity checker
-      const inventoryMap = productsData.reduce((map, item) => {
-        map[item.id] = item.quantity;
-        return map;
-      }, {});
-      setInventory(inventoryMap);
+        const [productsAndStockRes, customersRes, servicesRes] =
+          await Promise.all([
+            api.get(productsEndpoint),
+            api.get(`/customers`),
+            api.get(`/services/newsales`),
+          ]);
 
-      // 6. Stop Loading
-      setLoading(false);
+        const productsData = (productsAndStockRes.data || [])
+          .filter((p) => p.name || p.product_name)
+          .map(p => ({
+            id: p.id || p.product_id,
+            name: p.name || p.product_name,
+            price: p.price,
+            category: p.category || p.product_category,
+            image_url: p.image_url,
+            quantity: p.quantity
+          }));
 
-    } catch (error) {
-      console.error("POS Data Fetch Error:", error.response?.data || error.message);
-      toast(<CustomToast type="error" message={`Failed to load POS data: ${error.response?.data?.error || 'Server Error'}`} />, {
-        toastId: 'pos-error'
-      });
-      setLoading(false); // Stop loading even on error
-    }
-  };
+        if (!mounted) return;
 
-  // REMOVED REDUNDANT useEffect BLOCK (Original lines 214-219)
+        setProducts(productsData);
+        setCustomers(customersRes.data);
+        setServices(servicesRes.data);
 
-useEffect(() => {
-  let mounted = true;
+        const inventoryMap = productsData.reduce((map, item) => {
+          map[item.id] = item.quantity;
+          return map;
+        }, {});
+        setInventory(inventoryMap);
 
-  const safeFetch = async () => {
-    if (userRole === 'sales' && !userId) return;
-    if (!mounted) return;
-    await fetchAllData();
-  };
+        setLoading(false);
 
-  safeFetch();
-  return () => { mounted = false; };
-}, [userId, userRole]);
+      } catch (error) {
+        if (!mounted) return;
+        console.error("POS Data Fetch Error:", error.response?.data || error.message);
+        toast(<CustomToast type="error" message={`Failed to load POS data: ${error.response?.data?.error || 'Server Error'}`} />, {
+          toastId: 'pos-error'
+        });
+        setLoading(false);
+      }
+    };
 
+    fetchAllData();
+    
+    return () => { mounted = false; };
+  }, [userId, userRole]);
 
-  // (The rest of the component remains unchanged)
-
-useEffect(() => {
-  let mounted = true;
-
-  const safeFetch = async () => {
-    if (userRole === 'sales' && !userId) return;
-    if (!mounted) return;
-    await fetchAllData();
-  };
-
-  safeFetch();
-  return () => { mounted = false; };
-}, [userId, userRole]);
-
-
-  /* ========= Totals ========= */
+  /* ========= Totals (UPDATED for Advantage Pricing - Frontend Only) ========= */
   const getTotals = (cart) => {
-    const subtotal = cart.items.reduce(
-      (sum, item) => sum + Number(item.price) * Number(item.quantity),
-      0
-    );
+    // Calculate with advantage amounts included in the price
+    const subtotal = cart.items.reduce((sum, item) => {
+      const basePrice = Number(item.price);
+      const advantageAmount = cart.itemAdvantageAmounts[item.id] || 0;
+      const finalPrice = basePrice + Number(advantageAmount);
+      return sum + finalPrice * Number(item.quantity);
+    }, 0);
+
     const discountService = services.find((s) => s.id === cart.discount);
     const discountAmount = discountService
       ? subtotal * (Number(discountService.rate) / 100)
@@ -217,10 +189,15 @@ useEffect(() => {
     const tax = subtotalAfterDiscount * taxRate;
     const total = subtotalAfterDiscount + tax;
 
-    return { subtotal, tax, total, discountAmount };
+    return { 
+      subtotal, 
+      tax, 
+      total, 
+      discountAmount
+    };
   };
 
-  // Auto-calc totals when items, discount, or services change
+  // Auto-calc totals
   useEffect(() => {
     setCarts((prev) =>
       prev.map((cart) => {
@@ -228,10 +205,15 @@ useEffect(() => {
         return { ...cart, subtotal, tax, total, discountAmount };
       })
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     JSON.stringify(
-      carts.map((c) => ({ id: c.id, items: c.items, discount: c.discount }))
+      carts.map((c) => ({ 
+        id: c.id, 
+        items: c.items, 
+        discount: c.discount,
+        isAdvantageSale: c.isAdvantageSale,
+        itemAdvantageAmounts: c.itemAdvantageAmounts 
+      }))
     ),
     JSON.stringify(services),
   ]);
@@ -254,27 +236,22 @@ useEffect(() => {
     });
   }, [products, searchTerm, category]);
 
-
-
-
-  /* ========= Cart Ops (Updated for Stock Check) ========= */
+  /* ========= Cart Operations (UPDATED for Advantage Pricing) ========= */
   const addToCart = (product, cartId) => {
     setCarts((prev) =>
       prev.map((cart) => {
         if (cart.id !== cartId) return cart;
         const existing = cart.items.find((i) => i.id === product.id);
-        // Ensure we always use the dynamic inventory map
         const stock = inventory[product.id] || 0;
 
         if (existing) {
           if (existing.quantity + 1 > stock) {
-            toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warning" message="Inventory limit reached." />, {
+            toast(<CustomToast type="warning" message="Inventory limit reached." />, {
               toastId: 'inventory-warn'
             });
             return cart;
           }
-          toast.success(`${product.name} +1`);
-          toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={`${product.name} +1`} />, {
+          toast(<CustomToast type="success" message={`${product.name} +1`} />, {
             toastId: 's-success'
           });
           return {
@@ -285,13 +262,12 @@ useEffect(() => {
           };
         } else {
           if (stock <= 0) {
-            toast(<CustomToast id={`error-stock-${Date.now()}`} type="error" message="Out of stock." />, {
+            toast(<CustomToast type="error" message="Out of stock." />, {
               toastId: 'stock-error'
             });
             return cart;
           }
-          // toast.success(`${product.name} added to cart`);
-          toast(<CustomToast id={`success-cart-${Date.now()}`} type="success" message={`${product.name} added to cart`} />, {
+          toast(<CustomToast type="success" message={`${product.name} added to cart`} />, {
             toastId: 'cart-success'
           });
           return {
@@ -321,8 +297,7 @@ useEffect(() => {
             if (i.id !== itemId) return i;
             const qty = Math.max(0, Number(nextQty) || 0);
             if (qty > productStock) {
-              // toast.warn("Inventory limit reached.");
-              toast(<CustomToast id={`warn-inventory-${Date.now()}`} type="warning" message="Inventory limit reached." />, {
+              toast(<CustomToast type="warning" message="Inventory limit reached." />, {
                 toastId: 'inventory-warn'
               });
               return i;
@@ -331,6 +306,23 @@ useEffect(() => {
           })
           .filter((i) => i.quantity > 0);
         return { ...cart, items };
+      })
+    );
+  };
+
+  // NEW: Update advantage amount for a specific product
+  const updateAdvantageAmount = (cartId, productId, amount) => {
+    setCarts((prev) =>
+      prev.map((cart) => {
+        if (cart.id !== cartId) return cart;
+        const newAmounts = {
+          ...cart.itemAdvantageAmounts,
+          [productId]: Math.max(0, Number(amount) || 0)
+        };
+        return {
+          ...cart,
+          itemAdvantageAmounts: newAmounts
+        };
       })
     );
   };
@@ -357,41 +349,36 @@ useEffect(() => {
         total: 0,
         discount: 0,
         note: "",
+        isAdvantageSale: false,
+        advantageAmount: 0,
+        itemAdvantageAmounts: {},
       },
     ]);
     setActiveCartId(nextId);
-    // toast.info(`${groupName} created`);
-    toast(<CustomToast id={`info-group-${Date.now()}`} type="info" message={`${groupName} created`} />, {
+    toast(<CustomToast type="info" message={`${groupName} created`} />, {
       toastId: 'group-info'
     });
   };
 
   const removeCart = (cartId) => {
     if (carts.length === 1) {
-      // toast.warn("At least one group is required.");
-      toast(<CustomToast id={`warn-group-${Date.now()}`} type="warning" message="At least one group is required." />, {
+      toast(<CustomToast type="warning" message="At least one group is required." />, {
         toastId: 'group-warn'
       });
       return;
     }
-    const removed =
-      carts.find((c) => c.id === cartId)?.name || `Group ${cartId}`;
+    const removed = carts.find((c) => c.id === cartId)?.name || `Group ${cartId}`;
     const next = carts.filter((c) => c.id !== cartId);
     setCarts(next);
     if (!next.find((c) => c.id === activeCartId) && next.length) {
       setActiveCartId(next[0].id);
     }
-    // toast.success(`${removed} removed`);
-    toast(<CustomToast id={`success-remove-${Date.now()}`} type="success" message={`${removed} removed`} />, {
+    toast(<CustomToast type="success" message={`${removed} removed`} />, {
       toastId: 'remove-success'
     });
   };
 
-
-
-
-
-  /* ========= Checkout (UPDATED to include Free Stock) ========= */
+/* ========= Checkout (UPDATED with Advantage Sale Data) ========= */
 const handleCheckout = async (cartToProcess) => {
   if (!cartToProcess || cartToProcess.items.length === 0) {
     toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
@@ -446,6 +433,17 @@ const handleCheckout = async (cartToProcess) => {
   }
 
   const { subtotal, tax, total, discountAmount } = getTotals(cartToProcess);
+  
+  // NEW: Calculate advantage total and base subtotal
+  const baseSubtotal = cartToProcess.items.reduce((sum, item) => {
+    return sum + Number(item.price) * Number(item.quantity);
+  }, 0);
+  
+  const advantageTotal = cartToProcess.items.reduce((sum, item) => {
+    const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
+    return sum + (Number(advantageAmount) * Number(item.quantity));
+  }, 0);
+  
   let amountPaid = 0;
   let balanceDue = 0;
   let status = "Paid";
@@ -491,8 +489,22 @@ const handleCheckout = async (cartToProcess) => {
     status = "Paid";
   }
 
+  // Prepare items with advantage amounts
+  const cartItemsWithAdvantage = cartToProcess.items.map(item => {
+    const basePrice = Number(item.price);
+    const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
+    const finalPrice = basePrice + Number(advantageAmount);
+    
+    return {
+      ...item,
+      advantageAmount: advantageAmount, // Send advantage amount
+      finalPrice: finalPrice, // Send final price
+      price: basePrice // Keep original price for base calculation
+    };
+  });
+
   const payload = {
-    cart: cartToProcess.items,
+    cart: cartItemsWithAdvantage,
     subtotal,
     tax,
     total,
@@ -510,39 +522,81 @@ const handleCheckout = async (cartToProcess) => {
     freeStock: isFreeStockChecked
       ? { quantities: freeStockQuantities, reason: freeStockReason }
       : null,
+    // NEW: Advantage sale data
+    isAdvantageSale: cartToProcess.isAdvantageSale,
+    advantageTotal: advantageTotal,
+    baseSubtotal: baseSubtotal
   };
 
   try {
     await api.post(`/sales/process`, payload);
     toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
 
-    // ✅ Reset everything properly after success
+    // ✅ FIXED: Only reset the processed cart, keep other carts
+    setCarts((prev) =>
+      prev.map((cart) =>
+        cart.id === cartToProcess.id
+          ? {
+              id: cart.id,
+              name: cart.name,
+              items: [],
+              payment: {
+                paymentMethod: "Cash",
+                paymentReference: "",
+                paymentImage: null,
+                customer: null,
+                amountPaid: 0,
+                dueDate: "",
+              },
+              total: 0,
+              discount: 0,
+              note: "",
+              isAdvantageSale: false,
+              advantageAmount: 0,
+              itemAdvantageAmounts: {},
+            }
+          : cart
+      )
+    );
+
+    // ✅ Reset free stock states
     setIsFreeStockChecked(false);
     setFreeStockQuantities({});
     setFreeStockReason("");
 
-    // ✅ Remove the processed cart and create a fresh new one
-    setCarts([
-      {
-        id: 1,
-        name: "Group 1",
-        items: [],
-        payment: {
-          paymentMethod: "Cash",
-          paymentReference: "",
-          paymentImage: null,
-          customer: null,
-          amountPaid: 0,
-          dueDate: "",
-        },
-        total: 0,
-        discount: 0,
-        note: "",
-      },
-    ]);
-    setActiveCartId(1);
+    // ✅ Refresh stock data
+    const fetchAllData = async () => {
+      try {
+        let productsEndpoint;
+        if (userRole === 'sales') {
+          productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
+        } else {
+          productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+        }
+        
+        const productsAndStockRes = await api.get(productsEndpoint);
+        const productsData = (productsAndStockRes.data || [])
+          .filter((p) => p.name || p.product_name)
+          .map(p => ({
+            id: p.id || p.product_id,
+            name: p.name || p.product_name,
+            price: p.price,
+            category: p.category || p.product_category,
+            image_url: p.image_url,
+            quantity: p.quantity
+          }));
 
-    // ✅ Refresh stock data to reflect deduction
+        setProducts(productsData);
+        const inventoryMap = productsData.reduce((map, item) => {
+          map[item.id] = item.quantity;
+          return map;
+        }, {});
+        setInventory(inventoryMap);
+      } catch (error) {
+        console.error("Stock refresh error:", error);
+      }
+    };
+    
     fetchAllData();
   } catch (error) {
     console.error("Sale Processing Error:", error.response?.data || error.message);
@@ -615,65 +669,92 @@ const handleCheckout = async (cartToProcess) => {
               {/* items list */}
               <div className="ppb-items">
                 {activeCart.items.length ? (
-                  activeCart.items.map((it) => (
-                    <div className="ppb-item" key={it.id}>
-                      <div className="ppb-item__main">
-                        <div className="ppb-item__name">{it.name}</div>
-                        <div className="ppb-item__price">
-                          {formatNaira(it.price)}
-                        </div>
-                      </div>
-
-                      <div className="ppb-item__controls">
-                        <div className="ppb-stepper">
-                          <button
-                            className="ppb-stepper__btn"
-                            onClick={() =>
-                              updateCartItem(
-                                activeCart.id,
-                                it.id,
-                                it.quantity - 1
-                              )
-                            }
-                          >
-                            <FaMinus />
-                          </button>
-                          <input
-                            className="ppb-stepper__input"
-                            type="number"
-                            min="1"
-                            max={inventory[it.id] || 0}
-                            value={it.quantity}
-                            onChange={(e) =>
-                              updateCartItem(
-                                activeCart.id,
-                                it.id,
-                                parseInt(e.target.value || "0", 10)
-                              )
-                            }
-                          />
-                          <button
-                            className="ppb-stepper__btn"
-                            onClick={() =>
-                              updateCartItem(
-                                activeCart.id,
-                                it.id,
-                                it.quantity + 1
-                              )
-                            }
-                          >
-                            <FaPlus />
-                          </button>
+                  activeCart.items.map((it) => {
+                    const advantageAmount = activeCart.itemAdvantageAmounts[it.id] || 0;
+                    const finalPrice = Number(it.price) + Number(advantageAmount);
+                    
+                    return (
+                      <div className="ppb-item" key={it.id}>
+                        <div className="ppb-item__main">
+                          <div className="ppb-item__name">{it.name}</div>
+                          <div className="ppb-item__price">
+                            {formatNaira(it.price)}
+                            {advantageAmount > 0 && (
+                              <Badge bg="success" className="ms-1">
+                                +{formatNaira(advantageAmount)}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="ppb-line">
-                          {formatNaira(
-                            Number(it.price) * Number(it.quantity)
-                          )}
+                        <div className="ppb-item__controls">
+                          <div className="ppb-stepper">
+                            <button
+                              className="ppb-stepper__btn"
+                              onClick={() =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  it.quantity - 1
+                                )
+                              }
+                            >
+                              <FaMinus />
+                            </button>
+                            <input
+                              className="ppb-stepper__input"
+                              type="number"
+                              min="1"
+                              max={inventory[it.id] || 0}
+                              value={it.quantity}
+                              onChange={(e) =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  parseInt(e.target.value || "0", 10)
+                                )
+                              }
+                            />
+                            <button
+                              className="ppb-stepper__btn"
+                              onClick={() =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  it.quantity + 1
+                                )
+                              }
+                            >
+                              <FaPlus />
+                            </button>
+                          </div>
+
+                          <div className="ppb-line">
+                            {formatNaira(finalPrice * Number(it.quantity))}
+                          </div>
                         </div>
+
+                        {/* Advantage Amount Input */}
+                        {activeCart.isAdvantageSale && (
+                          <div className="ppb-advantage-input mt-2">
+                            <InputGroup size="sm">
+                              <InputGroup.Text>+₦</InputGroup.Text>
+                              <FormControl
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Extra amount"
+                                value={activeCart.itemAdvantageAmounts[it.id] || ''}
+                                onChange={(e) => 
+                                  updateAdvantageAmount(activeCart.id, it.id, e.target.value)
+                                }
+                              />
+                            </InputGroup>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="ppb-empty">
                     <span>No items yet</span>
@@ -683,10 +764,47 @@ const handleCheckout = async (cartToProcess) => {
 
               {/* totals + options */}
               <div className="ppb-summary">
+                {/* Advantage Sale Checkbox */}
+                <div className="ppb-advantage-sale mb-3 p-3 border rounded">
+                  <FormCheck
+                    type="checkbox"
+                    id="advantage-sale-check"
+                    label={
+                      <>
+                        <FaCrown className="me-2 text-warning" />
+                        Premium/Advantage Sale (Add Extra Amount)
+                      </>
+                    }
+                    checked={activeCart.isAdvantageSale}
+                    onChange={(e) =>
+                      setCarts((prev) =>
+                        prev.map((c) =>
+                          c.id === activeCart.id
+                            ? { 
+                                ...c, 
+                                isAdvantageSale: e.target.checked,
+                                itemAdvantageAmounts: e.target.checked ? c.itemAdvantageAmounts : {}
+                              }
+                            : c
+                        )
+                      )
+                    }
+                  />
+                  
+                  {activeCart.isAdvantageSale && activeCart.items.length > 0 && (
+                    <div className="mt-2">
+                      <small className="text-muted">
+                        Enter extra amounts for each item above. This will be added to the final price.
+                      </small>
+                    </div>
+                  )}
+                </div>
+
                 <div className="ppb-summary__row">
                   <span>Subtotal</span>
                   <b>{formatNaira(activeCart.subtotal)}</b>
                 </div>
+                
                 <div className="ppb-summary__row">
                   <span>Discount</span>
                   <b>- {formatNaira(activeCart.discountAmount)}</b>
@@ -749,7 +867,7 @@ const handleCheckout = async (cartToProcess) => {
                   </div>
                 </div>
 
-                {/* NEW FREE STOCK SECTION */}
+                {/* Free Stock Section */}
                 <div className="ppb-free-stock mt-3 p-3 border rounded">
                   <FormCheck
                     type="checkbox"
@@ -782,14 +900,13 @@ const handleCheckout = async (cartToProcess) => {
                           <FormControl
                             type="number"
                             min="0"
-                            max={item.quantity} // Max free stock is the quantity sold in the current cart
+                            max={item.quantity}
                             placeholder={`Qty Free (Max: ${item.quantity})`}
                             value={freeStockQuantities[item.id] || ''}
                             onChange={(e) => {
                               const qty = parseInt(e.target.value) || 0;
                               setFreeStockQuantities(prev => ({
                                 ...prev,
-                                // Cap the input at the quantity currently sold
                                 [item.id]: Math.min(qty, item.quantity)
                               }));
                             }}
@@ -799,7 +916,6 @@ const handleCheckout = async (cartToProcess) => {
                     </div>
                   )}
                 </div>
-                {/* END NEW FREE STOCK SECTION */}
 
                 {/* payment segmented */}
                 <div className="ppb-payment">

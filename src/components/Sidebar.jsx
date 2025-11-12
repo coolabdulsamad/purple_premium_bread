@@ -91,7 +91,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
     ],
 
     // 5️⃣ People & System
