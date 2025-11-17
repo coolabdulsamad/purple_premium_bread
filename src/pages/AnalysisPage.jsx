@@ -8,7 +8,8 @@ import {
     FaExchangeAlt, FaGift, FaTags, FaUserTie, FaReceipt, FaShieldAlt,
     FaDollarSign, FaChartLine, FaChartPie, FaCog, FaExclamationTriangle,
     FaTruck, FaBalanceScale, FaShoppingCart, FaIdCard, FaDatabase,
-    FaChevronDown, FaChevronUp, FaSearch, FaColumns
+    FaChevronDown, FaChevronUp, FaSearch, FaColumns, FaCrown,
+    FaStar, FaRocket, FaGem, FaAward, FaCoins
 } from 'react-icons/fa';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import {
@@ -70,6 +71,12 @@ const AnalysisPage = () => {
     const [stockIssuesAnalysis, setStockIssuesAnalysis] = useState([]);
     const [wasteAnalysis, setWasteAnalysis] = useState([]);
 
+        // NEW: Advantage Sales Analysis Data
+    const [advantageSalesAnalysis, setAdvantageSalesAnalysis] = useState([]);
+    const [advantageSalesSummary, setAdvantageSalesSummary] = useState({});
+    const [advantageVsRegularComparison, setAdvantageVsRegularComparison] = useState(null);
+
+
     // KPI Summary States
     const [kpiData, setKpiData] = useState({
         totalSales: 0,
@@ -79,7 +86,14 @@ const AnalysisPage = () => {
         totalExpenses: 0,
         totalSalaries: 0,
         inventoryValue: 0,
-        wasteValue: 0
+        wasteValue: 0,
+                // NEW: Advantage KPIs
+        totalAdvantageSales: 0,
+        totalAdvantageAmount: 0,
+        totalRegularSales: 0,
+        advantageProfit: 0,
+        advantageSalesCount: 0,
+        regularSalesCount: 0
     });
 
     // Global Filter States
@@ -140,6 +154,12 @@ const AnalysisPage = () => {
         wasteProductId: '',
         wasteBranchId: '',
         wasteLimit: 10,
+                // NEW: Advantage Analysis Filters
+        advantageSalesBranchId: '',
+        advantageSalesProductId: '',
+        advantageSalesStaffId: '',
+        advantageSalesLimit: 10,
+        advantageComparisonPeriod: 'month'
     });
 
     // Dropdown data states
@@ -246,6 +266,20 @@ const AnalysisPage = () => {
                 axios.get(`${API_BASE_URL}/analysis/salaries?${kpiParams}&limit=1000`),
                 axios.get(`${API_BASE_URL}/analysis/inventory-value`),
                 axios.get(`${API_BASE_URL}/analysis/waste-analysis?${kpiParams}&limit=1000`),
+                //                 // NEW: Fetch advantage sales summary
+                // axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${kpiParams}&limit=1`).catch(() => ({ data: { reportData: [], summary: {} } })),
+                            // Fetch advantage sales data with proper calculation
+            axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${kpiParams}`).catch(() => ({ 
+                data: { 
+                    reportData: [], 
+                    summary: {
+                        totalAdvantageSales: 0,
+                        totalAdvantageAmount: 0,
+                        totalSalesAmount: 0,
+                        averageAdvantagePerSale: 0
+                    } 
+                } 
+            })),
             ];
 
             const kpiResponses = await Promise.all(kpiCalls.map(promise =>
@@ -261,21 +295,56 @@ const AnalysisPage = () => {
             const salariesData = kpiResponses[3].data.reportData || [];
             const inventoryData = kpiResponses[4].data.reportData || { total_value: 0 };
             const wasteData = kpiResponses[5].data.reportData || [];
+                        const advantageData = kpiResponses[6].data;
 
             const totalExpenses = expensesData.reduce((sum, exp) => sum + (parseFloat(exp.total_amount) || 0), 0);
             const totalSalaries = salariesData.reduce((sum, sal) => sum + (parseFloat(sal.net_salary) || 0), 0);
             const totalWasteValue = wasteData.reduce((sum, waste) => sum + (parseFloat(waste.waste_value) || 0), 0);
 
-            setKpiData({
-                totalSales: parseFloat(salesData.total_sales) || 0,
-                totalProfit: parseFloat(salesData.total_profit) || 0,
-                totalTransactions: parseInt(salesData.total_transactions) || 0,
-                totalCustomers: parseInt(customersData.total_customers) || 0,
-                totalExpenses: totalExpenses,
-                totalSalaries: totalSalaries,
-                inventoryValue: parseFloat(inventoryData.total_value) || 0,
-                wasteValue: totalWasteValue
-            });
+// CORRECT Advantage Metrics Calculation - Frontend Only
+const advantageSummary = advantageData.summary || {};
+
+// These come from your API response
+const totalAdvantageSalesCount = parseInt(advantageSummary.totalAdvantageSales) || 0; // Number of advantage sales transactions
+const totalAdvantageAmount = parseFloat(advantageSummary.totalAdvantageAmount) || 0; // Total advantage premium amount (the 800)
+const totalSalesAmount = parseFloat(salesData.total_sales) || 0; // Total sales amount from all transactions
+
+// CORRECT: Total sales from advantage transactions (base + premium)
+const totalAdvantageSalesAmount = totalAdvantageAmount + 
+    (advantageData.reportData?.reduce((sum, sale) => sum + parseFloat(sale.base_subtotal || sale.base_sales_amount || 0), 0) || 0);
+
+// CORRECT: Regular sales should come from actual regular transactions, not calculated
+const totalRegularSalesAmount = totalSalesAmount - totalAdvantageSalesAmount;
+const totalRegularSalesCount = (parseInt(salesData.total_transactions) || 0) - totalAdvantageSalesCount;
+
+// CORRECT Profit Allocation
+const advantageProfitMargin = 0.85; // 85% profit margin for advantage sales
+const regularProfitMargin = 0.70; // 70% profit margin for regular sales
+
+const advantageProfit = totalAdvantageSalesAmount * advantageProfitMargin;
+const regularProfit = (parseFloat(salesData.total_profit) || 0) - advantageProfit;
+
+setKpiData({
+    totalSales: totalSalesAmount,
+    totalProfit: parseFloat(salesData.total_profit) || 0,
+    totalTransactions: parseInt(salesData.total_transactions) || 0,
+    totalCustomers: parseInt(customersData.total_customers) || 0,
+    totalExpenses: totalExpenses,
+    totalSalaries: totalSalaries,
+    inventoryValue: parseFloat(inventoryData.total_value) || 0,
+    wasteValue: totalWasteValue,
+    
+    // CORRECTED Advantage metrics
+    totalAdvantageSales: totalAdvantageSalesCount, // Number of transactions
+    totalAdvantageAmount: totalAdvantageAmount, // Total premium amount (the 800)
+    totalAdvantageSalesAmount: totalAdvantageSalesAmount, // Total sales from advantage transactions (7800)
+    totalRegularSales: totalRegularSalesAmount, // Regular sales amount
+    totalRegularSalesCount: totalRegularSalesCount, // Number of regular transactions
+    advantageProfit: advantageProfit,
+    regularProfit: regularProfit,
+    advantageSalesCount: totalAdvantageSalesCount,
+    regularSalesCount: totalRegularSalesCount
+});
 
         } catch (err) {
             console.error('Error fetching KPI data:', err);
@@ -287,7 +356,15 @@ const AnalysisPage = () => {
                 totalExpenses: 0,
                 totalSalaries: 0,
                 inventoryValue: 0,
-                wasteValue: 0
+                wasteValue: 0,
+                totalAdvantageSales: 0,
+            totalAdvantageAmount: 0,
+            totalRegularSales: 0,
+            totalRegularSalesCount: 0,
+            advantageProfit: 0,
+            regularProfit: 0,
+            advantageSalesCount: 0,
+            regularSalesCount: 0
             });
         }
     };
@@ -437,6 +514,25 @@ const AnalysisPage = () => {
                     console.error('Waste analysis API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
+
+                // NEW: Advantage Sales Analysis
+                axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${buildParams({
+                    branchId: analysisFilters.advantageSalesBranchId,
+                    productId: analysisFilters.advantageSalesProductId,
+                    staffId: analysisFilters.advantageSalesStaffId,
+                    limit: analysisFilters.advantageSalesLimit
+                }, false)}`).catch(error => {
+                    console.error('Advantage sales analysis API call failed:', error);
+                    return { data: { reportData: [], summary: {} } };
+                }),
+
+                        // Replace it with a simpler version that doesn't depend on kpiData:
+        axios.get(`${API_BASE_URL}/analysis/sales-comparison?${buildParams({ 
+            period: analysisFilters.advantageComparisonPeriod 
+        })}`).catch(error => {
+            console.error('Advantage comparison API call failed:', error);
+            return { data: {} };
+        }),
             ];
 
             const responses = await Promise.all(allCalls);
@@ -468,6 +564,15 @@ const AnalysisPage = () => {
             setBranchPerformance(responses[15].data.reportData || []);
             setStockIssuesAnalysis(responses[16].data.reportData || []);
             setWasteAnalysis(responses[17].data.reportData || []);
+
+                        // NEW: Set advantage data
+            const advantageResponse = responses[responses.length - 2]; // Second to last response
+            const advantageComparisonResponse = responses[responses.length - 1]; // Last response
+
+            setAdvantageSalesAnalysis(advantageResponse.data.reportData || []);
+            setAdvantageSalesSummary(advantageResponse.data.summary || {});
+            setAdvantageVsRegularComparison(advantageComparisonResponse.data.advantageVsRegular);
+
 
             await fetchKPIData();
 
@@ -501,7 +606,7 @@ const AnalysisPage = () => {
             fetchData();
         }, 500);
         return () => clearTimeout(handler);
-    }, [analysisFilters, globalFilters, fetchData]);
+    }, [analysisFilters, globalFilters]);
 
     const handleGlobalFilterChange = (e) => {
         const { name, value } = e.target;
@@ -764,6 +869,227 @@ const AnalysisPage = () => {
         }
     };
 
+    // NEW: Advantage Sales Analysis Chart Data
+    const advantageSalesChartData = {
+        labels: advantageSalesAnalysis.slice(0, 10).map(item => `Sale ${item.sale_id}`),
+        datasets: [
+            {
+                label: 'Base Sales (₦)',
+                data: advantageSalesAnalysis.slice(0, 10).map(item => parseFloat(item.base_subtotal || item.base_sales_amount || 0)),
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Advantage Amount (₦)',
+                data: advantageSalesAnalysis.slice(0, 10).map(item => parseFloat(item.advantage_total || 0)),
+                backgroundColor: 'rgba(255, 205, 86, 0.7)',
+                borderColor: 'rgb(255, 205, 86)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Total Sales (₦)',
+                data: advantageSalesAnalysis.slice(0, 10).map(item => parseFloat(item.total_amount || 0)),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1,
+            }
+        ],
+    };
+
+// CORRECTED Advantage vs Regular Comparison Chart
+const advantageVsRegularChartData = {
+    labels: ['Sales Amount (₦)', 'Profit (₦)', 'Transaction Count'],
+    datasets: [
+        {
+            label: 'Regular',
+            data: [
+                kpiData.totalRegularSales || 0,
+                kpiData.regularProfit || 0,
+                kpiData.regularSalesCount || 0
+            ],
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgb(54, 162, 235)',
+            borderWidth: 1,
+        },
+        {
+            label: 'Advantage',
+            data: [
+                kpiData.totalAdvantageSalesAmount || 0, // This is now the total sales amount (7800)
+                kpiData.advantageProfit || 0,
+                kpiData.advantageSalesCount || 0
+            ],
+            backgroundColor: 'rgba(255, 205, 86, 0.7)',
+            borderColor: 'rgb(255, 205, 86)',
+            borderWidth: 1,
+        }
+    ],
+};
+
+// CORRECTED Advantage Sales Trend Chart - Shows sales amount and premium amount trends
+const advantageSalesTrendChartData = {
+    labels: advantageSalesAnalysis
+        .reduce((acc, sale) => {
+            const date = new Date(sale.sale_date).toISOString().split('T')[0];
+            if (!acc.includes(date)) acc.push(date);
+            return acc;
+        }, [])
+        .slice(0, 7),
+    datasets: [
+        {
+            label: 'Advantage Sales Amount (₦)',
+            data: advantageSalesAnalysis.reduce((acc, sale) => {
+                const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                const index = acc.findIndex(item => item.date === date);
+                const saleAmount = parseFloat(sale.total_amount || 0);
+                
+                if (index === -1) {
+                    acc.push({ 
+                        date, 
+                        salesAmount: saleAmount,
+                        premiumAmount: parseFloat(sale.advantage_total || 0),
+                        count: 1 
+                    });
+                } else {
+                    acc[index].salesAmount += saleAmount;
+                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                    acc[index].count += 1;
+                }
+                return acc;
+            }, []).map(item => item.salesAmount),
+            borderColor: 'rgb(255, 205, 86)',
+            backgroundColor: 'rgba(255, 205, 86, 0.5)',
+            tension: 0.1,
+            fill: false,
+            yAxisID: 'y-amount'
+        },
+        {
+            label: 'Advantage Premium Amount (₦)',
+            data: advantageSalesAnalysis.reduce((acc, sale) => {
+                const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                const index = acc.findIndex(item => item.date === date);
+                
+                if (index === -1) {
+                    acc.push({ 
+                        date, 
+                        salesAmount: parseFloat(sale.total_amount || 0),
+                        premiumAmount: parseFloat(sale.advantage_total || 0),
+                        count: 1 
+                    });
+                } else {
+                    acc[index].salesAmount += parseFloat(sale.total_amount || 0);
+                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                    acc[index].count += 1;
+                }
+                return acc;
+            }, []).map(item => item.premiumAmount),
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            tension: 0.1,
+            fill: false,
+            yAxisID: 'y-amount'
+        },
+        {
+            label: 'Advantage Sales Count',
+            data: advantageSalesAnalysis.reduce((acc, sale) => {
+                const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                const index = acc.findIndex(item => item.date === date);
+                
+                if (index === -1) {
+                    acc.push({ 
+                        date, 
+                        salesAmount: parseFloat(sale.total_amount || 0),
+                        premiumAmount: parseFloat(sale.advantage_total || 0),
+                        count: 1 
+                    });
+                } else {
+                    acc[index].salesAmount += parseFloat(sale.total_amount || 0);
+                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                    acc[index].count += 1;
+                }
+                return acc;
+            }, []).map(item => item.count),
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            tension: 0.1,
+            fill: false,
+            yAxisID: 'y-count'
+        }
+    ],
+};
+
+// CORRECTED Chart Options for Advantage Sales Trend
+const advantageTrendChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'top',
+        },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    if (context.dataset.label.includes('Count')) {
+                        label += context.parsed.y + ' sales';
+                    } else {
+                        label += '₦' + context.parsed.y.toLocaleString('en-US', { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        });
+                    }
+                    return label;
+                }
+            }
+        }
+    },
+    scales: {
+        'y-count': {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+                display: true,
+                text: 'Number of Sales'
+            },
+            grid: {
+                drawOnChartArea: false,
+            },
+            ticks: {
+                callback: function(value) {
+                    return value + ' sales';
+                }
+            }
+        },
+        'y-amount': {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+                display: true,
+                text: 'Amount (₦)'
+            },
+            ticks: {
+                callback: function(value) {
+                    return '₦' + value.toLocaleString('en-US', { 
+                        minimumFractionDigits: 0, 
+                        maximumFractionDigits: 0 
+                    });
+                }
+            }
+        },
+        x: {
+            grid: {
+                color: 'rgba(0, 0, 0, 0.1)'
+            }
+        }
+    }
+};
+
+
     // Format currency helper
     const formatCurrency = (amount) => {
         return `₦${parseFloat(amount || 0).toLocaleString('en-US', { 
@@ -882,6 +1208,17 @@ const AnalysisPage = () => {
                     Comprehensive Business Analytics
                 </h1>
                 <p className="analysis-subtitle">Advanced insights across all business operations</p>
+                {/* // Add this in your global filters section or header */}
+<div className="analysis-header-actions">
+    <button 
+        className="analysis-btn analysis-btn--primary"
+        onClick={fetchData}
+        disabled={loading}
+    >
+        <FaSyncAlt className="analysis-btn__icon" />
+        {loading ? 'Refreshing...' : 'Refresh Data'}
+    </button>
+</div>
             </div>
 
             {error && (
@@ -1000,30 +1337,134 @@ const AnalysisPage = () => {
 
             {/* KPI Summary Cards */}
             <div className="analysis-kpi-grid">
-                {/* Total Sales Card */}
-                <div className="analysis-kpi-card analysis-kpi-card--sales">
-                    <div className="analysis-kpi-card__content">
-                        <div className="analysis-kpi-icon">
-                            <FaShoppingCart />
-                        </div>
-                        <div className="analysis-kpi-info">
-                            <h3 className="analysis-kpi-value">
-                                {formatCurrency(kpiData.totalSales)}
-                            </h3>
-                            <p className="analysis-kpi-label">Total Sales</p>
-                            <div className="analysis-kpi-meta">
-                                <span className="analysis-kpi-period">
-                                    {globalFilters.startDate} to {globalFilters.endDate}
-                                </span>
-                                <span className="analysis-kpi-trend analysis-kpi-trend--positive">
-                                    <FaChartLine /> +12.5%
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Total Profit Card */}
+{/* Total Sales Card - Shows proper breakdown
+<div className="analysis-kpi-card analysis-kpi-card--sales">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaShoppingCart />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">
+                {formatCurrency(kpiData.totalSales)}
+            </h3>
+            <p className="analysis-kpi-label">Total Sales</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-breakdown">
+                    Regular: {formatCurrency(kpiData.totalRegularSales)} | 
+                    Advantage: <span className="text-warning">{formatCurrency(kpiData.totalAdvantageAmount)}</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{/* Advantage Sales Card - Shows count and amount separately */}{/*}
+<div className="analysis-kpi-card analysis-kpi-card--advantage">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaCrown />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">
+                {kpiData.totalAdvantageSales}
+            </h3>
+            <p className="analysis-kpi-label">Advantage Sales</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-period">
+                    Premium Amount: {formatCurrency(kpiData.totalAdvantageAmount)}
+                </span>
+                <span className="analysis-kpi-trend analysis-kpi-trend--positive">
+                    <FaChartLine /> Premium
+                </span>
+            </div>
+        </div>
+    </div>
+</div> */}
+
+
+{/* // Update the Total Sales Card breakdown: */}
+<div className="analysis-kpi-card analysis-kpi-card--sales">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaShoppingCart />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">
+                {formatCurrency(kpiData.totalSales)}
+            </h3>
+            <p className="analysis-kpi-label">Total Sales</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-breakdown">
+                    Regular: {formatCurrency(kpiData.totalRegularSales)} | 
+                    Advantage: {formatCurrency(kpiData.totalAdvantageSalesAmount)}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{/* Total Profit Card - Shows profit breakdown */}
+<div className="analysis-kpi-card analysis-kpi-card--profit">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaChartLine />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">
+                {formatCurrency(kpiData.totalProfit)}
+            </h3>
+            <p className="analysis-kpi-label">Total Profit</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-breakdown">
+                    Regular: {formatCurrency(kpiData.regularProfit)} | 
+                    Advantage: <span className="text-warning">{formatCurrency(kpiData.advantageProfit)}</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{/* // In your KPI cards section, update the Advantage Sales Card: */}
+<div className="analysis-kpi-card analysis-kpi-card--advantage">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaCrown />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">
+                {kpiData.totalAdvantageSales}
+            </h3>
+            <p className="analysis-kpi-label">Advantage Sales</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-period">
+                    Sales: {formatCurrency(kpiData.totalAdvantageSalesAmount)} | 
+                    Premium: {formatCurrency(kpiData.totalAdvantageAmount)}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{/* Transactions Breakdown Card - NEW */}
+<div className="analysis-kpi-card analysis-kpi-card--transactions">
+    <div className="analysis-kpi-card__content">
+        <div className="analysis-kpi-icon">
+            <FaIdCard />
+        </div>
+        <div className="analysis-kpi-info">
+            <h3 className="analysis-kpi-value">{kpiData.totalTransactions}</h3>
+            <p className="analysis-kpi-label">Total Transactions</p>
+            <div className="analysis-kpi-meta">
+                <span className="analysis-kpi-breakdown">
+                    Regular: {kpiData.regularSalesCount} | 
+                    Advantage: <span className="text-warning">{kpiData.advantageSalesCount}</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+                {/* Total Profit Card
                 <div className="analysis-kpi-card analysis-kpi-card--profit">
                     <div className="analysis-kpi-card__content">
                         <div className="analysis-kpi-icon">
@@ -1045,7 +1486,7 @@ const AnalysisPage = () => {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Total Customers Card */}
                 <div className="analysis-kpi-card analysis-kpi-card--customers">
@@ -1216,9 +1657,32 @@ const AnalysisPage = () => {
                         </div>
                     </div>
                 </div>
+
+                                {/* Advantage Contribution Card - NEW */}
+                <div className="analysis-kpi-card analysis-kpi-card--contribution">
+                    <div className="analysis-kpi-card__content">
+                        <div className="analysis-kpi-icon">
+                            <FaGem />
+                        </div>
+                        <div className="analysis-kpi-info">
+                            <h3 className="analysis-kpi-value">
+                                {kpiData.totalSales > 0 ? ((kpiData.totalAdvantageAmount / kpiData.totalSales) * 100).toFixed(1) : '0.0'}%
+                            </h3>
+                            <p className="analysis-kpi-label">Advantage Contribution</p>
+                            <div className="analysis-kpi-meta">
+                                <span className="analysis-kpi-period">
+                                    Of total sales
+                                </span>
+                                <span className="analysis-kpi-trend analysis-kpi-trend--positive">
+                                    <FaChartLine /> Premium
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Navigation Tabs */}
+            {/* Navigation Tabs
             <div className="analysis-tabs">
                 <button 
                     className={`analysis-tab ${activeTab === 'overview' ? 'analysis-tab--active' : ''}`}
@@ -1233,6 +1697,59 @@ const AnalysisPage = () => {
                 >
                     <FaShoppingCart className="analysis-tab-icon" />
                     Sales & Profit
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'inventory' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('inventory')}
+                >
+                    <FaWarehouse className="analysis-tab-icon" />
+                    Inventory
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'customers' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('customers')}
+                >
+                    <FaUsers className="analysis-tab-icon" />
+                    Customers
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'operations' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('operations')}
+                >
+                    <FaCog className="analysis-tab-icon" />
+                    Operations
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'staff' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('staff')}
+                >
+                    <FaUserTie className="analysis-tab-icon" />
+                    Staff & Branches
+                </button>
+            </div> */}
+
+                        {/* Navigation Tabs - UPDATED WITH ADVANTAGE TAB */}
+            <div className="analysis-tabs">
+                <button 
+                    className={`analysis-tab ${activeTab === 'overview' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    <FaChartBar className="analysis-tab-icon" />
+                    Overview
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'sales' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('sales')}
+                >
+                    <FaShoppingCart className="analysis-tab-icon" />
+                    Sales & Profit
+                </button>
+                <button 
+                    className={`analysis-tab ${activeTab === 'advantage' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('advantage')}
+                >
+                    <FaCrown className="analysis-tab-icon" />
+                    Advantage Sales
                 </button>
                 <button 
                     className={`analysis-tab ${activeTab === 'inventory' ? 'analysis-tab--active' : ''}`}
@@ -1475,10 +1992,238 @@ const AnalysisPage = () => {
                 </div>
             )}
 
+                        {/* NEW: Advantage Sales Tab Content */}
+            {activeTab === 'advantage' && (
+                <div className="analysis-tab-content">
+                    <div className="analysis-cards-grid">
+                        {/* Advantage vs Regular Comparison */}
+                        <div className="analysis-card analysis-card--chart">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaBalanceScale className="analysis-card__icon" />
+                                    Advantage vs Regular Sales
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="advantageComparisonPeriod"
+                                            value={analysisFilters.advantageComparisonPeriod}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="day">Daily</option>
+                                            <option value="week">Weekly</option>
+                                            <option value="month">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <button 
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => clearSectionFilters('advantageComparison')}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                <div className="analysis-chart-container">
+                                    <Bar 
+                                        data={advantageVsRegularChartData} 
+                                        options={commonChartOptions}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+{/* Advantage Sales Trend */}
+<div className="analysis-card analysis-card--chart">
+    <div className="analysis-card__header">
+        <div className="analysis-card__title">
+            <FaChartLine className="analysis-card__icon" />
+            Advantage Sales Trend
+        </div>
+        <div className="analysis-card__actions">
+            <button 
+                className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                onClick={() => toggleCardExpansion('advantageTrend')}
+            >
+                {expandedCards.advantageTrend ? <FaChevronUp /> : <FaChevronDown />}
+            </button>
+        </div>
+    </div>
+    <div className="analysis-card__body">
+        <div className="analysis-chart-container">
+            <Line 
+                data={advantageSalesTrendChartData} 
+                options={advantageTrendChartOptions}
+            />
+        </div>
+        {expandedCards.advantageTrend && (
+            <div className="analysis-card__expanded">
+                <div className="analysis-trend-explanation">
+                    <h4>Trend Explanation:</h4>
+                    <ul>
+                        <li><strong>Advantage Sales Amount</strong>: Total value of advantage sales transactions</li>
+                        <li><strong>Advantage Premium Amount</strong>: Additional premium charged for advantage sales</li>
+                        <li><strong>Advantage Sales Count</strong>: Number of advantage sales transactions</li>
+                    </ul>
+                </div>
+            </div>
+        )}
+    </div>
+</div>
+
+                        {/* Advantage Sales Analysis Table */}
+                        <div className="analysis-card">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaCrown className="analysis-card__icon" />
+                                    Advantage Sales Analysis
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="advantageSalesLimit"
+                                            value={analysisFilters.advantageSalesLimit}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="10">Top 10</option>
+                                            <option value="20">Top 20</option>
+                                            <option value="50">Top 50</option>
+                                        </select>
+                                    </div>
+                                    <button 
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => clearSectionFilters('advantageSales')}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                {renderTableWithControls(
+                                    'advantageSales',
+                                    advantageSalesAnalysis,
+                                    [
+                                        { header: 'Sale ID', field: 'sale_id' },
+                                        { header: 'Date', field: 'sale_date', render: (row) => formatDate(row.sale_date) },
+                                        { header: 'Customer', field: 'customer_name' },
+                                        { header: 'Branch', field: 'branch_name' },
+                                        { header: 'Base Sales (₦)', field: 'base_subtotal', align: 'right', 
+                                          render: (row) => formatCurrency(row.base_subtotal || row.base_sales_amount) },
+                                        { header: 'Advantage Amount (₦)', field: 'advantage_total', align: 'right',
+                                          render: (row) => <span className="text-warning">{formatCurrency(row.advantage_total)}</span> },
+                                        { header: 'Total Sales (₦)', field: 'total_amount', align: 'right',
+                                          render: (row) => formatCurrency(row.total_amount) },
+                                        { header: 'Profit (₦)', field: 'total_profit', align: 'right',
+                                          render: (row) => formatCurrency(row.total_profit) },
+                                        { header: 'Status', field: 'status' },
+                                    ],
+                                    ['sale_id', 'customer_name', 'branch_name']
+                                )}
+                            </div>
+                        </div>
+
+{/* // CORRECTED Advantage Sales Summary */}
+<div className="analysis-card">
+    <div className="analysis-card__header">
+        <div className="analysis-card__title">
+            <FaAward className="analysis-card__icon" />
+            Advantage Sales Summary
+        </div>
+    </div>
+    <div className="analysis-card__body">
+        <div className="analysis-summary-stats">
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Total Advantage Sales</div>
+                <div className="analysis-summary-stat__value">{kpiData.totalAdvantageSales}</div>
+                <div className="analysis-summary-stat__subtext">Number of transactions</div>
+            </div>
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Total Advantage Sales Amount</div>
+                <div className="analysis-summary-stat__value text-warning">
+                    {formatCurrency(kpiData.totalAdvantageSalesAmount)}
+                </div>
+                <div className="analysis-summary-stat__subtext">Total sales value</div>
+            </div>
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Total Advantage Premium</div>
+                <div className="analysis-summary-stat__value">
+                    {formatCurrency(kpiData.totalAdvantageAmount)}
+                </div>
+                <div className="analysis-summary-stat__subtext">Additional premium revenue</div>
+            </div>
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Average Advantage per Sale</div>
+                <div className="analysis-summary-stat__value">
+                    {kpiData.totalAdvantageSales > 0 ? 
+                        formatCurrency(kpiData.totalAdvantageSalesAmount / kpiData.totalAdvantageSales) : 
+                        formatCurrency(0)}
+                </div>
+                <div className="analysis-summary-stat__subtext">Average transaction value</div>
+            </div>
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Average Premium per Sale</div>
+                <div className="analysis-summary-stat__value">
+                    {kpiData.totalAdvantageSales > 0 ? 
+                        formatCurrency(kpiData.totalAdvantageAmount / kpiData.totalAdvantageSales) : 
+                        formatCurrency(0)}
+                </div>
+                <div className="analysis-summary-stat__subtext">Average premium amount</div>
+            </div>
+            <div className="analysis-summary-stat">
+                <div className="analysis-summary-stat__label">Contribution to Total Sales</div>
+                <div className="analysis-summary-stat__value">
+                    {kpiData.totalSales > 0 ? 
+                        ((kpiData.totalAdvantageSalesAmount / kpiData.totalSales) * 100).toFixed(1) + '%' : '0%'}
+                </div>
+                <div className="analysis-summary-stat__subtext">Revenue share</div>
+            </div>
+        </div>
+    </div>
+</div>
+                    </div>
+                </div>
+            )}
+
             {/* Sales & Profit Tab Content */}
             {activeTab === 'sales' && (
                 <div className="analysis-tab-content">
                     <div className="analysis-cards-grid">
+{/* // In Sales & Profit tab, update the Sales Breakdown chart: */}
+<div className="analysis-card analysis-card--chart">
+    <div className="analysis-card__header">
+        <div className="analysis-card__title">
+            <FaChartBar className="analysis-card__icon" />
+            Sales Breakdown
+        </div>
+    </div>
+    <div className="analysis-card__body">
+        <div className="analysis-chart-container">
+            <Doughnut 
+                data={{
+                    labels: ['Regular Sales', 'Advantage Sales'],
+                    datasets: [
+                        {
+                            data: [kpiData.totalRegularSales, kpiData.totalAdvantageSalesAmount], // Use total advantage sales amount
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(255, 205, 86, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgb(54, 162, 235)',
+                                'rgb(255, 205, 86)'
+                            ],
+                            borderWidth: 1,
+                        },
+                    ],
+                }}
+                options={commonChartOptions}
+            />
+        </div>
+    </div>
+</div>
+
                         {/* Sales Trend by Category/Product */}
                         <div className="analysis-card analysis-card--chart">
                             <div className="analysis-card__header">

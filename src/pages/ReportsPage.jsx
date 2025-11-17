@@ -8,7 +8,8 @@ import {
     FaPrint, FaFilter, FaTrashAlt, FaCalendarAlt, FaStore,
     FaUsers, FaBox, FaCubes, FaExchangeAlt, FaSeedling,
     FaMoneyBillWave, FaDownload, FaSync, FaGift, FaReceipt,
-    FaTrash, FaIndustry, FaUserTie, FaShieldAlt
+    FaTrash, FaIndustry, FaUserTie, FaShieldAlt, FaPercentage,
+    FaCalculator
 } from 'react-icons/fa';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
@@ -24,30 +25,56 @@ const ReportsPage = () => {
     const [lastUpdated, setLastUpdated] = useState('');
         const [isAuthenticated, setIsAuthenticated] = useState(false);
 // Check authentication on component mount
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setError('Please log in to access reports.');
-            toast(<CustomToast id={`error-auth-${Date.now()}`} type="error" message="Authentication required" />, {
-                toastId: 'auth-error'
-            });
-            // Optional: redirect to login after a delay
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 2000);
-        } else {
-            setIsAuthenticated(true);
-            fetchDropdownData();
-            const today = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(today.getDate() - 30);
-            setFilterData(prev => ({
-                ...prev,
-                startDate: thirtyDaysAgo.toISOString().split('T')[0],
-                endDate: today.toISOString().split('T')[0],
-            }));
-        }
-    }, []);
+    // useEffect(() => {
+    //     const token = localStorage.getItem('token');
+    //     if (!token) {
+    //         setError('Please log in to access reports.');
+    //         toast(<CustomToast id={`error-auth-${Date.now()}`} type="error" message="Authentication required" />, {
+    //             toastId: 'auth-error'
+    //         });
+    //         // Optional: redirect to login after a delay
+    //         setTimeout(() => {
+    //             window.location.href = '/login';
+    //         }, 2000);
+    //     } else {
+    //         setIsAuthenticated(true);
+    //         fetchDropdownData();
+    //         const today = new Date();
+    //         const thirtyDaysAgo = new Date();
+    //         thirtyDaysAgo.setDate(today.getDate() - 30);
+    //         setFilterData(prev => ({
+    //             ...prev,
+    //             startDate: thirtyDaysAgo.toISOString().split('T')[0],
+    //             endDate: today.toISOString().split('T')[0],
+    //         }));
+    //     }
+    // }, []);
+
+    // Check authentication on component mount
+useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        setError('Please log in to access reports.');
+        toast(<CustomToast id={`error-auth-${Date.now()}`} type="error" message="Authentication required" />, {
+            toastId: 'auth-error'
+        });
+        // Optional: redirect to login after a delay
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
+    } else {
+        setIsAuthenticated(true);
+        // Set default date range
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        setFilterData(prev => ({
+            ...prev,
+            startDate: thirtyDaysAgo.toISOString().split('T')[0],
+            endDate: today.toISOString().split('T')[0],
+        }));
+    }
+}, []);
 
     const [filterData, setFilterData] = useState({
         startDate: '',
@@ -84,50 +111,108 @@ const ReportsPage = () => {
 
     const reportContentRef = useRef(null);
 
+// const fetchDropdownData = async () => {
+//             if (!isAuthenticated) return;
+
+//         try {
+//             setLoading(true);
+//             const [
+//                 customersRes,
+//                 productsRes,
+//                 categoriesRes,
+//                 usersRes,
+//                 branchesRes,
+//                 rawMaterialsRes,
+//                 operatingExpensesRes
+//             ] = await Promise.all([
+//                 api.get('/customers'), // Use api instead of axios
+//                 api.get('/products'),
+//                 api.get('/categories'),
+//                 api.get('/users'),
+//                 api.get('/branches'),
+//                 api.get('/raw-materials'),
+//                 api.get('/operating-expenses'), // This will now include auth token
+//             ]);
+//             setAllCustomers(customersRes.data);
+//             setAllProducts(productsRes.data);
+//             setAllCategories(categoriesRes.data);
+//             setAllUsers(usersRes.data);
+//             setAllBranches(branchesRes.data);
+//             setAllRawMaterials(rawMaterialsRes.data);
+//             setAllOperatingExpenses(operatingExpensesRes.data);
+
+//             toast(<CustomToast id={`success-dropdown-${Date.now()}`} type="success" message="Filter options loaded successfully" />, {
+//                 toastId: 'dropdown-success'
+//             });
+//         } catch (err) {
+//             console.error('Error fetching dropdown data:', err);
+//             setError('Failed to load filter options. Some filters may not work.');
+//             toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message="Failed to load filter options" />, {
+//                 toastId: 'dropdown-error'
+//             });
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+    // Fetch dropdown data only when authenticated
+useEffect(() => {
+    if (isAuthenticated) {
+        fetchDropdownData();
+    }
+}, [isAuthenticated]);
+
 const fetchDropdownData = async () => {
-            if (!isAuthenticated) return;
-
-        try {
-            setLoading(true);
-            const [
-                customersRes,
-                productsRes,
-                categoriesRes,
-                usersRes,
-                branchesRes,
-                rawMaterialsRes,
-                operatingExpensesRes
-            ] = await Promise.all([
-                api.get('/customers'), // Use api instead of axios
-                api.get('/products'),
-                api.get('/categories'),
-                api.get('/users'),
-                api.get('/branches'),
-                api.get('/raw-materials'),
-                api.get('/operating-expenses'), // This will now include auth token
-            ]);
-            setAllCustomers(customersRes.data);
-            setAllProducts(productsRes.data);
-            setAllCategories(categoriesRes.data);
-            setAllUsers(usersRes.data);
-            setAllBranches(branchesRes.data);
-            setAllRawMaterials(rawMaterialsRes.data);
-            setAllOperatingExpenses(operatingExpensesRes.data);
-
-            toast(<CustomToast id={`success-dropdown-${Date.now()}`} type="success" message="Filter options loaded successfully" />, {
-                toastId: 'dropdown-success'
-            });
-        } catch (err) {
-            console.error('Error fetching dropdown data:', err);
-            setError('Failed to load filter options. Some filters may not work.');
-            toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message="Failed to load filter options" />, {
-                toastId: 'dropdown-error'
-            });
-        } finally {
-            setLoading(false);
+    try {
+        setLoading(true);
+        setError('');
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('No authentication token found');
         }
-    };
 
+        const [
+            customersRes,
+            productsRes,
+            categoriesRes,
+            usersRes,
+            branchesRes,
+            rawMaterialsRes,
+            operatingExpensesRes
+        ] = await Promise.all([
+            api.get('/customers'),
+            api.get('/products'),
+            api.get('/categories'),
+            api.get('/users'),
+            api.get('/branches'),
+            api.get('/raw-materials'),
+            api.get('/operating-expenses'),
+        ]);
+
+        // Check if responses have data
+        if (customersRes.data) setAllCustomers(customersRes.data);
+        if (productsRes.data) setAllProducts(productsRes.data);
+        if (categoriesRes.data) setAllCategories(categoriesRes.data);
+        if (usersRes.data) setAllUsers(usersRes.data);
+        if (branchesRes.data) setAllBranches(branchesRes.data);
+        if (rawMaterialsRes.data) setAllRawMaterials(rawMaterialsRes.data);
+        if (operatingExpensesRes.data) setAllOperatingExpenses(operatingExpensesRes.data);
+
+        toast(<CustomToast id={`success-dropdown-${Date.now()}`} type="success" message="Filter options loaded successfully" />, {
+            toastId: 'dropdown-success'
+        });
+    } catch (err) {
+        console.error('Error fetching dropdown data:', err);
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to load filter options';
+        setError(`Failed to load filter options: ${errorMessage}`);
+        toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message="Failed to load filter options" />, {
+            toastId: 'dropdown-error'
+        });
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchDropdownData();
@@ -189,6 +274,7 @@ const generateReport = useCallback(async () => {
             const relevantFiltersMap = {
                 'profit-loss': ['startDate', 'endDate', 'branchId'],
                 'detailed-sales': ['startDate', 'endDate', 'paymentMethod', 'customerId', 'status', 'minTotal', 'maxTotal', 'staffId', 'branchId', 'transactionType'],
+                'advantage-sales-analysis': ['startDate', 'endDate', 'branchId', 'productId', 'staffId'], // NEW
                 'product-profitability': ['startDate', 'endDate', 'productId', 'category', 'branchId'],
                 'inventory-movement': ['startDate', 'endDate', 'productId', 'inventoryTransactionType'],
                 'raw-material-consumption': ['startDate', 'endDate', 'rawMaterialId', 'rawMaterialTransactionType', 'branchId'],
@@ -454,99 +540,256 @@ const generateReport = useCallback(async () => {
         const data = reportResult.reportData;
 
         switch (reportType) {
-            case 'profit-loss':
-                const plData = data;
-                return (
-                    <Table striped bordered hover responsive className="report-table">
-                        <thead>
-                            <tr>
-                                <th colSpan="2" className="text-center">Profit & Loss Summary</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr className="table-row-revenue">
-                                <td><FaDollarSign className="me-2" /> Total Revenue (Sales)</td>
-                                <td className="text-end">₦{plData.totalRevenue?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                            <tr className="table-row-cogs">
-                                <td><FaShoppingBag className="me-2" /> Total Cost of Goods Sold (COGS)</td>
-                                <td className="text-end">-₦{plData.totalCostOfGoodsSold?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                            <tr className="table-row-profit fw-bold">
-                                <td><FaChartLine className="me-2" /> Gross Profit</td>
-                                <td className="text-end">₦{plData.grossProfit?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                            <tr className="table-row-expenses">
-                                <td><FaMoneyBillWave className="me-2" /> Total Operating Expenses</td>
-                                <td className="text-end">-₦{plData.totalOperatingExpenses?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                            <tr className="table-row-salaries">
-                                <td><FaUserTie className="me-2" /> Total Salaries & Wages</td>
-                                <td className="text-end">-₦{plData.totalSalaries?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                            <tr className="table-row-net fw-bold table-primary">
-                                <td><FaChartLine className="me-2" /> Net Profit</td>
-                                <td className="text-end">₦{plData.netProfit?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                        </tbody>
-                    </Table>
-                );
+// Update the profit-loss report table rendering
+case 'profit-loss':
+    const plData = data;
+    return (
+        <Table striped bordered hover responsive className="report-table">
+            <thead>
+                <tr>
+                    <th colSpan="2" className="text-center">Profit & Loss Summary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {/* Revenue Breakdown */}
+                <tr className="table-row-revenue">
+                    <td><FaDollarSign className="me-2" /> Total Revenue (Sales)</td>
+                    <td className="text-end">₦{plData.totalRevenue?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-regular-sales">
+                    <td><FaShoppingBag className="me-2" /> &nbsp;&nbsp; Regular Sales</td>
+                    <td className="text-end">₦{plData.totalRegularSales?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-advantage-sales">
+                    <td><FaChartLine className="me-2" /> &nbsp;&nbsp; Advantage Sales</td>
+                    <td className="text-end">₦{plData.totalAdvantageSales?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-advantage-amount">
+                    <td><FaMoneyBillWave className="me-2" /> &nbsp;&nbsp; Total Advantage Amount (Premium)</td>
+                    <td className="text-end text-success">+₦{plData.totalAdvantageAmount?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* COGS */}
+                <tr className="table-row-cogs">
+                    <td><FaShoppingBag className="me-2" /> Total Cost of Goods Sold (COGS)</td>
+                    <td className="text-end">-₦{plData.totalCostOfGoodsSold?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* Gross Profit */}
+                <tr className="table-row-profit fw-bold">
+                    <td><FaChartLine className="me-2" /> Gross Profit</td>
+                    <td className="text-end">₦{plData.grossProfit?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* Expenses */}
+                <tr className="table-row-expenses">
+                    <td><FaMoneyBillWave className="me-2" /> Total Operating Expenses</td>
+                    <td className="text-end">-₦{plData.totalOperatingExpenses?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-salaries">
+                    <td><FaUserTie className="me-2" /> Total Salaries & Wages</td>
+                    <td className="text-end">-₦{plData.totalSalaries?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-total-expenses fw-bold">
+                    <td><FaMoneyBillWave className="me-2" /> Total Expenses</td>
+                    <td className="text-end">-₦{plData.totalExpenses?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* Net Profit Before Tax */}
+                <tr className="table-row-net-before-tax fw-bold table-warning">
+                    <td><FaChartLine className="me-2" /> Net Profit Before Tax</td>
+                    <td className="text-end">₦{plData.netProfitBeforeTax?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* Tax Calculation */}
+                <tr className="table-row-taxable-income">
+                    <td><FaCalculator className="me-2" /> Taxable Income</td>
+                    <td className="text-end">₦{plData.taxableIncome?.toFixed(2) || '0.00'}</td>
+                </tr>
+                <tr className="table-row-tax">
+                    <td><FaPercentage className="me-2" /> Corporate Tax ({plData.taxRate?.toFixed(1) || '30.0'}%)</td>
+                    <td className="text-end text-danger">-₦{plData.taxAmount?.toFixed(2) || '0.00'}</td>
+                </tr>
+                
+                {/* Final Net Profit */}
+                <tr className="table-row-net fw-bold table-primary">
+                    <td><FaChartLine className="me-2" /> Net Profit After Tax</td>
+                    <td className="text-end">₦{plData.netProfit?.toFixed(2) || '0.00'}</td>
+                </tr>
+            </tbody>
+        </Table>
+    );
 
-            case 'detailed-sales':
-                if (!Array.isArray(data) || data.length === 0) {
-                    return <Alert variant="info">No sales data found matching the selected filters.</Alert>;
-                }
-                return (
-                    <Table striped bordered hover responsive className="report-table">
-                        <thead>
-                            <tr>
-                                <th>S/N</th>
-                                <th>Sale ID</th>
-                                <th>Date</th>
-                                <th>Customer</th>
-                                <th>Cashier</th>
-                                <th>Branch</th>
-                                <th>Payment Method</th>
-                                <th>Status</th>
-                                <th>Sales Type</th>
-                                <th>Subtotal (₦)</th>
-                                <th>Discount (₦)</th>
-                                <th>Tax (₦)</th>
-                                <th>Total Amt (₦)</th>
-                                <th>COGS (₦)</th>
-                                <th>Profit (₦)</th>
-                                <th>Stock Source</th>
-                                <th>Receipt Ref</th>
-                                <th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((sale, index) => (
-                                <tr key={sale.sale_id || index}>
-                                    <td className="text-center">{index + 1}</td>
-                                    <td>{sale.sale_id}</td>
-                                    <td>{new Date(sale.sale_date).toLocaleString()}</td>
-                                    <td>{sale.customer_name || 'Walk-in Customer'}</td>
-                                    <td>{sale.cashier_name || 'N/A'}</td>
-                                    <td>{sale.branch_name || 'N/A'}</td>
-                                    <td>{sale.payment_method}</td>
-                                    <td>{sale.status}</td>
-                                    <td>{sale.transaction_type || 'Retail'}</td>
-                                    <td className="text-end">₦{Number(sale.subtotal || sale.total_amount).toFixed(2)}</td>
-                                    <td className="text-end text-danger">-₦{Number(sale.discount_amount || 0).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.tax_amount || sale.tax || 0).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
-                                    <td className="text-end">
-                                        <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                            ₦{Number(sale.total_profit).toFixed(2)}
-                                        </span>
-                                    </td>
-                                    <td>{sale.stock_source || 'Main Inventory'}</td>
-                                    <td>{sale.receipt_reference || 'N/A'}</td>
-                                    <td>{sale.note || 'N/A'}</td>
-                                </tr>
-                            ))}
+// Add the new Advantage Sales Analysis Report rendering
+case 'advantage-sales-analysis':
+    if (!reportResult || !reportResult.reportData || !Array.isArray(reportResult.reportData) || reportResult.reportData.length === 0) {
+        return <Alert variant="info">No advantage sales data found matching the selected filters.</Alert>;
+    }
+    
+    const advantageData = reportResult.reportData;
+    const advantageSummary = reportResult.summary || {};
+    
+    return (
+        <div>
+            {/* Summary Statistics */}
+            <Card className="mb-4 bg-light">
+                <Card.Body>
+                    <Row>
+                        <Col md={3} className="text-center">
+                            <h5>Total Advantage Sales</h5>
+                            <h3 className="text-primary">{advantageSummary.totalAdvantageSales || 0}</h3>
+                        </Col>
+                        <Col md={3} className="text-center">
+                            <h5>Total Advantage Amount</h5>
+                            <h3 className="text-success">₦{Number(advantageSummary.totalAdvantageAmount || 0).toFixed(2)}</h3>
+                        </Col>
+                        <Col md={3} className="text-center">
+                            <h5>Total Sales Amount</h5>
+                            <h3 className="text-info">₦{Number(advantageSummary.totalSalesAmount || 0).toFixed(2)}</h3>
+                        </Col>
+                        <Col md={3} className="text-center">
+                            <h5>Avg Advantage/Sale</h5>
+                            <h3 className="text-warning">₦{Number(advantageSummary.averageAdvantagePerSale || 0).toFixed(2)}</h3>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+
+            {/* Detailed Table */}
+            <Table striped bordered hover responsive className="report-table">
+                <thead>
+                    <tr>
+                        <th>S/N</th>
+                        <th>Sale ID</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Cashier</th>
+                        <th>Branch</th>
+                        <th>Payment Method</th>
+                        <th>Status</th>
+                        <th>Base Subtotal (₦)</th>
+                        <th>Advantage Amount (₦)</th>
+                        <th>Final Subtotal (₦)</th>
+                        <th>Total Amount (₦)</th>
+                        <th>COGS (₦)</th>
+                        <th>Total Profit (₦)</th>
+                        <th>Advantage Profit (₦)</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {advantageData.map((sale, index) => (
+                        <tr key={sale.sale_id || index}>
+                            <td className="text-center">{index + 1}</td>
+                            <td>{sale.sale_id}</td>
+                            <td>{new Date(sale.sale_date).toLocaleString()}</td>
+                            <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                            <td>{sale.cashier_name || 'N/A'}</td>
+                            <td>{sale.branch_name || 'N/A'}</td>
+                            <td>{sale.payment_method}</td>
+                            <td>{sale.status}</td>
+                            <td className="text-end">₦{Number(sale.base_subtotal || sale.base_sales_amount || 0).toFixed(2)}</td>
+                            <td className="text-end text-success">+₦{Number(sale.advantage_total || 0).toFixed(2)}</td>
+                            <td className="text-end">₦{Number(sale.subtotal || 0).toFixed(2)}</td>
+                            <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
+                            <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
+                            <td className="text-end">
+                                <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
+                                    ₦{Number(sale.total_profit).toFixed(2)}
+                                </span>
+                            </td>
+                            <td className="text-end text-success">
+                                +₦{Number(sale.advantage_profit || 0).toFixed(2)}
+                            </td>
+                            <td>{sale.note || 'N/A'}</td>
+                        </tr>
+                    ))}
+                    <tr className="table-totals table-primary">
+                        <td colSpan="8" className="text-end fw-bold">Grand Totals:</td>
+                        <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.base_subtotal || s.base_sales_amount || 0), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold text-success">+₦{advantageData.reduce((sum, s) => sum + Number(s.advantage_total || 0), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.subtotal || 0), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_amount), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_cogs), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_profit), 0).toFixed(2)}</td>
+                        <td className="text-end fw-bold text-success">+₦{advantageData.reduce((sum, s) => sum + Number(s.advantage_profit || 0), 0).toFixed(2)}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </Table>
+        </div>
+    );
+
+// Update the detailed sales report to show advantage amounts
+case 'detailed-sales':
+    if (!Array.isArray(data) || data.length === 0) {
+        return <Alert variant="info">No sales data found matching the selected filters.</Alert>;
+    }
+    return (
+        <Table striped bordered hover responsive className="report-table">
+            <thead>
+                <tr>
+                    <th>S/N</th>
+                    <th>Sale ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Cashier</th>
+                    <th>Branch</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                    <th>Sales Type</th>
+                    <th>Subtotal (₦)</th>
+                    <th>Discount (₦)</th>
+                    <th>Tax (₦)</th>
+                    <th>Total Amt (₦)</th>
+                    <th>COGS (₦)</th>
+                    <th>Profit (₦)</th>
+                    <th>Advantage Sale</th>
+                    <th>Advantage Amt (₦)</th>
+                    <th>Stock Source</th>
+                    <th>Receipt Ref</th>
+                    <th>Receipt Images</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((sale, index) => (
+                    <tr key={sale.sale_id || index}>
+                        <td className="text-center">{index + 1}</td>
+                        <td>{sale.sale_id}</td>
+                        <td>{new Date(sale.sale_date).toLocaleString()}</td>
+                        <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                        <td>{sale.cashier_name || 'N/A'}</td>
+                        <td>{sale.branch_name || 'N/A'}</td>
+                        <td>{sale.payment_method}</td>
+                        <td>{sale.status}</td>
+                        <td>{sale.transaction_type || 'Retail'}</td>
+                        <td className="text-end">₦{Number(sale.subtotal || sale.total_amount).toFixed(2)}</td>
+                        <td className="text-end text-danger">-₦{Number(sale.discount_amount || 0).toFixed(2)}</td>
+                        <td className="text-end">₦{Number(sale.tax_amount || sale.tax || 0).toFixed(2)}</td>
+                        <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
+                        <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
+                        <td className="text-end">
+                            <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
+                                ₦{Number(sale.total_profit).toFixed(2)}
+                            </span>
+                        </td>
+                        <td className="text-center">
+                            {sale.is_advantage_sale ? (
+                                <span className="badge bg-warning text-dark">Advantage</span>
+                            ) : (
+                                <span className="badge bg-secondary">Regular</span>
+                            )}
+                        </td>
+                        <td className="text-end text-success">
+                            {sale.is_advantage_sale ? `+₦${Number(sale.advantage_total || 0).toFixed(2)}` : '-'}
+                        </td>
+                        <td>{sale.stock_source || 'Main Inventory'}</td>
+                        <td>{sale.receipt_reference || 'N/A'}</td>
+                        <td>{sale.payment_image_url ||'N/A'}</td>  
+                        <td>{sale.note || 'N/A'}</td>
+                    </tr>
+                ))}
                             <tr className="table-totals table-primary">
                                 <td colSpan="9" className="text-end fw-bold">Grand Totals:</td>
                                 <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.subtotal || s.total_amount), 0).toFixed(2)}</td>
@@ -909,25 +1152,26 @@ case 'exchange-requests':
                     <Form.Group as={Row} className="mb-3">
                         <Form.Label column sm="3">Report Type:</Form.Label>
                         <Col sm="9">
-                            <Form.Control as="select" value={reportType} onChange={(e) => {
-                                setReportType(e.target.value);
-                                clearFilters();
-                            }}>
-                                <option value="profit-loss">Profit & Loss Summary</option>
-                                <option value="detailed-sales">Detailed Sales Report</option>
-                                <option value="product-profitability">Product Profitability Report</option>
-                                <option value="inventory-movement">Inventory Movement Report</option>
-                                <option value="raw-material-consumption">Raw Material Consumption Report</option>
-                                <option value="sales-performance-by-staff-branch">Sales Performance (Staff/Branch)</option>
-                                <option value="free-stock">Free Stock Report</option>
-                                <option value="discount-analysis">Discount Analysis Report</option>
-                                <option value="exchange-requests">Bread Exchange Report</option>
-                                <option value="operating-expenses">Operating Expenses Report</option>
-                                <option value="salary-payroll">Salary & Payroll Report</option>
-                                <option value="waste-stock">Waste Stock Report</option>
-                                <option value="stock-issue-transfer">Stock Issue/Transfer Report</option>
-                                <option value="production-efficiency">Production Efficiency Report</option>
-                            </Form.Control>
+<Form.Control as="select" value={reportType} onChange={(e) => {
+    setReportType(e.target.value);
+    clearFilters();
+}}>
+    <option value="profit-loss">Profit & Loss Summary</option>
+    <option value="detailed-sales">Detailed Sales Report</option>
+    <option value="product-profitability">Product Profitability Report</option>
+    <option value="advantage-sales-analysis">Advantage Sales Analysis Report</option> {/* NEW */}
+    <option value="inventory-movement">Inventory Movement Report</option>
+    <option value="raw-material-consumption">Raw Material Consumption Report</option>
+    <option value="sales-performance-by-staff-branch">Sales Performance (Staff/Branch)</option>
+    <option value="free-stock">Free Stock Report</option>
+    <option value="discount-analysis">Discount Analysis Report</option>
+    <option value="exchange-requests">Bread Exchange Report</option>
+    <option value="operating-expenses">Operating Expenses Report</option>
+    <option value="salary-payroll">Salary & Payroll Report</option>
+    <option value="waste-stock">Waste Stock Report</option>
+    <option value="stock-issue-transfer">Stock Issue/Transfer Report</option>
+    <option value="production-efficiency">Production Efficiency Report</option>
+</Form.Control>
                         </Col>
                     </Form.Group>
                 </div>

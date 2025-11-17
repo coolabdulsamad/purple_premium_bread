@@ -1032,3 +1032,139 @@
     padding: 12px 16px;
   }
 }
+
+
+
+/* Add these styles to your existing SalesHistoryPage.css */
+
+/* Advantage Sale Badge */
+.sh-advantage-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #ff9800, #ff5722);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sh-advantage-icon {
+    font-size: 0.875rem;
+}
+
+/* Payment Reference Styles */
+.sh-table__cell--reference {
+    max-width: 120px;
+    min-width: 100px;
+}
+
+.sh-reference {
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #666;
+    background: #f8f9fa;
+    padding: 1px 4px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    word-break: break-all;
+}
+
+/* Receipt Cell Styles */
+.sh-table__cell--receipt {
+    text-align: center;
+    width: 60px;
+}
+
+/* Receipt Image Modal Styles */
+.sh-receipt-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.sh-receipt-image {
+    max-width: 100%;
+    max-height: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sh-receipt-fallback {
+    text-align: center;
+    color: #6c757d;
+}
+
+.sh-receipt-fallback-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #dee2e6;
+}
+
+/* Receipt Actions */
+.sh-receipt-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Advantage Sale Specific Styles */
+.sh-details-card--warning {
+    border-left: 4px solid #ff9800;
+}
+
+.sh-detail-value--highlight {
+    color: #ff9800;
+    font-weight: 600;
+}
+
+.sh-payment-item--advantage {
+    color: #ff9800;
+    font-weight: 600;
+}
+
+.sh-detail-value--mono {
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+/* Badge Colors for Advantage Sales */
+.sh-badge--warning {
+    background: linear-gradient(135deg, #ff9800, #ff5722);
+    color: white;
+}
+
+/* Print Styles for Advantage Sales */
+@media print {
+    .advantage-sale {
+        background-color: #fff3e0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .sh-table__cell--reference,
+    .sh-table__cell--receipt {
+        display: none;
+    }
+    
+    .sh-receipt-actions {
+        flex-direction: column;
+    }
+    
+    .sh-advantage-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+}

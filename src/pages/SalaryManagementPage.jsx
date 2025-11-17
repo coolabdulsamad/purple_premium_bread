@@ -8,31 +8,41 @@ import {
     FiPlus, FiTrendingUp, FiPieChart, FiCreditCard, FiFilter,
     FiChevronDown, FiChevronUp, FiSearch, FiX, FiSave, FiTrash2,
     FiAlertTriangle, FiCheckCircle, FiClock, FiArrowUp, FiArrowDown,
-    FiPercent
+    FiPercent,
+    FiList,
+    FiUserPlus
 } from 'react-icons/fi';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/salaryManagement.css';
 import { FiPrinter } from 'react-icons/fi';
+import { RiFileHistoryFill } from 'react-icons/ri';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const SalaryManagementPage = () => {
-    const [activeTab, setActiveTab] = useState('staff');
-    const [staff, setStaff] = useState([]);
+    const [activeTab, setActiveTab] = useState('all-staff');
+    const [allStaff, setAllStaff] = useState([]);
     const [payments, setPayments] = useState([]);
     const [loans, setLoans] = useState([]);
+    const [companyDebts, setCompanyDebts] = useState([]);
+    const [debtHistory, setDebtHistory] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showPaymentDetails, setShowPaymentDetails] = useState(false);
     const [showLoanModal, setShowLoanModal] = useState(false);
+    const [showStaffModal, setShowStaffModal] = useState(false);
+    const [showDebtModal, setShowDebtModal] = useState(false);
+    const [showDebtHistoryModal, setShowDebtHistoryModal] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState(null);
     const [selectedPayment, setSelectedPayment] = useState(null);
+    const [selectedDebt, setSelectedDebt] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState(null);
     const [filterOptions, setFilterOptions] = useState({});
-    const [filtersOpen, setFiltersOpen] = useState(true);
+    const [staff, setStaff] = useState([]);
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -88,13 +98,50 @@ const SalaryManagementPage = () => {
         endDate: ''
     });
 
+    // // Form states
+    // const [salaryForm, setSalaryForm] = useState({
+    //     base_salary: '',
+    //     allowances: '',
+    //     deductions: '',
+    //     salary_type: 'monthly',
+    //     bank_name: '',
+    //     account_number: '',
+    //     tax_rate: '',
+    //     pension_rate: ''
+    // });
+
     // Form states
+    const [staffForm, setStaffForm] = useState({
+        fullname: '',
+        phone_number: '',
+        position: '',
+        department: '',
+        email: '',
+        gender: '',
+        date_of_birth: '',
+        address: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        is_active: true
+    });
+
+    const [debtForm, setDebtForm] = useState({
+        staff_id: '',
+        staff_type: 'user',
+        amount: '',
+        reason: '',
+        debt_type: 'owed_to_company', // or 'owed_by_company'
+        status: 'pending'
+    });
+
+    // Update the salaryForm state
     const [salaryForm, setSalaryForm] = useState({
         base_salary: '',
         allowances: '',
         deductions: '',
         salary_type: 'monthly',
         bank_name: '',
+        bank_account_name: '', // Add this field
         account_number: '',
         tax_rate: '',
         pension_rate: ''
@@ -147,6 +194,207 @@ const SalaryManagementPage = () => {
         }
     };
 
+    // Add new filter state for all staff
+    const [allStaffFilters, setAllStaffFilters] = useState({
+        role: '',
+        search: '',
+        salaryType: '',
+        minSalary: '',
+        maxSalary: '',
+        isActive: 'true',
+        staffType: '' // Add staff type filter
+    });
+
+    // Update fetchAllStaff to use filters
+    const fetchAllStaff = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/salaries/all-staff', {
+                params: allStaffFilters
+            });
+            setAllStaff(response.data);
+        } catch (error) {
+            console.error('Error fetching all staff:', error);
+            toast.error('Failed to fetch staff data.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add handler for all staff filters
+    const handleAllStaffFilterChange = (key, value) => {
+        setAllStaffFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Clear all staff filters
+    const clearAllStaffFilters = () => {
+        setAllStaffFilters({
+            role: '',
+            search: '',
+            salaryType: '',
+            minSalary: '',
+            maxSalary: '',
+            isActive: 'true',
+            staffType: ''
+        });
+    };
+
+    // Add filter state for company debts
+    const [debtFilters, setDebtFilters] = useState({
+        staffType: '',
+        debtType: '',
+        status: '',
+        search: '',
+        minAmount: '',
+        maxAmount: '',
+        startDate: '',
+        endDate: ''
+    });
+
+    // Update fetchCompanyDebts to use filters
+    const fetchCompanyDebts = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/salaries/company-debts', {
+                params: debtFilters
+            });
+            setCompanyDebts(response.data);
+        } catch (error) {
+            console.error('Error fetching company debts:', error);
+            toast.error('Failed to fetch company debts.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add handler for debt filters
+    const handleDebtFilterChange = (key, value) => {
+        setDebtFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Clear debt filters
+    const clearDebtFilters = () => {
+        setDebtFilters({
+            staffType: '',
+            debtType: '',
+            status: '',
+            search: '',
+            minAmount: '',
+            maxAmount: '',
+            startDate: '',
+            endDate: ''
+        });
+    };
+
+    // Fetch debt history for a staff
+    const fetchDebtHistory = async (staffId, staffType) => {
+        try {
+            const response = await api.get(`/salaries/company-debts/history/${staffType}/${staffId}`);
+            setDebtHistory(response.data);
+        } catch (error) {
+            console.error('Error fetching debt history:', error);
+        }
+    };
+
+    // Add new staff member
+    const handleAddStaff = async () => {
+        try {
+            await api.post('/staffs/members', staffForm);
+            toast.success('Staff member added successfully!');
+            setShowStaffModal(false);
+            setStaffForm({
+                fullname: '',
+                phone_number: '',
+                position: '',
+                department: '',
+                email: '',
+                gender: '',
+                date_of_birth: '',
+                address: '',
+                emergency_contact_name: '',
+                emergency_contact_phone: '',
+                is_active: true
+            });
+            fetchAllStaff();
+        } catch (error) {
+            console.error('Error adding staff member:', error);
+            toast.error('Failed to add staff member.');
+        }
+    };
+
+    // Add company debt
+    const handleAddDebt = async () => {
+        try {
+            await api.post('/salaries/company-debts', debtForm);
+            toast.success('Company debt recorded successfully!');
+            setShowDebtModal(false);
+            setDebtForm({
+                staff_id: '',
+                staff_type: 'user',
+                amount: '',
+                reason: '',
+                debt_type: 'owed_to_company',
+                status: 'pending'
+            });
+            fetchCompanyDebts();
+        } catch (error) {
+            console.error('Error adding company debt:', error);
+            toast.error('Failed to record company debt.');
+        }
+    };
+
+    // Add this new function to handle debt editing:
+const handleEditDebt = (debt) => {
+    console.log('Editing debt:', debt); // Debug log
+    
+    setSelectedDebt(debt);
+    setDebtForm({
+        staff_id: debt.staff_id,
+        staff_type: debt.staff_type,
+        amount: debt.amount,
+        reason: debt.reason,
+        debt_type: debt.debt_type,
+        status: debt.status
+    });
+    setShowDebtModal(true);
+};
+
+    // Update company debt
+    const handleUpdateDebt = async (debtId, updates) => {
+        try {
+            await api.put(`/salaries/company-debts/${debtId}`, updates);
+            toast.success('Company debt updated successfully!');
+            fetchCompanyDebts();
+        } catch (error) {
+            console.error('Error updating company debt:', error);
+            toast.error('Failed to update company debt.');
+        }
+    };
+
+    // Add debt history entry
+    const handleAddDebtHistory = async (debtId, historyData) => {
+        try {
+            await api.post(`/salaries/company-debts/${debtId}/history`, historyData);
+            toast.success('Debt history updated successfully!');
+            if (selectedDebt) {
+                fetchDebtHistory(selectedDebt.staff_id, selectedDebt.staff_type);
+            }
+        } catch (error) {
+            console.error('Error adding debt history:', error);
+            toast.error('Failed to update debt history.');
+        }
+    };
+
+    // Update useEffect to include allStaffFilters
+    useEffect(() => {
+        if (activeTab === 'all-staff') {
+            fetchAllStaff();
+        } else if (activeTab === 'company-debts') {
+            fetchCompanyDebts();
+        }
+    }, [activeTab, allStaffFilters]); // Add allStaffFilters dependency
+
+
     // Fetch payments data with filters
     const fetchPayments = async (page = 1) => {
         setLoading(true);
@@ -170,12 +418,18 @@ const SalaryManagementPage = () => {
     };
 
     // Fetch loans data with filters
+    // Fetch loans data with filters - ADD DEBUGGING
     const fetchLoans = async (page = 1) => {
         setLoading(true);
         try {
             const response = await api.get(`/salaries/loans`, {
                 params: { ...loanFilters, page, limit: 50 }
             });
+
+            // ADD DEBUGGING - Log what the API returns
+            console.log('Loans API Response:', response.data);
+            console.log('First loan object:', response.data.loans[0]);
+
             setLoans(response.data.loans);
             setPagination(response.data.pagination || {
                 page: 1,
@@ -237,7 +491,7 @@ const SalaryManagementPage = () => {
         setLoanData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Add new loan
+    // Add new loan - UPDATED VERSION
     const handleAddLoan = async () => {
         if (!loanData.user_id || !loanData.amount || !loanData.loan_date) {
             toast.error('Please fill in all required loan fields.');
@@ -245,12 +499,19 @@ const SalaryManagementPage = () => {
         }
 
         try {
-            // await axios.post(`${API_BASE_URL}/salaries/loans`, loanData);
-            await api.post('/salaries/loans', loanData);
+            // Create loan payload with staff_type included
+            const loanPayload = {
+                ...loanData,
+                staff_type: selectedStaff?.staff_type || 'user' // Add staff_type from selected staff
+            };
+
+            console.log('Sending loan data:', loanPayload); // Debug log
+
+            await api.post('/salaries/loans', loanPayload);
             toast.success('Loan recorded successfully!');
 
             // Refresh data
-            fetchStaff();
+            fetchAllStaff(); // Changed from fetchStaff() to fetchAllStaff()
             if (activeTab === 'loans') {
                 fetchLoans();
             }
@@ -271,12 +532,14 @@ const SalaryManagementPage = () => {
         }
     };
 
-    // Open loan modal
+
+    // Open loan modal - UPDATED VERSION
     const handleOpenLoanModal = (staff) => {
         setSelectedStaff(staff);
         setLoanData(prev => ({
             ...prev,
-            user_id: staff.id
+            user_id: staff.id,
+            staff_type: staff.staff_type // ADD THIS LINE - include staff_type
         }));
         setShowLoanModal(true);
     };
@@ -410,7 +673,10 @@ const SalaryManagementPage = () => {
                 net_amount: parseFloat(paymentForm.net_amount),
                 gross_amount: gross_amount, // Send calculated gross amount
                 loan_deduction: parseFloat(paymentForm.loan_deduction),
-                loan_ids: outstandingLoans.map(loan => loan.id)
+                loan_ids: outstandingLoans.map(loan => loan.id),
+                user_id: selectedStaff.id,
+                staff_type: selectedStaff.staff_type || 'user', // <--- IMPORTANT: Pass the type!
+                // ... all other payment fields
             };
 
             console.log('Sending payment data:', paymentData);
@@ -426,12 +692,6 @@ const SalaryManagementPage = () => {
             toast.error(errorMessage);
         }
     };
-
-    // Handle payment form changes
-    // const handlePaymentChange = (e) => {
-    //     const { name, value } = e.target;
-    //     setPaymentForm(prev => ({ ...prev, [name]: value }));
-    // };
 
     // Recalculate net amount when dependencies change
     useEffect(() => {
@@ -451,41 +711,31 @@ const SalaryManagementPage = () => {
         }
     }, [selectedStaff, otherDeductions, outstandingLoans, showPaymentModal]);
 
-    // Process payment
-    // const handleProcessPayment = async () => {
-    //     try {
-    //         // Prepare payment data
-    //         const paymentData = {
-    //             ...paymentForm,
-    //             gross_amount: parseFloat(paymentForm.gross_amount),
-    //             deductions: parseFloat(otherDeductions),
-    //             net_amount: parseFloat(paymentForm.net_amount),
-    //             loan_deduction: parseFloat(paymentForm.loan_deduction),
-    //             loan_ids: outstandingLoans.map(loan => loan.id)
-    //         };
-
-    //         const response = await api.post(`/salaries/payments`, paymentData);
-    //         toast.success('Salary payment processed successfully!');
-    //         setShowPaymentModal(false);
-    //         fetchPayments();
-    //         fetchStaff(); // Refresh staff to update outstanding loans
-    //     } catch (error) {
-    //         console.error('Error processing payment:', error);
-    //         const errorMessage = error.response?.data?.details || error.response?.data?.error || 'Failed to process payment.';
-    //         toast.error(errorMessage);
-    //     }
-    // };
-
-    // Save salary structure
+    // Update the handleSaveSalary function with better error handling
     const handleSaveSalary = async () => {
         try {
-            await api.post(`/salaries/staff/${selectedStaff.id}/salary`, salaryForm);
+            // Determine the staff type and prepare the endpoint
+            const staffType = selectedStaff.staff_type || 'user';
+            const endpoint = `/salaries/staff/${staffType}/${selectedStaff.id}/salary`;
+
+            console.log('Saving salary data:', {
+                endpoint,
+                staffType,
+                staffId: selectedStaff.id,
+                formData: salaryForm
+            });
+
+            const response = await api.post(endpoint, salaryForm);
             toast.success('Salary structure updated successfully!');
             setShowSalaryModal(false);
-            fetchStaff();
+            fetchAllStaff(); // Refresh the all staff list
         } catch (error) {
             console.error('Error updating salary:', error);
-            const errorMessage = error.response?.data?.details || error.response?.data?.error || 'Failed to update salary structure.';
+            console.error('Error response:', error.response);
+
+            const errorMessage = error.response?.data?.details ||
+                error.response?.data?.error ||
+                'Failed to update salary structure.';
             toast.error(errorMessage);
         }
     };
@@ -560,20 +810,24 @@ const SalaryManagementPage = () => {
         }));
     };
 
-    const handleEditSalary = (staffMember) => {
-        setSelectedStaff(staffMember);
-        setSalaryForm({
-            base_salary: staffMember.base_salary || '',
-            allowances: staffMember.allowances || '',
-            deductions: staffMember.deductions || '',
-            salary_type: staffMember.salary_type || 'monthly',
-            bank_name: staffMember.bank_name || '',
-            account_number: staffMember.account_number || '',
-            tax_rate: staffMember.tax_rate || '',
-            pension_rate: staffMember.pension_rate || ''
-        });
-        setShowSalaryModal(true);
-    };
+// Replace the existing handleEditSalary function with this:
+const handleEditSalary = (staffMember) => {
+    console.log('Editing staff member:', staffMember); // Debug log
+    
+    setSelectedStaff(staffMember);
+    setSalaryForm({
+        base_salary: staffMember.base_salary || '',
+        allowances: staffMember.allowances || '',
+        deductions: staffMember.deductions || '',
+        salary_type: staffMember.salary_type || 'monthly',
+        bank_name: staffMember.bank_name || '',
+        bank_account_name: staffMember.bank_account_name || '',
+        account_number: staffMember.account_number || '',
+        tax_rate: staffMember.tax_rate || '',
+        pension_rate: staffMember.pension_rate || ''
+    });
+    setShowSalaryModal(true);
+};
 
     const handleViewPaymentDetails = async (payment) => {
         try {
@@ -629,19 +883,19 @@ const SalaryManagementPage = () => {
         setPaymentDetails(null);
     };
 
-// Add this function to your component
-const handlePrintPayment = (payment) => {
-    const printWindow = window.open('', '_blank');
-    const printDate = format(new Date(), 'MMMM dd, yyyy hh:mm a');
-    
-    const grossAmount = parseFloat(payment.base_salary || 0) + parseFloat(payment.allowances || 0);
-    const totalDeductions = 
-        parseFloat(payment.tax_amount || 0) +
-        parseFloat(payment.pension_amount || 0) +
-        parseFloat(payment.deductions || 0) +
-        parseFloat(payment.loan_deduction || 0);
+    // Add this function to your component
+    const handlePrintPayment = (payment) => {
+        const printWindow = window.open('', '_blank');
+        const printDate = format(new Date(), 'MMMM dd, yyyy hh:mm a');
 
-    printWindow.document.write(`
+        const grossAmount = parseFloat(payment.base_salary || 0) + parseFloat(payment.allowances || 0);
+        const totalDeductions =
+            parseFloat(payment.tax_amount || 0) +
+            parseFloat(payment.pension_amount || 0) +
+            parseFloat(payment.deductions || 0) +
+            parseFloat(payment.loan_deduction || 0);
+
+        printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -862,9 +1116,9 @@ const handlePrintPayment = (payment) => {
         </body>
         </html>
     `);
-    
-    printWindow.document.close();
-};
+
+        printWindow.document.close();
+    };
 
     return (
         <div className="sm-page">
@@ -878,7 +1132,7 @@ const handlePrintPayment = (payment) => {
                         Salary & Wages Management
                     </h1>
                     <p className="sm-subtitle">
-                        Manage staff salaries, loans, and process payments
+                        Manage staff, salaries, loans, company debts and process payments
                     </p>
                 </div>
                 <button
@@ -893,13 +1147,14 @@ const handlePrintPayment = (payment) => {
 
             {/* Tabs */}
             <div className="sm-tabs">
+
                 <div className="sm-tabs__header">
                     <button
-                        className={`sm-tabs__tab ${activeTab === 'staff' ? 'sm-tabs__tab--active' : ''}`}
-                        onClick={() => setActiveTab('staff')}
+                        className={`sm-tabs__tab ${activeTab === 'all-staff' ? 'sm-tabs__tab--active' : ''}`}
+                        onClick={() => setActiveTab('all-staff')}
                     >
                         <FiUsers className="sm-tabs__icon" />
-                        Staff Management
+                        All Staff
                     </button>
                     <button
                         className={`sm-tabs__tab ${activeTab === 'payments' ? 'sm-tabs__tab--active' : ''}`}
@@ -915,12 +1170,19 @@ const handlePrintPayment = (payment) => {
                         <FiArrowUp className="sm-tabs__icon" />
                         Loan Records
                     </button>
+                    <button
+                        className={`sm-tabs__tab ${activeTab === 'company-debts' ? 'sm-tabs__tab--active' : ''}`}
+                        onClick={() => setActiveTab('company-debts')}
+                    >
+                        <FiList className="sm-tabs__icon" />
+                        Company Debts
+                    </button>
                 </div>
 
-                {/* Staff Management Tab */}
-                {activeTab === 'staff' && (
+                {/* All Staff Tab */}
+                {activeTab === 'all-staff' && (
                     <div className="sm-tab-content">
-                        {/* Staff Filters */}
+                        {/* All Staff Filters */}
                         {filtersOpen && (
                             <div className="sm-card">
                                 <div className="sm-card__header">
@@ -928,16 +1190,31 @@ const handlePrintPayment = (payment) => {
                                         <FiFilter />
                                         Staff Filters
                                     </div>
-                                    <span className="sm-badge sm-badge--secondary">{staff.length} staff members</span>
+                                    <span className="sm-badge sm-badge--secondary">{allStaff.length} staff members</span>
                                 </div>
                                 <div className="sm-card__body">
                                     <div className="sm-filters-grid">
                                         <div className="sm-field">
+                                            <label className="sm-label">Staff Type</label>
+                                            <div className="sm-input">
+                                                <select
+                                                    value={allStaffFilters.staffType}
+                                                    onChange={(e) => handleAllStaffFilterChange('staffType', e.target.value)}
+                                                    className="sm-input__field"
+                                                >
+                                                    <option value="">All Types</option>
+                                                    <option value="user">System Users</option>
+                                                    <option value="staff_member">Staff Members</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
                                             <label className="sm-label">Role</label>
                                             <div className="sm-input">
                                                 <select
-                                                    value={staffFilters.role}
-                                                    onChange={(e) => handleStaffFilterChange('role', e.target.value)}
+                                                    value={allStaffFilters.role}
+                                                    onChange={(e) => handleAllStaffFilterChange('role', e.target.value)}
                                                     className="sm-input__field"
                                                 >
                                                     <option value="">All Roles</option>
@@ -952,8 +1229,8 @@ const handlePrintPayment = (payment) => {
                                             <label className="sm-label">Salary Type</label>
                                             <div className="sm-input">
                                                 <select
-                                                    value={staffFilters.salaryType}
-                                                    onChange={(e) => handleStaffFilterChange('salaryType', e.target.value)}
+                                                    value={allStaffFilters.salaryType}
+                                                    onChange={(e) => handleAllStaffFilterChange('salaryType', e.target.value)}
                                                     className="sm-input__field"
                                                 >
                                                     <option value="">All Types</option>
@@ -970,8 +1247,8 @@ const handlePrintPayment = (payment) => {
                                                 <input
                                                     type="number"
                                                     placeholder="Min"
-                                                    value={staffFilters.minSalary}
-                                                    onChange={(e) => handleStaffFilterChange('minSalary', e.target.value)}
+                                                    value={allStaffFilters.minSalary}
+                                                    onChange={(e) => handleAllStaffFilterChange('minSalary', e.target.value)}
                                                     className="sm-input__field"
                                                 />
                                             </div>
@@ -983,8 +1260,8 @@ const handlePrintPayment = (payment) => {
                                                 <input
                                                     type="number"
                                                     placeholder="Max"
-                                                    value={staffFilters.maxSalary}
-                                                    onChange={(e) => handleStaffFilterChange('maxSalary', e.target.value)}
+                                                    value={allStaffFilters.maxSalary}
+                                                    onChange={(e) => handleAllStaffFilterChange('maxSalary', e.target.value)}
                                                     className="sm-input__field"
                                                 />
                                             </div>
@@ -996,9 +1273,9 @@ const handlePrintPayment = (payment) => {
                                                 <FiSearch className="sm-input__icon" />
                                                 <input
                                                     type="text"
-                                                    placeholder="Search by name, email, or username..."
-                                                    value={staffFilters.search}
-                                                    onChange={(e) => handleStaffFilterChange('search', e.target.value)}
+                                                    placeholder="Search by name, email, or phone..."
+                                                    value={allStaffFilters.search}
+                                                    onChange={(e) => handleAllStaffFilterChange('search', e.target.value)}
                                                     className="sm-input__field"
                                                 />
                                             </div>
@@ -1008,8 +1285,8 @@ const handlePrintPayment = (payment) => {
                                             <label className="sm-label">Status</label>
                                             <div className="sm-input">
                                                 <select
-                                                    value={staffFilters.isActive}
-                                                    onChange={(e) => handleStaffFilterChange('isActive', e.target.value)}
+                                                    value={allStaffFilters.isActive}
+                                                    onChange={(e) => handleAllStaffFilterChange('isActive', e.target.value)}
                                                     className="sm-input__field"
                                                 >
                                                     <option value="true">Active Only</option>
@@ -1022,14 +1299,14 @@ const handlePrintPayment = (payment) => {
                                         <div className="sm-field sm-field--actions">
                                             <button
                                                 className="sm-btn sm-btn--ghost"
-                                                onClick={clearStaffFilters}
+                                                onClick={clearAllStaffFilters}
                                             >
                                                 <FiX />
                                                 Clear Filters
                                             </button>
                                             <button
                                                 className="sm-btn sm-btn--primary"
-                                                onClick={fetchStaff}
+                                                onClick={fetchAllStaff}
                                             >
                                                 Apply Filters
                                             </button>
@@ -1039,14 +1316,22 @@ const handlePrintPayment = (payment) => {
                             </div>
                         )}
 
-                        {/* Staff Table */}
+                        {/* All Staff Table */}
                         <div className="sm-card">
                             <div className="sm-card__header">
                                 <div className="sm-card__title">
                                     <FiUsers />
-                                    Staff Salary Structure
+                                    All Staff Members
                                 </div>
-                                <span className="sm-badge sm-badge--primary">{staff.length} Staff Found</span>
+                                <div className="sm-header-actions">
+                                    <button
+                                        className="sm-btn sm-btn--primary"
+                                        onClick={() => setShowStaffModal(true)}
+                                    >
+                                        <FiUserPlus />
+                                        Add Staff Member
+                                    </button>
+                                </div>
                             </div>
                             <div className="sm-card__body">
                                 {loading ? (
@@ -1054,7 +1339,7 @@ const handlePrintPayment = (payment) => {
                                         <div className="sm-spinner"></div>
                                         <div className="sm-loading-text">Loading staff data...</div>
                                     </div>
-                                ) : staff.length === 0 ? (
+                                ) : allStaff.length === 0 ? (
                                     <div className="sm-empty-state">
                                         <FiUsers className="sm-empty-icon" />
                                         <h3>No Staff Members Found</h3>
@@ -1065,78 +1350,343 @@ const handlePrintPayment = (payment) => {
                                         <table className="sm-table">
                                             <thead className="sm-table__head">
                                                 <tr>
-                                                    <th className="sm-table__cell sm-table__cell--header">S/N</th>
-                                                    <th className="sm-table__cell sm-table__cell--header">Staff Member</th>
-                                                    <th className="sm-table__cell sm-table__cell--header">Role</th>
+                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--index">S/N</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Name</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Type</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Role/Position</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Contact</th>
                                                     <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Base Salary</th>
-                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Allowances</th>
-                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Deductions</th>
-                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Net Salary</th>
-                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Outstanding Loan</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Bank Details</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Status</th>
                                                     <th className="sm-table__cell sm-table__cell--header sm-table__cell--actions">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="sm-table__body">
-                                                {staff.map((staffMember, index) => (
-                                                    <tr key={staffMember.id} className="sm-table__row">
+                                                {allStaff.map((staff, index) => (
+                                                    <tr key={`${staff.staff_type}-${staff.id}`} className="sm-table__row">
                                                         <td className="sm-table__cell sm-table__cell--index">{index + 1}</td>
                                                         <td className="sm-table__cell sm-table__cell--staff">
                                                             <div className="sm-staff-info">
-                                                                <strong>{staffMember.fullname || staffMember.username}</strong>
-                                                                <div className="sm-staff-meta">{staffMember.email}</div>
-                                                                {staffMember.phone_number && (
-                                                                    <div className="sm-staff-meta">{staffMember.phone_number}</div>
+                                                                <strong>{staff.fullname}</strong>
+                                                                {staff.staff_type === 'staff_member' && (
+                                                                    <div className="sm-staff-badge">Non-User</div>
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="sm-table__cell sm-table__cell--role">
-                                                            <span className={`sm-badge ${getRoleBadgeColor(staffMember.role)}`}>
-                                                                {staffMember.role?.toUpperCase()}
+                                                        <td className="sm-table__cell">
+                                                            <span className={`sm-badge ${staff.staff_type === 'user' ? 'sm-badge--primary' : 'sm-badge--secondary'
+                                                                }`}>
+                                                                {staff.staff_type === 'user' ? 'System User' : 'Staff Member'}
                                                             </span>
                                                         </td>
-                                                        <td className="sm-table__cell sm-table__cell--amount">
-                                                            <strong>{formatCurrency(staffMember.base_salary)}</strong>
-                                                        </td>
-                                                        <td className="sm-table__cell sm-table__cell--amount sm-table__cell--positive">
-                                                            +{formatCurrency(staffMember.allowances)}
-                                                        </td>
-                                                        <td className="sm-table__cell sm-table__cell--amount sm-table__cell--negative">
-                                                            -{formatCurrency(staffMember.deductions)}
-                                                        </td>
-                                                        <td className="sm-table__cell sm-table__cell--amount sm-table__cell--net">
-                                                            <strong>{formatCurrency(staffMember.net_salary)}</strong>
+                                                        <td className="sm-table__cell">{staff.role}</td>
+                                                        <td className="sm-table__cell">
+                                                            <div className="sm-staff-info">
+                                                                <div>{staff.email}</div>
+                                                                <div className="sm-staff-meta">{staff.phone_number}</div>
+                                                            </div>
                                                         </td>
                                                         <td className="sm-table__cell sm-table__cell--amount">
-                                                            {staffMember.outstanding_loan_amount > 0 ? (
-                                                                <span className="sm-text-warning">
-                                                                    {formatCurrency(staffMember.outstanding_loan_amount)}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="sm-text-success">₦0.00</span>
-                                                            )}
+                                                            {formatCurrency(staff.base_salary)}
+                                                        </td>
+                                                        <td className="sm-table__cell">
+                                                            <div className="sm-bank-details">
+                                                                {staff.bank_name ? (
+                                                                    <>
+                                                                        <div><strong>Bank:</strong> {staff.bank_name}</div>
+                                                                        <div><strong>Account Name:</strong> {staff.bank_account_name || 'Not set'}</div>
+                                                                        <div><strong>Account No:</strong> {staff.account_number || 'Not set'}</div>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="sm-text-muted">Not set</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="sm-table__cell">
+                                                            <span className={`sm-badge ${staff.is_active ? 'sm-badge--success' : 'sm-badge--danger'
+                                                                }`}>
+                                                                {staff.is_active ? 'Active' : 'Inactive'}
+                                                            </span>
                                                         </td>
                                                         <td className="sm-table__cell sm-table__cell--actions">
                                                             <div className="sm-actions">
-                                                                <button
-                                                                    className="sm-action-btn sm-action-btn--edit"
-                                                                    onClick={() => handleEditSalary(staffMember)}
-                                                                    title="Edit salary structure"
-                                                                >
-                                                                    <FiEdit />
-                                                                </button>
+{/* // In the actions column of the All Staff table, change the edit button to: */}
+<button
+    className="sm-action-btn sm-action-btn--edit"
+    onClick={() => handleEditSalary(staff)}
+    title="Edit Salary"
+>
+    <FiEdit />
+</button>
                                                                 <button
                                                                     className="sm-action-btn sm-action-btn--success"
-                                                                    onClick={() => handleOpenPaymentModal(staffMember)}
-                                                                    title="Process payment"
+                                                                    onClick={() => handleOpenPaymentModal(staff)}
+                                                                    title="Process Payment"
                                                                 >
                                                                     <FiDollarSign />
                                                                 </button>
                                                                 <button
                                                                     className="sm-action-btn sm-action-btn--warning"
-                                                                    onClick={() => handleOpenLoanModal(staffMember)}
-                                                                    title="Record loan/advance"
+                                                                    onClick={() => handleOpenLoanModal(staff)}
+                                                                    title="Record Loan"
                                                                 >
                                                                     <FiArrowUp />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Company Debts Tab */}
+                {activeTab === 'company-debts' && (
+                    <div className="sm-tab-content">
+                        {/* Company Debts Filters */}
+                        {filtersOpen && (
+                            <div className="sm-card">
+                                <div className="sm-card__header">
+                                    <div className="sm-card__title">
+                                        <FiFilter />
+                                        Debt Filters
+                                    </div>
+                                    <span className="sm-badge sm-badge--secondary">{companyDebts.length} debt records</span>
+                                </div>
+                                <div className="sm-card__body">
+                                    <div className="sm-filters-grid">
+                                        <div className="sm-field">
+                                            <label className="sm-label">Staff Type</label>
+                                            <div className="sm-input">
+                                                <select
+                                                    value={debtFilters.staffType}
+                                                    onChange={(e) => handleDebtFilterChange('staffType', e.target.value)}
+                                                    className="sm-input__field"
+                                                >
+                                                    <option value="">All Types</option>
+                                                    <option value="user">System Users</option>
+                                                    <option value="staff_member">Staff Members</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">Debt Type</label>
+                                            <div className="sm-input">
+                                                <select
+                                                    value={debtFilters.debtType}
+                                                    onChange={(e) => handleDebtFilterChange('debtType', e.target.value)}
+                                                    className="sm-input__field"
+                                                >
+                                                    <option value="">All Types</option>
+                                                    <option value="owed_to_company">Owed to Company</option>
+                                                    <option value="owed_by_company">Owed by Company</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">Status</label>
+                                            <div className="sm-input">
+                                                <select
+                                                    value={debtFilters.status}
+                                                    onChange={(e) => handleDebtFilterChange('status', e.target.value)}
+                                                    className="sm-input__field"
+                                                >
+                                                    <option value="">All Status</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="partially_paid">Partially Paid</option>
+                                                    <option value="paid">Paid</option>
+                                                    <option value="written_off">Written Off</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">Min Amount (₦)</label>
+                                            <div className="sm-input">
+                                                <input
+                                                    type="number"
+                                                    placeholder="Min"
+                                                    value={debtFilters.minAmount}
+                                                    onChange={(e) => handleDebtFilterChange('minAmount', e.target.value)}
+                                                    className="sm-input__field"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">Max Amount (₦)</label>
+                                            <div className="sm-input">
+                                                <input
+                                                    type="number"
+                                                    placeholder="Max"
+                                                    value={debtFilters.maxAmount}
+                                                    onChange={(e) => handleDebtFilterChange('maxAmount', e.target.value)}
+                                                    className="sm-input__field"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">From Date</label>
+                                            <div className="sm-input">
+                                                <input
+                                                    type="date"
+                                                    value={debtFilters.startDate}
+                                                    onChange={(e) => handleDebtFilterChange('startDate', e.target.value)}
+                                                    className="sm-input__field"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field">
+                                            <label className="sm-label">To Date</label>
+                                            <div className="sm-input">
+                                                <input
+                                                    type="date"
+                                                    value={debtFilters.endDate}
+                                                    onChange={(e) => handleDebtFilterChange('endDate', e.target.value)}
+                                                    className="sm-input__field"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field sm-field--full">
+                                            <label className="sm-label">Search</label>
+                                            <div className="sm-input sm-input--icon">
+                                                <FiSearch className="sm-input__icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search by staff name or reason..."
+                                                    value={debtFilters.search}
+                                                    onChange={(e) => handleDebtFilterChange('search', e.target.value)}
+                                                    className="sm-input__field"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm-field sm-field--actions">
+                                            <button
+                                                className="sm-btn sm-btn--ghost"
+                                                onClick={clearDebtFilters}
+                                            >
+                                                <FiX />
+                                                Clear Filters
+                                            </button>
+                                            <button
+                                                className="sm-btn sm-btn--primary"
+                                                onClick={fetchCompanyDebts}
+                                            >
+                                                Apply Filters
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Company Debts Table */}
+                        <div className="sm-card">
+                            <div className="sm-card__header">
+                                <div className="sm-card__title">
+                                    <FiList />
+                                    Company Debts Management
+                                </div>
+                                <div className="sm-header-actions">
+                                    <button
+                                        className="sm-btn sm-btn--primary"
+                                        onClick={() => setShowDebtModal(true)}
+                                    >
+                                        <FiPlus />
+                                        Add Debt Record
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="sm-card__body">
+                                {loading ? (
+                                    <div className="sm-loading">
+                                        <div className="sm-spinner"></div>
+                                        <div className="sm-loading-text">Loading debt records...</div>
+                                    </div>
+                                ) : companyDebts.length === 0 ? (
+                                    <div className="sm-empty-state">
+                                        <FiList className="sm-empty-icon" />
+                                        <h3>No Debt Records Found</h3>
+                                        <p>No company debt records found matching your filters.</p>
+                                    </div>
+                                ) : (
+                                    <div className="sm-table-container">
+                                        <table className="sm-table">
+                                            <thead className="sm-table__head">
+                                                <tr>
+                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--index">S/N</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Staff Member</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Type</th>
+                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--amount">Amount</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Reason</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Status</th>
+                                                    <th className="sm-table__cell sm-table__cell--header">Date Recorded</th>
+                                                    <th className="sm-table__cell sm-table__cell--header sm-table__cell--actions">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="sm-table__body">
+                                                {companyDebts.map((debt, index) => (
+                                                    <tr key={debt.id} className="sm-table__row">
+                                                        <td className="sm-table__cell sm-table__cell--index">{index + 1}</td>
+                                                        <td className="sm-table__cell sm-table__cell--staff">
+                                                            <div className="sm-staff-info">
+                                                                <strong>{debt.staff_name}</strong>
+                                                                <div className="sm-staff-meta">{debt.staff_type}</div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="sm-table__cell">
+                                                            <span className={`sm-badge ${debt.debt_type === 'owed_to_company' ? 'sm-badge--danger' : 'sm-badge--info'
+                                                                }`}>
+                                                                {debt.debt_type === 'owed_to_company' ? 'Owed to Company' : 'Owed by Company'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="sm-table__cell sm-table__cell--amount">
+                                                            {formatCurrency(debt.amount)}
+                                                        </td>
+                                                        <td className="sm-table__cell">
+                                                            {debt.reason}
+                                                        </td>
+                                                        <td className="sm-table__cell">
+                                                            <span className={`sm-badge ${debt.status === 'paid' ? 'sm-badge--success' :
+                                                                debt.status === 'partially_paid' ? 'sm-badge--warning' : 'sm-badge--danger'
+                                                                }`}>
+                                                                {debt.status.replace('_', ' ').toUpperCase()}
+                                                            </span>
+                                                        </td>
+                                                        <td className="sm-table__cell sm-table__cell--date">
+                                                            {format(new Date(debt.created_at), 'MMM dd, yyyy')}
+                                                        </td>
+                                                        <td className="sm-table__cell sm-table__cell--actions">
+                                                            <div className="sm-actions">
+{/* // Replace the existing edit button in company debts with: */}
+<button
+    className="sm-action-btn sm-action-btn--edit"
+    onClick={() => handleEditDebt(debt)}
+    title="Edit Debt"
+>
+    <FiEdit />
+</button>
+                                                                <button
+                                                                    className="sm-action-btn sm-action-btn--info"
+                                                                    onClick={() => {
+                                                                        setSelectedDebt(debt);
+                                                                        fetchDebtHistory(debt.staff_id, debt.staff_type);
+                                                                        setShowDebtHistoryModal(true);
+                                                                    }}
+                                                                    title="View History"
+                                                                >
+                                                                    <RiFileHistoryFill />
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -1373,12 +1923,12 @@ const handlePrintPayment = (payment) => {
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Payment History Table - UPDATED COLUMNS */}
+                                        {/* Payment History Table */}
                                         <div className="sm-table-container">
                                             <table className="sm-table">
                                                 <thead className="sm-table__head">
                                                     <tr>
-                                                        <th className="sm-table__cell sm-table__cell--header">S/N</th>
+                                                        <th className="sm-table__cell sm-table__cell--header sm-table__cell--index">S/N</th>
                                                         <th className="sm-table__cell sm-table__cell--header">Payment Date</th>
                                                         <th className="sm-table__cell sm-table__cell--header">Staff Member</th>
                                                         <th className="sm-table__cell sm-table__cell--header">Role</th>
@@ -1410,7 +1960,7 @@ const handlePrintPayment = (payment) => {
 
                                                         return (
                                                             <tr key={payment.id} className="sm-table__row">
-                                                                <td className='sm-table__cell sm-table__cell--index'>{index + 1}</td>
+                                                                <td className="sm-table__cell sm-table__cell--index">{index + 1}</td>
                                                                 <td className="sm-table__cell sm-table__cell--date">
                                                                     {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
                                                                 </td>
@@ -1592,19 +2142,13 @@ const handlePrintPayment = (payment) => {
                         )}
 
                         {/* Loans Table */}
+                        {/* Loans Table - UPDATED WITH BETTER ERROR HANDLING */}
                         <div className="sm-card">
                             <div className="sm-card__header">
                                 <div className="sm-card__title">
                                     <FiArrowUp />
                                     Loan Records
                                 </div>
-                                {/* <button
-                                    className="sm-btn sm-btn--primary"
-                                    onClick={() => setShowLoanModal(true)}
-                                >
-                                    <FiPlus />
-                                    Add New Loan
-                                </button> */}
                                 <span className="sm-badge sm-badge--total-loans">{loans.length} Total Loans</span>
                             </div>
                             <div className="sm-card__body">
@@ -1639,8 +2183,13 @@ const handlePrintPayment = (payment) => {
                                                         <td className='sm-table__cell sm-table__cell--index'>{index + 1}</td>
                                                         <td className="sm-table__cell sm-table__cell--staff">
                                                             <div className="sm-staff-info">
-                                                                <strong>{loan.staff_name}</strong>
-                                                                <div className="sm-staff-meta">{loan.staff_role}</div>
+                                                                <strong>{loan.borrower_name || loan.staff_name || 'Unknown Staff'}</strong>
+                                                                <div className="sm-staff-meta">
+                                                                    {loan.borrower_role || loan.staff_role || 'No role'}
+                                                                    {loan.staff_type && (
+                                                                        <span className="sm-staff-type"> ({loan.staff_type})</span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </td>
                                                         <td className="sm-table__cell sm-table__cell--date">
@@ -1790,6 +2339,20 @@ const handlePrintPayment = (payment) => {
                                     </div>
                                 </div>
 
+                                {/* NEW BANK ACCOUNT NAME FIELD */}
+                                <div className="sm-field">
+                                    <label className="sm-label">Bank Account Name</label>
+                                    <div className="sm-input">
+                                        <input
+                                            type="text"
+                                            value={salaryForm.bank_account_name}
+                                            onChange={(e) => setSalaryForm(prev => ({ ...prev, bank_account_name: e.target.value }))}
+                                            placeholder="Account holder's name as it appears in bank"
+                                            className="sm-input__field"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="sm-field">
                                     <label className="sm-label">Account Number</label>
                                     <div className="sm-input">
@@ -1854,326 +2417,326 @@ const handlePrintPayment = (payment) => {
                 </div>
             )}
 
-            {/* // Updated Payment Modal Section - FIXED CALCULATIONS */}
-            {showPaymentModal && (
-                <div className="sm-modal">
-                    <div className="sm-modal__content">
-                        <div className="sm-modal__header">
-                            <h3 className="sm-modal__title">
-                                <FiDollarSign className="sm-modal__icon" />
-                                Process Salary Payment - {selectedStaff?.fullname || selectedStaff?.username}
-                            </h3>
-                            <button className="sm-modal__close" onClick={() => setShowPaymentModal(false)}>
-                                <FiX />
-                            </button>
+{/* Payment Modal */}
+{showPaymentModal && (
+    <div className="sm-modal">
+        <div className="sm-modal__content">
+            <div className="sm-modal__header">
+                <h3 className="sm-modal__title">
+                    <FiDollarSign className="sm-modal__icon" />
+                    Process Salary Payment - {selectedStaff?.fullname || selectedStaff?.username}
+                </h3>
+                <button className="sm-modal__close" onClick={() => setShowPaymentModal(false)}>
+                    <FiX />
+                </button>
+            </div>
+            <div className="sm-modal__body">
+                <div className="sm-form-grid">
+                    <div className="sm-field">
+                        <label className="sm-label">Salary Period *</label>
+                        <div className="sm-input">
+                            <input
+                                type="date"
+                                name="salary_period"
+                                value={paymentForm.salary_period}
+                                onChange={handlePaymentChange}
+                                className="sm-input__field"
+                                required
+                            />
                         </div>
-                        <div className="sm-modal__body">
-                            <div className="sm-form-grid">
-                                <div className="sm-field">
-                                    <label className="sm-label">Salary Period *</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="date"
-                                            name="salary_period"
-                                            value={paymentForm.salary_period}
-                                            onChange={handlePaymentChange}
-                                            className="sm-input__field"
-                                            required
-                                        />
+                        <div className="sm-input-help">First day of the salary period</div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Payment Date *</label>
+                        <div className="sm-input">
+                            <input
+                                type="date"
+                                name="payment_date"
+                                value={paymentForm.payment_date}
+                                onChange={handlePaymentChange}
+                                className="sm-input__field"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Base Salary (₦) *</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                name="base_salary"
+                                value={paymentForm.base_salary}
+                                onChange={(e) => {
+                                    handlePaymentChange(e);
+                                    recalculatePayment();
+                                }}
+                                className="sm-input__field"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Allowances (₦)</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                name="allowances"
+                                value={paymentForm.allowances}
+                                onChange={(e) => {
+                                    handlePaymentChange(e);
+                                    recalculatePayment();
+                                }}
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Tax Rate (%)</label>
+                        <div className="sm-input sm-input--icon">
+                            <FiPercent className="sm-input__icon" />
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                value={taxRate}
+                                onChange={handleTaxRateChange}
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Pension Rate (%)</label>
+                        <div className="sm-input sm-input--icon">
+                            <FiPercent className="sm-input__icon" />
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                value={pensionRate}
+                                onChange={handlePensionRateChange}
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Other Deductions (₦)</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={otherDeductions}
+                                onChange={handleOtherDeductionsChange}
+                                className="sm-input__field"
+                            />
+                        </div>
+                        <div className="sm-input-help">Company debt, advances, etc.</div>
+                    </div>
+
+                    {outstandingLoans.length > 0 && (
+                        <div className="sm-field sm-field--full">
+                            <label className="sm-label">Loan Deductions</label>
+                            <div className="sm-loan-deductions">
+                                {outstandingLoans.map(loan => (
+                                    <div key={loan.id} className="sm-loan-item">
+                                        <span>{format(new Date(loan.loan_date), 'MMM dd, yyyy')} - {loan.reason || 'No reason provided'}</span>
+                                        <span className="sm-loan-amount">{formatCurrency(loan.amount)}</span>
                                     </div>
-                                    <div className="sm-input-help">First day of the salary period</div>
+                                ))}
+                                <div className="sm-loan-total">
+                                    Total Loan Deduction: {formatCurrency(selectedStaff?.outstanding_loan_amount || 0)}
                                 </div>
+                            </div>
+                        </div>
+                    )}
 
-                                <div className="sm-field">
-                                    <label className="sm-label">Payment Date *</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="date"
-                                            name="payment_date"
-                                            value={paymentForm.payment_date}
-                                            onChange={handlePaymentChange}
-                                            className="sm-input__field"
-                                            required
-                                        />
+                    {/* DEDUCTION BREAKDOWN */}
+                    <div className="sm-field sm-field--full">
+                        <div className="sm-deductions-breakdown">
+                            <h5>Deduction Breakdown</h5>
+                            <div className="sm-deduction-item">
+                                <span>Tax Deduction:</span>
+                                <span className="sm-deduction-amount">-{formatCurrency(paymentForm.tax_amount)}</span>
+                            </div>
+                            <div className="sm-deduction-item">
+                                <span>Pension Deduction:</span>
+                                <span className="sm-deduction-amount">-{formatCurrency(paymentForm.pension_amount)}</span>
+                            </div>
+                            <div className="sm-deduction-item">
+                                <span>Other Deductions:</span>
+                                <span className="sm-deduction-amount">-{formatCurrency(otherDeductions)}</span>
+                            </div>
+                            <div className="sm-deduction-item">
+                                <span>Loan Deductions:</span>
+                                <span className="sm-deduction-amount">-{formatCurrency(paymentForm.loan_deduction)}</span>
+                            </div>
+                            <div className="sm-deduction-total">
+                                <span>Total Deductions:</span>
+                                <span className="sm-deduction-amount">
+                                    -{formatCurrency(
+                                        parseFloat(paymentForm.tax_amount || 0) +
+                                        parseFloat(paymentForm.pension_amount || 0) +
+                                        parseFloat(otherDeductions || 0) +
+                                        parseFloat(paymentForm.loan_deduction || 0)
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Gross Salary (₦)</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                value={(
+                                    parseFloat(paymentForm.base_salary || 0) +
+                                    parseFloat(paymentForm.allowances || 0)
+                                ).toFixed(2)}
+                                readOnly
+                                className="sm-input__field sm-input__field--readonly"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Net Amount (₦)</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                name="net_amount"
+                                value={paymentForm.net_amount}
+                                readOnly
+                                className="sm-input__field sm-input__field--readonly"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Payment Method *</label>
+                        <div className="sm-input">
+                            <select
+                                name="payment_method"
+                                value={paymentForm.payment_method}
+                                onChange={handlePaymentChange}
+                                className="sm-input__field"
+                                required
+                            >
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Mobile Money">Mobile Money</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Reference Number</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                name="reference_number"
+                                value={paymentForm.reference_number}
+                                onChange={handlePaymentChange}
+                                placeholder="Transaction reference"
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Notes</label>
+                        <div className="sm-input">
+                            <textarea
+                                rows={3}
+                                name="notes"
+                                value={paymentForm.notes}
+                                onChange={handlePaymentChange}
+                                placeholder="Additional notes..."
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="sm-field sm-field--full">
+                        <div className="sm-summary-card">
+                            <div className="sm-summary-card__header">
+                                <h6>Payment Summary</h6>
+                            </div>
+                            <div className="sm-summary-card__body">
+                                <div className="sm-summary-grid">
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Base Salary:</span>
+                                        <span className="sm-summary-value">{formatCurrency(paymentForm.base_salary)}</span>
                                     </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Base Salary (₦) *</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            name="base_salary"
-                                            value={paymentForm.base_salary}
-                                            onChange={(e) => {
-                                                handlePaymentChange(e);
-                                                recalculatePayment();
-                                            }}
-                                            className="sm-input__field"
-                                            required
-                                        />
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Allowances:</span>
+                                        <span className="sm-summary-value sm-summary-value--positive">+{formatCurrency(paymentForm.allowances)}</span>
                                     </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Allowances (₦)</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            name="allowances"
-                                            value={paymentForm.allowances}
-                                            onChange={(e) => {
-                                                handlePaymentChange(e);
-                                                recalculatePayment();
-                                            }}
-                                            className="sm-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Tax Rate (%)</label>
-                                    <div className="sm-input sm-input--icon">
-                                        <FiPercent className="sm-input__icon" />
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            max="100"
-                                            value={taxRate}
-                                            onChange={handleTaxRateChange}
-                                            className="sm-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Pension Rate (%)</label>
-                                    <div className="sm-input sm-input--icon">
-                                        <FiPercent className="sm-input__icon" />
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            max="100"
-                                            value={pensionRate}
-                                            onChange={handlePensionRateChange}
-                                            className="sm-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Other Deductions (₦)</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            value={otherDeductions}
-                                            onChange={handleOtherDeductionsChange}
-                                            className="sm-input__field"
-                                        />
-                                    </div>
-                                    <div className="sm-input-help">Company debt, advances, etc.</div>
-                                </div>
-
-                                {outstandingLoans.length > 0 && (
-                                    <div className="sm-field sm-field--full">
-                                        <label className="sm-label">Loan Deductions</label>
-                                        <div className="sm-loan-deductions">
-                                            {outstandingLoans.map(loan => (
-                                                <div key={loan.id} className="sm-loan-item">
-                                                    <span>{format(new Date(loan.loan_date), 'MMM dd, yyyy')} - {loan.reason || 'No reason provided'}</span>
-                                                    <span className="sm-loan-amount">{formatCurrency(loan.amount)}</span>
-                                                </div>
-                                            ))}
-                                            <div className="sm-loan-total">
-                                                Total Loan Deduction: {formatCurrency(selectedStaff?.outstanding_loan_amount || 0)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* DEDUCTION BREAKDOWN */}
-                                <div className="sm-field sm-field--full">
-                                    <div className="sm-deductions-breakdown">
-                                        <h5>Deduction Breakdown</h5>
-                                        <div className="sm-deduction-item">
-                                            <span>Tax Deduction:</span>
-                                            <span className="sm-deduction-amount">-{formatCurrency(paymentForm.tax_amount)}</span>
-                                        </div>
-                                        <div className="sm-deduction-item">
-                                            <span>Pension Deduction:</span>
-                                            <span className="sm-deduction-amount">-{formatCurrency(paymentForm.pension_amount)}</span>
-                                        </div>
-                                        <div className="sm-deduction-item">
-                                            <span>Other Deductions:</span>
-                                            <span className="sm-deduction-amount">-{formatCurrency(otherDeductions)}</span>
-                                        </div>
-                                        <div className="sm-deduction-item">
-                                            <span>Loan Deductions:</span>
-                                            <span className="sm-deduction-amount">-{formatCurrency(paymentForm.loan_deduction)}</span>
-                                        </div>
-                                        <div className="sm-deduction-total">
-                                            <span>Total Deductions:</span>
-                                            <span className="sm-deduction-amount">
-                                                -{formatCurrency(
-                                                    parseFloat(paymentForm.tax_amount || 0) +
-                                                    parseFloat(paymentForm.pension_amount || 0) +
-                                                    parseFloat(otherDeductions || 0) +
-                                                    parseFloat(paymentForm.loan_deduction || 0)
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Gross Salary (₦)</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            value={(
+                                    <div className="sm-summary-item sm-summary-item--gross">
+                                        <span className="sm-summary-label">Gross Salary:</span>
+                                        <span className="sm-summary-value sm-summary-value--gross">
+                                            {formatCurrency(
                                                 parseFloat(paymentForm.base_salary || 0) +
                                                 parseFloat(paymentForm.allowances || 0)
-                                            ).toFixed(2)}
-                                            readOnly
-                                            className="sm-input__field sm-input__field--gross"
-                                        />
+                                            )}
+                                        </span>
                                     </div>
-                                </div>
 
-                                <div className="sm-field">
-                                    <label className="sm-label">Net Amount (₦)</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            name="net_amount"
-                                            value={paymentForm.net_amount}
-                                            readOnly
-                                            className="sm-input__field sm-input__field--net"
-                                        />
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Tax Deduction:</span>
+                                        <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.tax_amount)}</span>
                                     </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Payment Method *</label>
-                                    <div className="sm-input">
-                                        <select
-                                            name="payment_method"
-                                            value={paymentForm.payment_method}
-                                            onChange={handlePaymentChange}
-                                            className="sm-input__field"
-                                            required
-                                        >
-                                            <option value="Bank Transfer">Bank Transfer</option>
-                                            <option value="Cash">Cash</option>
-                                            <option value="Cheque">Cheque</option>
-                                            <option value="Mobile Money">Mobile Money</option>
-                                        </select>
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Pension Deduction:</span>
+                                        <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.pension_amount)}</span>
                                     </div>
-                                </div>
-
-                                <div className="sm-field sm-field--full">
-                                    <label className="sm-label">Reference Number</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="text"
-                                            name="reference_number"
-                                            value={paymentForm.reference_number}
-                                            onChange={handlePaymentChange}
-                                            placeholder="Transaction reference"
-                                            className="sm-input__field"
-                                        />
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Other Deductions:</span>
+                                        <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(otherDeductions)}</span>
                                     </div>
-                                </div>
-
-                                <div className="sm-field sm-field--full">
-                                    <label className="sm-label">Notes</label>
-                                    <div className="sm-input">
-                                        <textarea
-                                            rows={3}
-                                            name="notes"
-                                            value={paymentForm.notes}
-                                            onChange={handlePaymentChange}
-                                            placeholder="Additional notes..."
-                                            className="sm-input__field"
-                                        />
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Loan Deductions:</span>
+                                        <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.loan_deduction)}</span>
                                     </div>
-                                </div>
 
-                                <div className="sm-field sm-field--full">
-                                    <div className="sm-summary-card">
-                                        <div className="sm-summary-card__header">
-                                            <h6>Payment Summary</h6>
-                                        </div>
-                                        <div className="sm-summary-card__body">
-                                            <div className="sm-summary-grid">
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Base Salary:</span>
-                                                    <span className="sm-summary-value">{formatCurrency(paymentForm.base_salary)}</span>
-                                                </div>
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Allowances:</span>
-                                                    <span className="sm-summary-value sm-summary-value--positive">+{formatCurrency(paymentForm.allowances)}</span>
-                                                </div>
-                                                <div className="sm-summary-item sm-summary-item--gross">
-                                                    <span className="sm-summary-label">Gross Salary:</span>
-                                                    <span className="sm-summary-value sm-summary-value--gross">
-                                                        {formatCurrency(
-                                                            parseFloat(paymentForm.base_salary || 0) +
-                                                            parseFloat(paymentForm.allowances || 0)
-                                                        )}
-                                                    </span>
-                                                </div>
-
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Tax Deduction:</span>
-                                                    <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.tax_amount)}</span>
-                                                </div>
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Pension Deduction:</span>
-                                                    <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.pension_amount)}</span>
-                                                </div>
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Other Deductions:</span>
-                                                    <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(otherDeductions)}</span>
-                                                </div>
-                                                <div className="sm-summary-item">
-                                                    <span className="sm-summary-label">Loan Deductions:</span>
-                                                    <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.loan_deduction)}</span>
-                                                </div>
-
-                                                <div className="sm-summary-item sm-summary-item--total">
-                                                    <span className="sm-summary-label">Net Amount (Paid to Staff):</span>
-                                                    <span className="sm-summary-value sm-summary-value--net">{formatCurrency(paymentForm.net_amount)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div className="sm-summary-item sm-summary-item--total">
+                                        <span className="sm-summary-label">Net Amount (Paid to Staff):</span>
+                                        <span className="sm-summary-value sm-summary-value--net">{formatCurrency(paymentForm.net_amount)}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="sm-modal__footer">
-                            <button className="sm-btn sm-btn--ghost" onClick={() => setShowPaymentModal(false)}>
-                                Cancel
-                            </button>
-                            <button
-                                className="sm-btn sm-btn--success"
-                                onClick={handleProcessPayment}
-                            >
-                                <FiDollarSign />
-                                Process Payment
-                            </button>
-                        </div>
                     </div>
                 </div>
-            )}
+            </div>
+            <div className="sm-modal__footer">
+                <button className="sm-btn sm-btn--ghost" onClick={() => setShowPaymentModal(false)}>
+                    Cancel
+                </button>
+                <button
+                    className="sm-btn sm-btn--success"
+                    onClick={handleProcessPayment}
+                >
+                    <FiDollarSign />
+                    Process Payment
+                </button>
+            </div>
+        </div>
+    </div>
+)}
 
             {/* Add Loan Modal */}
             {showLoanModal && (
@@ -2253,7 +2816,7 @@ const handlePrintPayment = (payment) => {
                 </div>
             )}
 
-{/* Payment Details Modal - WITH PRINT FUNCTIONALITY */}
+{/* Payment Details Modal */}
 {showPaymentDetails && paymentDetails && (
     <div className="sm-modal">
         <div className="sm-modal__content sm-modal__content--large">
@@ -2271,14 +2834,13 @@ const handlePrintPayment = (payment) => {
                         <FiPrinter />
                         Print
                     </button>
-                    <button className="sm-modal__close close-btn-1" onClick={() => setShowPaymentDetails(false)}>
+                    <button className="sm-modal__close" onClick={() => setShowPaymentDetails(false)}>
                         <FiX />
                     </button>
                 </div>
             </div>
             <div className="sm-modal__body">
-                <div className="sm-details-grid" id="payment-details-content">
-                    {/* ... (existing payment details content remains the same) ... */}
+                <div className="sm-details-grid">
                     <div className="sm-details-card">
                         <div className="sm-details-card__header">
                             <h6>Payment Information</h6>
@@ -2297,8 +2859,8 @@ const handlePrintPayment = (payment) => {
                             <div className="sm-detail-item">
                                 <span className="sm-detail-label">Salary Period:</span>
                                 <span className="sm-detail-value">
-                                    {paymentDetails.salary_period ? 
-                                        format(new Date(paymentDetails.salary_period), 'MMMM yyyy') : 
+                                    {paymentDetails.salary_period ?
+                                        format(new Date(paymentDetails.salary_period), 'MMMM yyyy') :
                                         'N/A'
                                     }
                                 </span>
@@ -2349,14 +2911,14 @@ const handlePrintPayment = (payment) => {
                                 <span className="sm-breakdown-label">Gross Salary:</span>
                                 <span className="sm-breakdown-value">
                                     {formatCurrency(
-                                        parseFloat(paymentDetails.base_salary || 0) + 
+                                        parseFloat(paymentDetails.base_salary || 0) +
                                         parseFloat(paymentDetails.allowances || 0)
                                     )}
                                 </span>
                             </div>
-                            
+
                             <div className="sm-breakdown-divider">Deductions</div>
-                            
+
                             <div className="sm-breakdown-item sm-breakdown-item--negative">
                                 <span className="sm-breakdown-label">Tax Deduction:</span>
                                 <span className="sm-breakdown-value">-{formatCurrency(paymentDetails.tax_amount)}</span>
@@ -2411,9 +2973,493 @@ const handlePrintPayment = (payment) => {
                     <FiPrinter />
                     Print Details
                 </button>
-                <button className="sm-btn sm-btn--ghost close-btn" onClick={() => setShowPaymentDetails(false)}>
+                <button className="sm-btn sm-btn--ghost" onClick={() => setShowPaymentDetails(false)}>
                     Close
                 </button>
+            </div>
+        </div>
+    </div>
+)}
+
+{/* Add Staff Member Modal */}
+{showStaffModal && (
+    <div className="sm-modal">
+        <div className="sm-modal__content">
+            <div className="sm-modal__header">
+                <h3 className="sm-modal__title">
+                    <FiUserPlus className="sm-modal__icon" />
+                    Add Staff Member
+                </h3>
+                <button className="sm-modal__close" onClick={() => setShowStaffModal(false)}>
+                    <FiX />
+                </button>
+            </div>
+            <div className="sm-modal__body">
+                <div className="sm-form-grid">
+                    <div className="sm-field">
+                        <label className="sm-label">Full Name *</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.fullname}
+                                onChange={(e) => setStaffForm({ ...staffForm, fullname: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Enter full name"
+                                required
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Phone Number</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.phone_number}
+                                onChange={(e) => setStaffForm({ ...staffForm, phone_number: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Phone number"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Position *</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.position}
+                                onChange={(e) => setStaffForm({ ...staffForm, position: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Job position"
+                                required
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Department</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.department}
+                                onChange={(e) => setStaffForm({ ...staffForm, department: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Department"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Email</label>
+                        <div className="sm-input">
+                            <input
+                                type="email"
+                                value={staffForm.email}
+                                onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Email address"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Gender</label>
+                        <div className="sm-input">
+                            <select
+                                value={staffForm.gender}
+                                onChange={(e) => setStaffForm({ ...staffForm, gender: e.target.value })}
+                                className="sm-input__field"
+                            >
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Date of Birth</label>
+                        <div className="sm-input">
+                            <input
+                                type="date"
+                                value={staffForm.date_of_birth}
+                                onChange={(e) => setStaffForm({ ...staffForm, date_of_birth: e.target.value })}
+                                className="sm-input__field"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Address</label>
+                        <div className="sm-input">
+                            <textarea
+                                value={staffForm.address}
+                                onChange={(e) => setStaffForm({ ...staffForm, address: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Full address"
+                                rows="3"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Emergency Contact Name</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.emergency_contact_name}
+                                onChange={(e) => setStaffForm({ ...staffForm, emergency_contact_name: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Emergency contact name"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Emergency Contact Phone</label>
+                        <div className="sm-input">
+                            <input
+                                type="text"
+                                value={staffForm.emergency_contact_phone}
+                                onChange={(e) => setStaffForm({ ...staffForm, emergency_contact_phone: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Emergency contact phone"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="sm-modal__footer">
+                <button className="sm-btn sm-btn--ghost cancle" onClick={() => setShowStaffModal(false)}>
+                    <FiX />
+                    Cancel
+                </button>
+                <button 
+                    className="sm-btn sm-btn--primary" 
+                    onClick={handleAddStaff}
+                >
+                    <FiUserPlus />
+                    Add Staff Member
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
+{/* Company Debt Modal */}
+{showDebtModal && (
+    <div className="sm-modal">
+        <div className="sm-modal__content">
+            <div className="sm-modal__header">
+                <h3 className="sm-modal__title">
+                    <FiFileText className="sm-modal__icon" />
+                    {selectedDebt ? `Edit Company Debt - ${selectedDebt.staff_name}` : 'Add Company Debt'}
+                </h3>
+                <button className="sm-modal__close" onClick={() => {
+                    setShowDebtModal(false);
+                    setSelectedDebt(null);
+                    // Reset form when closing
+                    setDebtForm({
+                        staff_id: '',
+                        staff_type: 'user',
+                        amount: '',
+                        reason: '',
+                        debt_type: 'owed_to_company',
+                        status: 'pending'
+                    });
+                }}>
+                    <FiX />
+                </button>
+            </div>
+            <div className="sm-modal__body">
+                {/* Show current debt info when editing */}
+                {selectedDebt && (
+                    <div className="sm-field sm-field--full">
+                        <div className="sm-info-card">
+                            <div className="sm-info-row">
+                                <strong>Staff Member:</strong> 
+                                <span>{selectedDebt.staff_name}</span>
+                            </div>
+                            <div className="sm-info-row">
+                                <strong>Current Amount:</strong> 
+                                <span>{formatCurrency(selectedDebt.amount)}</span>
+                            </div>
+                            <div className="sm-info-row">
+                                <strong>Current Status:</strong> 
+                                <span className={`sm-badge ${selectedDebt.status === 'paid' ? 'sm-badge--success' :
+                                    selectedDebt.status === 'partially_paid' ? 'sm-badge--warning' : 'sm-badge--danger'
+                                    }`}>
+                                    {selectedDebt.status.replace('_', ' ').toUpperCase()}
+                                </span>
+                            </div>
+                            <div className="sm-info-row">
+                                <strong>Debt Type:</strong> 
+                                <span>{selectedDebt.debt_type === 'owed_to_company' ? 'Owed to Company' : 'Owed by Company'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="sm-form-grid">
+                    <div className="sm-field">
+                        <label className="sm-label">Staff Type</label>
+                        <div className="sm-input">
+                            <select
+                                value={debtForm.staff_type}
+                                onChange={(e) => {
+                                    setDebtForm({ 
+                                        ...debtForm, 
+                                        staff_type: e.target.value,
+                                        staff_id: '' // Reset staff selection when type changes
+                                    });
+                                }}
+                                className="sm-input__field"
+                                disabled={!!selectedDebt} // Disable when editing existing debt
+                            >
+                                <option value="user">System User</option>
+                                <option value="staff_member">Staff Member</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div className="sm-field">
+                        <label className="sm-label">Staff Member *</label>
+                        <div className="sm-input">
+                            <select
+                                value={debtForm.staff_id}
+                                onChange={(e) => setDebtForm({ ...debtForm, staff_id: e.target.value })}
+                                className="sm-input__field"
+                                required
+                                disabled={!!selectedDebt} // Disable when editing existing debt
+                            >
+                                <option value="">Select Staff</option>
+                                {allStaff
+                                    .filter(staff => staff.staff_type === debtForm.staff_type)
+                                    .map(staff => (
+                                        <option key={`${staff.staff_type}-${staff.id}`} value={staff.id}>
+                                            {staff.fullname} ({staff.role})
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                        {selectedDebt && (
+                            <div className="sm-input-help">
+                                Staff member cannot be changed when editing existing debt
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Debt Type</label>
+                        <div className="sm-input">
+                            <select
+                                value={debtForm.debt_type}
+                                onChange={(e) => setDebtForm({ ...debtForm, debt_type: e.target.value })}
+                                className="sm-input__field"
+                            >
+                                <option value="owed_to_company">Owed to Company</option>
+                                <option value="owed_by_company">Owed by Company</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Amount (₦) *</label>
+                        <div className="sm-input">
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={debtForm.amount}
+                                onChange={(e) => setDebtForm({ ...debtForm, amount: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+                        {selectedDebt && (
+                            <div className="sm-input-help">
+                                Original amount: {formatCurrency(selectedDebt.amount)}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="sm-field">
+                        <label className="sm-label">Status</label>
+                        <div className="sm-input">
+                            <select
+                                value={debtForm.status}
+                                onChange={(e) => setDebtForm({ ...debtForm, status: e.target.value })}
+                                className="sm-input__field"
+                            >
+                                <option value="pending">Pending</option>
+                                <option value="partially_paid">Partially Paid</option>
+                                <option value="paid">Paid</option>
+                                <option value="written_off">Written Off</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Reason *</label>
+                        <div className="sm-input">
+                            <textarea
+                                value={debtForm.reason}
+                                onChange={(e) => setDebtForm({ ...debtForm, reason: e.target.value })}
+                                className="sm-input__field"
+                                placeholder="Reason for the debt..."
+                                required
+                                rows="3"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="sm-modal__footer">
+                <button className="sm-btn sm-btn--ghost" onClick={() => {
+                    setShowDebtModal(false);
+                    setSelectedDebt(null);
+                    // Reset form when canceling
+                    setDebtForm({
+                        staff_id: '',
+                        staff_type: 'user',
+                        amount: '',
+                        reason: '',
+                        debt_type: 'owed_to_company',
+                        status: 'pending'
+                    });
+                }}>
+                    <FiX />
+                    Cancel
+                </button>
+                <button 
+                    className="sm-btn sm-btn--primary"
+                    onClick={selectedDebt ? () => handleUpdateDebt(selectedDebt.id, debtForm) : handleAddDebt}
+                    disabled={!debtForm.staff_id || !debtForm.amount || !debtForm.reason}
+                >
+                    <FiSave />
+                    {selectedDebt ? 'Update Debt' : 'Add Debt'}
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
+{/* Debt History Modal */}
+{showDebtHistoryModal && selectedDebt && (
+    <div className="sm-modal">
+        <div className="sm-modal__content">
+            <div className="sm-modal__header">
+                <h3 className="sm-modal__title">
+                    Debt History - {selectedDebt.staff_name}
+                </h3>
+                <button className="sm-modal__close" onClick={() => setShowDebtHistoryModal(false)}>
+                    <FiX />
+                </button>
+            </div>
+            <div className="sm-modal__body">
+                <div className="sm-history-section">
+                    <div className="sm-current-debt">
+                        <h4>Current Debt: {formatCurrency(selectedDebt.amount)}</h4>
+                        <p>Reason: {selectedDebt.reason}</p>
+                        <p>Status: <span className={`sm-badge ${selectedDebt.status === 'paid' ? 'sm-badge--success' :
+                            selectedDebt.status === 'partially_paid' ? 'sm-badge--warning' : 'sm-badge--danger'
+                            }`}>{selectedDebt.status.replace('_', ' ').toUpperCase()}</span></p>
+                    </div>
+
+                    <div className="sm-history-list">
+                        <h5>Transaction History</h5>
+                        {debtHistory.length === 0 ? (
+                            <p className="sm-text-muted">No history recorded</p>
+                        ) : (
+                            debtHistory.map(history => (
+                                <div key={history.id} className="sm-history-item">
+                                    <div className="sm-history-date">
+                                        {format(new Date(history.created_at), 'MMM dd, yyyy HH:mm')}
+                                    </div>
+                                    <div className="sm-history-amount">
+                                        {history.transaction_type === 'payment' ? '-' : '+'}
+                                        {formatCurrency(history.amount)}
+                                    </div>
+                                    <div className="sm-history-reason">
+                                        {history.reason}
+                                    </div>
+                                    <div className="sm-history-type">
+                                        <span className={`sm-badge ${history.transaction_type === 'payment' ? 'sm-badge--success' : 'sm-badge--info'
+                                            }`}>
+                                            {history.transaction_type.toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="sm-add-history">
+                        <h5>Add Transaction</h5>
+                        <div className="sm-form-grid">
+                            <div className="sm-field">
+                                <label className="sm-label">Amount</label>
+                                <div className="sm-input">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="historyAmount"
+                                        placeholder="Enter amount"
+                                        className="sm-input__field"
+                                    />
+                                </div>
+                            </div>
+                            <div className="sm-field">
+                                <label className="sm-label">Type</label>
+                                <div className="sm-input">
+                                    <select id="historyType" className="sm-input__field">
+                                        <option value="payment">Payment</option>
+                                        <option value="adjustment">Adjustment</option>
+                                        <option value="gift">Gift</option>
+                                        <option value="additional_debt">Additional Debt</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="sm-field sm-field--full">
+                                <label className="sm-label">Reason</label>
+                                <div className="sm-input">
+                                    <textarea
+                                        id="historyReason"
+                                        rows="2"
+                                        placeholder="Reason for this transaction"
+                                        className="sm-input__field"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            className="sm-btn sm-btn--primary"
+                            onClick={() => {
+                                const amount = document.getElementById('historyAmount').value;
+                                const type = document.getElementById('historyType').value;
+                                const reason = document.getElementById('historyReason').value;
+
+                                if (amount && reason) {
+                                    handleAddDebtHistory(selectedDebt.id, {
+                                        amount: parseFloat(amount),
+                                        transaction_type: type,
+                                        reason: reason,
+                                        notes: `Manual entry by admin`
+                                    });
+
+                                    // Clear fields
+                                    document.getElementById('historyAmount').value = '';
+                                    document.getElementById('historyReason').value = '';
+                                }
+                            }}
+                        >
+                            Add Transaction
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2423,3 +3469,12 @@ const handlePrintPayment = (payment) => {
 };
 
 export default SalaryManagementPage;
+
+
+
+
+
+
+
+
+

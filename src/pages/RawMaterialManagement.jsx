@@ -90,16 +90,12 @@ const RawMaterialManagement = () => {
 
             const response = await axios.get(`${API_BASE_URL}/raw-materials`, { params });
             setRawMaterials(response.data);
-            // toast.success('Materials loaded successfully');
-            // toast(<CustomToast id="raws" type="success" message="Materials loaded successfully" />);
             toast(<CustomToast id={`success-material-${Date.now()}`} type="success" message="Materials loaded successfully" />, {
                 toastId: 'material-success'
             });
         } catch (err) {
             const errorMsg = 'Failed to load raw materials. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -116,8 +112,21 @@ const RawMaterialManagement = () => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'current_stock' || name === 'min_stock_level' || name === 'restock_price_per_unit' ? parseFloat(value) : value,
+            [name]: name === 'current_stock' || name === 'min_stock_level' || name === 'restock_price_per_unit' ? 
+                   parseFloat(value) || 0 : value,
         }));
+    };
+
+    // Helper function to handle decimal input with high precision
+    const handleDecimalInput = (e, fieldName) => {
+        const value = e.target.value;
+        // Allow empty input or valid decimal numbers
+        if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: value
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -126,21 +135,25 @@ const RawMaterialManagement = () => {
         setSuccessMessage('');
 
         try {
+            // Ensure proper precision for decimal fields
+            const submitData = {
+                ...formData,
+                current_stock: parseFloat(parseFloat(formData.current_stock).toFixed(6)),
+                min_stock_level: parseFloat(parseFloat(formData.min_stock_level).toFixed(6)),
+                restock_price_per_unit: parseFloat(parseFloat(formData.restock_price_per_unit).toFixed(6))
+            };
+
             if (isEditing) {
-                const response = await axios.put(`${API_BASE_URL}/raw-materials/${formData.id}`, formData);
+                const response = await axios.put(`${API_BASE_URL}/raw-materials/${formData.id}`, submitData);
                 const successMsg = `Raw material "${response.data.name}" updated successfully!`;
                 setSuccessMessage(successMsg);
-                // toast.success(successMsg);
-                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
                 toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
                     toastId: 's-success'
                 });
             } else {
-                const response = await axios.post(`${API_BASE_URL}/raw-materials`, formData);
+                const response = await axios.post(`${API_BASE_URL}/raw-materials`, submitData);
                 const successMsg = `Raw material "${response.data.name}" created successfully!`;
                 setSuccessMessage(successMsg);
-                // toast.success(successMsg);
-                // toast(<CustomToast id="raw" type="success" message={successMsg} />);
                 toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
                     toastId: 's-success'
                 });
@@ -150,8 +163,6 @@ const RawMaterialManagement = () => {
         } catch (err) {
             const errorMsg = 'Failed to save raw material. ' + (err.response?.data?.error || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="raw" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -172,8 +183,6 @@ const RawMaterialManagement = () => {
         setIsEditing(true);
         setError('');
         setSuccessMessage('');
-        // toast.info(`Editing ${material.name}`);
-        // toast(<CustomToast id="raw" type="info" message={`Editing ${material.name}`} />);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="success" message={`Editing ${material.name}`} />, {
             toastId: 'edit-info'
         });
@@ -218,8 +227,6 @@ const RawMaterialManagement = () => {
         setIsEditing(false);
         setError('');
         setSuccessMessage('');
-        // toast.info('Edit cancelled');
-        // toast(<CustomToast id="raw" type="info" message="Edit cancelled" />);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Edit cancelled" />, {
             toastId: 'edit-info'
         });
@@ -230,8 +237,6 @@ const RawMaterialManagement = () => {
         setFilterUnit('');
         setFilterMinStock('');
         setFilterMaxStock('');
-        // toast.info('Filters cleared');
-        // toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
         toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
             toastId: 'clear-info'
         });
@@ -319,45 +324,87 @@ const RawMaterialManagement = () => {
                                 <Form.Group>
                                     <Form.Label>Current Stock *</Form.Label>
                                     <Form.Control
-                                        type="number"
+                                        type="text"  // Changed from "number" to "text" for better decimal handling
                                         name="current_stock"
                                         value={formData.current_stock}
-                                        onChange={handleChange}
-                                        min="0"
-                                        step="0.01"
+                                        onChange={(e) => handleDecimalInput(e, 'current_stock')}
+                                        onBlur={(e) => {
+                                            // Format to 6 decimal places on blur
+                                            const value = parseFloat(e.target.value);
+                                            if (!isNaN(value)) {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    current_stock: parseFloat(value.toFixed(6))
+                                                }));
+                                            }
+                                        }}
                                         required
+                                        placeholder="0.000000"
                                         className="full-width-input"
+                                        pattern="^-?\d*\.?\d*$"
+                                        title="Enter a decimal number with up to 6 decimal places"
                                     />
+                                    <Form.Text className="text-muted">
+                                        Enter stock quantity with up to 6 decimal places
+                                    </Form.Text>
                                 </Form.Group>
                             </Col>
                             <Col md={12} lg={4}>
                                 <Form.Group>
                                     <Form.Label>Min Stock Level *</Form.Label>
                                     <Form.Control
-                                        type="number"
+                                        type="text"  // Changed from "number" to "text" for better decimal handling
                                         name="min_stock_level"
                                         value={formData.min_stock_level}
-                                        onChange={handleChange}
-                                        min="0"
-                                        step="0.01"
+                                        onChange={(e) => handleDecimalInput(e, 'min_stock_level')}
+                                        onBlur={(e) => {
+                                            // Format to 6 decimal places on blur
+                                            const value = parseFloat(e.target.value);
+                                            if (!isNaN(value)) {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    min_stock_level: parseFloat(value.toFixed(6))
+                                                }));
+                                            }
+                                        }}
                                         required
+                                        placeholder="0.000000"
                                         className="full-width-input"
+                                        pattern="^-?\d*\.?\d*$"
+                                        title="Enter a decimal number with up to 6 decimal places"
                                     />
+                                    <Form.Text className="text-muted">
+                                        Enter minimum stock level with up to 6 decimal places
+                                    </Form.Text>
                                 </Form.Group>
                             </Col>
                             <Col md={12} lg={4}>
                                 <Form.Group>
                                     <Form.Label>Price/Unit (₦) *</Form.Label>
                                     <Form.Control
-                                        type="number"
+                                        type="text"  // Changed from "number" to "text" for better decimal handling
                                         name="restock_price_per_unit"
                                         value={formData.restock_price_per_unit}
-                                        onChange={handleChange}
-                                        min="0"
-                                        step="0.01"
+                                        onChange={(e) => handleDecimalInput(e, 'restock_price_per_unit')}
+                                        onBlur={(e) => {
+                                            // Format to 6 decimal places on blur
+                                            const value = parseFloat(e.target.value);
+                                            if (!isNaN(value)) {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    restock_price_per_unit: parseFloat(value.toFixed(6))
+                                                }));
+                                            }
+                                        }}
                                         required
+                                        placeholder="0.000000"
                                         className="full-width-input"
+                                        pattern="^-?\d*\.?\d*$"
+                                        title="Enter a price with up to 6 decimal places"
                                     />
+                                    <Form.Text className="text-muted">
+                                        Enter price per unit with up to 6 decimal places
+                                    </Form.Text>
                                 </Form.Group>
                             </Col>
                             <Col md={12}>
@@ -458,12 +505,12 @@ const RawMaterialManagement = () => {
                             <Form.Group>
                                 <Form.Label>Min Stock</Form.Label>
                                 <Form.Control
-                                    type="number"
+                                    type="text"
                                     placeholder="Min"
                                     value={filterMinStock}
                                     onChange={e => setFilterMinStock(e.target.value)}
-                                    step="0.01"
                                     className="full-width-input"
+                                    pattern="^-?\d*\.?\d*$"
                                 />
                             </Form.Group>
                         </Col>
@@ -471,12 +518,12 @@ const RawMaterialManagement = () => {
                             <Form.Group>
                                 <Form.Label>Max Stock</Form.Label>
                                 <Form.Control
-                                    type="number"
+                                    type="text"
                                     placeholder="Max"
                                     value={filterMaxStock}
                                     onChange={e => setFilterMaxStock(e.target.value)}
-                                    step="0.01"
                                     className="full-width-input"
+                                    pattern="^-?\d*\.?\d*$"
                                 />
                             </Form.Group>
                         </Col>
@@ -561,9 +608,9 @@ const RawMaterialManagement = () => {
                                                 <td className="fw-bold serial-number">{index + 1}</td>
                                                 <td className="fw-semibold material-name">{material.name}</td>
                                                 <td><Badge bg="light" text="dark" className="unit-badge">{material.unit}</Badge></td>
-                                                <td className="stock-amount">{Number(material.current_stock).toFixed(2)}</td>
-                                                <td className="min-stock">{Number(material.min_stock_level).toFixed(2)}</td>
-                                                <td className="price fw-bold">₦{Number(material.restock_price_per_unit).toFixed(2)}</td>
+                                                <td className="stock-amount">{Number(material.current_stock).toFixed(6)}</td> {/* Updated to 6 decimal places */}
+                                                <td className="min-stock">{Number(material.min_stock_level).toFixed(6)}</td> {/* Updated to 6 decimal places */}
+                                                <td className="price fw-bold">₦{Number(material.restock_price_per_unit).toFixed(6)}</td> {/* Updated to 6 decimal places */}
                                                 <td>
                                                     <Badge bg={status === 'out-of-stock' ? 'danger' :
                                                         status === 'low-stock' ? 'warning' : 'success'}

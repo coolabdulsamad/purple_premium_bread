@@ -378,7 +378,7 @@ const NewSalePage = () => {
     });
   };
 
-/* ========= Checkout (UPDATED with Advantage Sale Data) ========= */
+/* ========= Checkout (UPDATED with Advantage Sale Data) - FIXED ========= */
 const handleCheckout = async (cartToProcess) => {
   if (!cartToProcess || cartToProcess.items.length === 0) {
     toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
@@ -391,7 +391,7 @@ const handleCheckout = async (cartToProcess) => {
     Object.entries(freeStockQuantities).forEach(([productId, freeQty]) => {
       const item = cartToProcess.items.find(i => i.id === parseInt(productId));
       if (freeQty > (item?.quantity || 0)) {
-        toast(<CustomToast type="error" message={`Free stock for ${item?.name || 'an item'} exceeds the quantity sold.`} />, {
+        toast(<CustomToast type="error" message={`Free stock for ${item?.name || 'an item'} exceeds the quantity sold.` } />, {
           toastId: 'free-stock-exceed-error'
         });
         isValid = false;
@@ -532,7 +532,7 @@ const handleCheckout = async (cartToProcess) => {
     await api.post(`/sales/process`, payload);
     toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
 
-    // ✅ FIXED: Only reset the processed cart, keep other carts
+    // ✅ FIXED: Only reset the processed cart, keep other carts intact
     setCarts((prev) =>
       prev.map((cart) =>
         cart.id === cartToProcess.id
@@ -559,7 +559,8 @@ const handleCheckout = async (cartToProcess) => {
       )
     );
 
-    // ✅ Reset free stock states
+    // ✅ Reset free stock states only for this specific cart
+    // Don't reset global free stock states as they might be used by other carts
     setIsFreeStockChecked(false);
     setFreeStockQuantities({});
     setFreeStockReason("");
@@ -633,7 +634,7 @@ const handleCheckout = async (cartToProcess) => {
                 {carts.length}
               </Badge>
             </div>
-            <Button className="group-add" size="sm" onClick={addCart}>
+            <Button className="ppb-group-add" size="sm" onClick={addCart}>
               + Add Group
             </Button>
           </div>
@@ -647,7 +648,7 @@ const handleCheckout = async (cartToProcess) => {
                   }`}
                 onClick={() => setActiveCartId(cart.id)}
               >
-                <span>{cart.name}</span>
+                <span className="ppb-group__name">{cart.name}</span>
                 <span className="ppb-group__total">
                   {formatNaira(cart.total)}
                 </span>
@@ -666,112 +667,115 @@ const handleCheckout = async (cartToProcess) => {
           {/* active cart content */}
           {activeCart && (
             <>
-              {/* items list */}
-              <div className="ppb-items">
-                {activeCart.items.length ? (
-                  activeCart.items.map((it) => {
-                    const advantageAmount = activeCart.itemAdvantageAmounts[it.id] || 0;
-                    const finalPrice = Number(it.price) + Number(advantageAmount);
-                    
-                    return (
-                      <div className="ppb-item" key={it.id}>
-                        <div className="ppb-item__main">
-                          <div className="ppb-item__name">{it.name}</div>
-                          <div className="ppb-item__price">
-                            {formatNaira(it.price)}
-                            {advantageAmount > 0 && (
-                              <Badge bg="success" className="ms-1">
-                                +{formatNaira(advantageAmount)}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+{/* items list */}
+<div className="ppb-items">
+  {activeCart.items.length ? (
+    activeCart.items.map((it) => {
+      const advantageAmount = activeCart.itemAdvantageAmounts[it.id] || 0;
+      const finalPrice = Number(it.price) + Number(advantageAmount);
+      
+      return (
+        <div className="ppb-item" key={it.id}>
+          <div className="ppb-item__main">
+            <div className="ppb-item__name">{it.name}</div>
+            <div className="ppb-item__price">
+              {formatNaira(it.price)}
+              {advantageAmount > 0 && (
+                <Badge bg="success" className="ppb-advantage-badge">
+                  +{formatNaira(advantageAmount)}
+                </Badge>
+              )}
+            </div>
+          </div>
 
-                        <div className="ppb-item__controls">
-                          <div className="ppb-stepper">
-                            <button
-                              className="ppb-stepper__btn"
-                              onClick={() =>
-                                updateCartItem(
-                                  activeCart.id,
-                                  it.id,
-                                  it.quantity - 1
-                                )
-                              }
-                            >
-                              <FaMinus />
-                            </button>
-                            <input
-                              className="ppb-stepper__input"
-                              type="number"
-                              min="1"
-                              max={inventory[it.id] || 0}
-                              value={it.quantity}
-                              onChange={(e) =>
-                                updateCartItem(
-                                  activeCart.id,
-                                  it.id,
-                                  parseInt(e.target.value || "0", 10)
-                                )
-                              }
-                            />
-                            <button
-                              className="ppb-stepper__btn"
-                              onClick={() =>
-                                updateCartItem(
-                                  activeCart.id,
-                                  it.id,
-                                  it.quantity + 1
-                                )
-                              }
-                            >
-                              <FaPlus />
-                            </button>
-                          </div>
+          <div className="ppb-item__controls">
+            <div className="ppb-stepper">
+              <button
+                className="ppb-stepper__btn"
+                onClick={() =>
+                  updateCartItem(
+                    activeCart.id,
+                    it.id,
+                    it.quantity - 1
+                  )
+                }
+                disabled={it.quantity <= 1}
+              >
+                <FaMinus />
+              </button>
+              <input
+                className="ppb-stepper__input"
+                type="number"
+                min="1"
+                max={inventory[it.id] || 0}
+                value={it.quantity}
+                onChange={(e) =>
+                  updateCartItem(
+                    activeCart.id,
+                    it.id,
+                    parseInt(e.target.value || "1", 10)
+                  )
+                }
+              />
+              <button
+                className="ppb-stepper__btn"
+                onClick={() =>
+                  updateCartItem(
+                    activeCart.id,
+                    it.id,
+                    it.quantity + 1
+                  )
+                }
+                disabled={it.quantity >= (inventory[it.id] || 0)}
+              >
+                <FaPlus />
+              </button>
+            </div>
 
-                          <div className="ppb-line">
-                            {formatNaira(finalPrice * Number(it.quantity))}
-                          </div>
-                        </div>
+            <div className="ppb-line-total">
+              {formatNaira(finalPrice * Number(it.quantity))}
+            </div>
+          </div>
 
-                        {/* Advantage Amount Input */}
-                        {activeCart.isAdvantageSale && (
-                          <div className="ppb-advantage-input mt-2">
-                            <InputGroup size="sm">
-                              <InputGroup.Text>+₦</InputGroup.Text>
-                              <FormControl
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Extra amount"
-                                value={activeCart.itemAdvantageAmounts[it.id] || ''}
-                                onChange={(e) => 
-                                  updateAdvantageAmount(activeCart.id, it.id, e.target.value)
-                                }
-                              />
-                            </InputGroup>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="ppb-empty">
-                    <span>No items yet</span>
-                  </div>
-                )}
-              </div>
+          {/* Advantage Amount Input */}
+          {activeCart.isAdvantageSale && (
+            <div className="ppb-advantage-input">
+              <InputGroup size="sm">
+                <InputGroup.Text className="ppb-advantage-prefix">+₦</InputGroup.Text>
+                <FormControl
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Extra amount"
+                  value={activeCart.itemAdvantageAmounts[it.id] || ''}
+                  onChange={(e) => 
+                    updateAdvantageAmount(activeCart.id, it.id, e.target.value)
+                  }
+                  className="ppb-advantage-control"
+                />
+              </InputGroup>
+            </div>
+          )}
+        </div>
+      );
+    })
+  ) : (
+    <div className="ppb-empty">
+      <span>No items yet</span>
+    </div>
+  )}
+</div>
 
               {/* totals + options */}
               <div className="ppb-summary">
                 {/* Advantage Sale Checkbox */}
-                <div className="ppb-advantage-sale mb-3 p-3 border rounded">
+                <div className="ppb-advantage-sale">
                   <FormCheck
                     type="checkbox"
                     id="advantage-sale-check"
                     label={
                       <>
-                        <FaCrown className="me-2 text-warning" />
+                        <FaCrown className="ppb-advantage-icon" />
                         Premium/Advantage Sale (Add Extra Amount)
                       </>
                     }
@@ -792,8 +796,8 @@ const handleCheckout = async (cartToProcess) => {
                   />
                   
                   {activeCart.isAdvantageSale && activeCart.items.length > 0 && (
-                    <div className="mt-2">
-                      <small className="text-muted">
+                    <div className="ppb-advantage-hint">
+                      <small>
                         Enter extra amounts for each item above. This will be added to the final price.
                       </small>
                     </div>
@@ -822,7 +826,7 @@ const handleCheckout = async (cartToProcess) => {
                 <div className="ppb-options">
                   <div className="ppb-opt">
                     <label>
-                      <FaTags /> Discount
+                      <FaTags className="ppb-opt-icon" /> Discount
                     </label>
                     <Form.Select
                       value={activeCart.discount || ""}
@@ -868,13 +872,13 @@ const handleCheckout = async (cartToProcess) => {
                 </div>
 
                 {/* Free Stock Section */}
-                <div className="ppb-free-stock mt-3 p-3 border rounded">
+                <div className="ppb-free-stock">
                   <FormCheck
                     type="checkbox"
                     id="free-stock-check"
                     label={
                       <>
-                        <FaGift className="me-2" />
+                        <FaGift className="ppb-free-stock-icon" />
                         Add Free Stock / Incentive
                       </>
                     }
@@ -883,20 +887,20 @@ const handleCheckout = async (cartToProcess) => {
                   />
 
                   {isFreeStockChecked && activeCart.items.length > 0 && (
-                    <div className="mt-3">
-                      <label className="fw-bold mb-1">Reason for Free Stock</label>
+                    <div className="ppb-free-stock-content">
+                      <label className="ppb-free-stock-label">Reason for Free Stock</label>
                       <FormControl
                         type="text"
                         placeholder="e.g., Promotion, Compensation, Incentive"
                         value={freeStockReason}
                         onChange={(e) => setFreeStockReason(e.target.value)}
-                        className="mb-3"
+                        className="ppb-free-stock-reason"
                       />
 
-                      <label className="fw-bold mb-1">Quantity Free (Cannot exceed quantity sold)</label>
+                      <label className="ppb-free-stock-label">Quantity Free (Cannot exceed quantity sold)</label>
                       {activeCart.items.map((item) => (
-                        <InputGroup key={item.id} className="mb-2">
-                          <InputGroup.Text>{item.name}</InputGroup.Text>
+                        <InputGroup key={item.id} className="ppb-free-stock-item">
+                          <InputGroup.Text className="ppb-free-stock-name">{item.name}</InputGroup.Text>
                           <FormControl
                             type="number"
                             min="0"
@@ -910,6 +914,7 @@ const handleCheckout = async (cartToProcess) => {
                                 [item.id]: Math.min(qty, item.quantity)
                               }));
                             }}
+                            className="ppb-free-stock-qty"
                           />
                         </InputGroup>
                       ))}
@@ -987,7 +992,7 @@ const handleCheckout = async (cartToProcess) => {
                         </div>
                         <div className="ppb-opt">
                           <label>
-                            <FaFileUpload /> Receipt Image
+                            <FaFileUpload className="ppb-opt-icon" /> Receipt Image
                           </label>
                           <FormControl
                             type="file"
@@ -1020,7 +1025,7 @@ const handleCheckout = async (cartToProcess) => {
                     <div className="ppb-pay__fields">
                       <div className="ppb-opt">
                         <label>
-                          <FaUser /> Customer
+                          <FaUser className="ppb-opt-icon" /> Customer
                         </label>
                         <Form.Select
                           value={activeCart.payment.customer?.id || ""}
@@ -1104,7 +1109,7 @@ const handleCheckout = async (cartToProcess) => {
 
                           <div className="ppb-opt">
                             <label>
-                              <FaCalendarAlt /> Due Date
+                              <FaCalendarAlt className="ppb-opt-icon" /> Due Date
                             </label>
                             <FormControl
                               type="date"
@@ -1168,7 +1173,7 @@ const handleCheckout = async (cartToProcess) => {
               </div>
 
               <div className="ppb-category">
-                <FaFilter />
+                <FaFilter className="ppb-category-icon" />
                 <Form.Select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -1220,7 +1225,7 @@ const handleCheckout = async (cartToProcess) => {
                       disabled={stock <= 0}
                       onClick={() => addToCart(p, activeCartId)}
                     >
-                      <FaCartPlus />
+                      <FaCartPlus className="ppb-add-icon" />
                       <span>Add</span>
                     </Button>
                   </div>

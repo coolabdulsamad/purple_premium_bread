@@ -1,7 +1,12 @@
-// SalesHistoryPage.jsx - Enhanced with Complete Details Dialog
+// SalesHistoryPage.jsx - Enhanced with Receipt Link, Payment Reference, Advantage Amount, and New Filters
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign, FiList, FiUser, FiGift, FiPackage, FiFileText, FiCreditCard, FiShoppingCart } from 'react-icons/fi';
+import { 
+    FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign, 
+    FiList, FiUser, FiGift, FiPackage, FiFileText, FiCreditCard, 
+    FiShoppingCart, FiImage, FiExternalLink, FiTrendingUp, 
+    FiFilter, FiHash 
+} from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
@@ -21,11 +26,20 @@ const SalesHistoryPage = () => {
     const [stockSource, setStockSource] = useState('');
     const [hasFreeStock, setHasFreeStock] = useState('');
     const [discountRange, setDiscountRange] = useState('');
+    // NEW FILTER STATES
+    const [saleType, setSaleType] = useState(''); // 'advantage', 'regular'
+    const [hasReceipt, setHasReceipt] = useState(''); // 'true', 'false'
+    const [hasReference, setHasReference] = useState(''); // 'true', 'false'
+    const [advantageRange, setAdvantageRange] = useState(''); // 'none', 'small', 'medium', 'large'
+    
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [saleDetails, setSaleDetails] = useState(null);
     const [companyDetails, setCompanyDetails] = useState({});
     const [users, setUsers] = useState([]);
     const [printLoading, setPrintLoading] = useState(false);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [receiptImageUrl, setReceiptImageUrl] = useState('');
+    const [showFilters, setShowFilters] = useState(false); // For mobile filter toggle
 
     const fetchSales = async () => {
         setLoading(true);
@@ -40,8 +54,21 @@ const SalesHistoryPage = () => {
                 status,
                 stockSource,
                 hasFreeStock,
-                discountRange
+                discountRange,
+                // NEW: Add new filter parameters
+                saleType: saleType || undefined,
+                hasReceipt: hasReceipt || undefined,
+                hasReference: hasReference || undefined,
+                advantageRange: advantageRange || undefined
             };
+            
+            // Remove undefined parameters
+            Object.keys(params).forEach(key => {
+                if (params[key] === undefined || params[key] === '') {
+                    delete params[key];
+                }
+            });
+            
             const response = await axios.get(`${API_BASE_URL}/sales`, { params });
             setSales(response.data);
         } catch (err) {
@@ -86,7 +113,7 @@ const SalesHistoryPage = () => {
         fetchCompanyDetails();
         fetchUsers();
         fetchSales();
-    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange]);
+    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange, saleType, hasReceipt, hasReference, advantageRange]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -103,6 +130,32 @@ const SalesHistoryPage = () => {
             return <span className="sh-badge sh-badge--info" title={`Allocated to: ${getUserName(sale.stock_source_user_id)}`}>User Stock</span>;
         }
         return <span className="sh-badge sh-badge--secondary">Main Inventory</span>;
+    };
+
+    // NEW: Function to view receipt image
+    const handleViewReceipt = (imageUrl) => {
+        if (imageUrl) {
+            setReceiptImageUrl(imageUrl);
+            setShowReceiptModal(true);
+        } else {
+            toast.error('No receipt image available for this transaction.');
+        }
+    };
+
+    // NEW: Function to check if sale has advantage amount
+    const hasAdvantageAmount = (sale) => {
+        return sale.is_advantage_sale && sale.advantage_total > 0;
+    };
+
+    // NEW: Function to get advantage range label
+    const getAdvantageRangeLabel = (range) => {
+        switch(range) {
+            case 'none': return 'No Advantage';
+            case 'small': return 'Small (₦1 - ₦500)';
+            case 'medium': return 'Medium (₦501 - ₦2000)';
+            case 'large': return 'Large (₦2001+)';
+            default: return 'Any Advantage';
+        }
     };
 
     const handlePrintReceipt = async () => {
@@ -191,6 +244,12 @@ const SalesHistoryPage = () => {
                             padding: 10px;
                             margin: 10px 0;
                         }
+                        .advantage-sale { 
+                            background-color: #fff3e0; 
+                            border-left: 4px solid #FF9800;
+                            padding: 10px;
+                            margin: 10px 0;
+                        }
                         .text-right { text-align: right; }
                         .text-center { text-align: center; }
                         .mono { font-family: 'Courier New', monospace; }
@@ -236,6 +295,11 @@ const SalesHistoryPage = () => {
                             <div class="detail-item">
                                 <span class="detail-label">Payment Method:</span> ${saleDetails.payment_method}
                             </div>
+                            ${saleDetails.payment_reference ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Payment Reference:</span> ${saleDetails.payment_reference}
+                            </div>
+                            ` : ''}
                             <div class="detail-item">
                                 <span class="detail-label">Stock Source:</span> ${saleDetails.stock_source === 'user_stock' ? 'User Allocated Stock' : 'Main Inventory'}
                             </div>
@@ -247,6 +311,23 @@ const SalesHistoryPage = () => {
                         </div>
                     </div>
 
+                    ${saleDetails.is_advantage_sale ? `
+                    <div class="receipt-section advantage-sale">
+                        <h3>🔄 Advantage Sale Details</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Advantage Amount Added:</span> ₦${parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Final Subtotal:</span> ₦${parseFloat(saleDetails.subtotal).toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+
                     <div class="receipt-section">
                         <h3>Items Sold</h3>
                         <table class="table">
@@ -255,6 +336,7 @@ const SalesHistoryPage = () => {
                                     <th>Product</th>
                                     <th>Qty</th>
                                     <th>Unit Price</th>
+                                    ${saleDetails.is_advantage_sale ? '<th>Advantage Amount</th>' : ''}
                                     <th>Discount %</th>
                                     <th class="text-right">Total</th>
                                 </tr>
@@ -265,6 +347,7 @@ const SalesHistoryPage = () => {
                                         <td>${item.product_name}</td>
                                         <td>${item.quantity}</td>
                                         <td>₦${parseFloat(item.price_at_sale).toFixed(2)}</td>
+                                        ${saleDetails.is_advantage_sale ? `<td>${item.advantage_amount ? `₦${parseFloat(item.advantage_amount).toFixed(2)}` : '-'}</td>` : ''}
                                         <td>${item.discount_applied > 0 ? `${item.discount_applied}%` : '-'}</td>
                                         <td class="text-right">₦${(parseFloat(item.price_at_sale) * item.quantity * (1 - (item.discount_applied || 0) / 100)).toFixed(2)}</td>
                                     </tr>
@@ -302,6 +385,14 @@ const SalesHistoryPage = () => {
                     <div class="receipt-section">
                         <h3>Payment Summary</h3>
                         <div class="totals">
+                            ${saleDetails.is_advantage_sale ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Advantage Amount:</span> +₦${parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                            </div>
+                            ` : ''}
                             <div class="detail-item">
                                 <span class="detail-label">Subtotal:</span> ₦${parseFloat(saleDetails.subtotal || 0).toFixed(2)}
                             </div>
@@ -372,6 +463,11 @@ const SalesHistoryPage = () => {
         setSaleDetails(null);
     };
 
+    const closeReceiptModal = () => {
+        setShowReceiptModal(false);
+        setReceiptImageUrl('');
+    };
+
     const clearFilters = () => {
         setSearch('');
         setStartDate('');
@@ -382,6 +478,21 @@ const SalesHistoryPage = () => {
         setStockSource('');
         setHasFreeStock('');
         setDiscountRange('');
+        // NEW: Clear new filters
+        setSaleType('');
+        setHasReceipt('');
+        setHasReference('');
+        setAdvantageRange('');
+    };
+
+    // NEW: Get active filter count
+    const getActiveFilterCount = () => {
+        const filters = [
+            search, startDate, endDate, transactionType, paymentMethod, 
+            status, stockSource, hasFreeStock, discountRange, saleType, 
+            hasReceipt, hasReference, advantageRange
+        ];
+        return filters.filter(filter => filter !== '').length;
     };
 
     return (
@@ -399,21 +510,36 @@ const SalesHistoryPage = () => {
                         Track and manage all sales transactions with complete details
                     </p>
                 </div>
+                <div className="sh-header-actions">
+                    <button 
+                        className={`sh-btn sh-btn--outline sh-btn--icon ${showFilters ? 'sh-btn--active' : ''}`}
+                        onClick={() => setShowFilters(!showFilters)}
+                    >
+                        <FiFilter />
+                        Filters {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
+                    </button>
+                </div>
             </div>
 
             {error && <div className="sh-error">{error}</div>}
 
             {/* Filter Form */}
-            <div className="sh-card">
+            <div className={`sh-card ${showFilters ? 'sh-card--expanded' : ''}`}>
                 <div className="sh-card__header">
                     <div className="sh-card__title">
                         <FiSearch />
                         Search & Filters
                     </div>
+                    <div className="sh-card__actions">
+                        <span className="sh-badge sh-badge--info">
+                            {getActiveFilterCount()} active filters
+                        </span>
+                    </div>
                 </div>
                 <div className="sh-card__body">
                     <form onSubmit={handleSearch} className="sh-filters-form">
                         <div className="sh-filters-grid">
+                            {/* Basic Search */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiSearch />
@@ -431,6 +557,7 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* Transaction Type */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiList />
@@ -449,6 +576,26 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* NEW: Sale Type Filter (Advantage vs Regular) */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiTrendingUp />
+                                    Sale Type
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={saleType}
+                                        onChange={(e) => setSaleType(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Sales</option>
+                                        <option value="advantage">Advantage Sales</option>
+                                        <option value="regular">Regular Sales</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Payment Method */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiDollarSign />
@@ -470,6 +617,7 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* Status */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiList />
@@ -489,6 +637,7 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* Stock Source */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiPackage />
@@ -507,6 +656,7 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* Free Stock */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiGift />
@@ -525,6 +675,45 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* NEW: Has Receipt Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiImage />
+                                    Has Receipt
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={hasReceipt}
+                                        onChange={(e) => setHasReceipt(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Sales</option>
+                                        <option value="true">With Receipt</option>
+                                        <option value="false">Without Receipt</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* NEW: Has Reference Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiHash />
+                                    Has Reference
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={hasReference}
+                                        onChange={(e) => setHasReference(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Sales</option>
+                                        <option value="true">With Reference</option>
+                                        <option value="false">Without Reference</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Discount Range */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiDollarSign />
@@ -545,6 +734,28 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* NEW: Advantage Range Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiTrendingUp />
+                                    Advantage Range
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={advantageRange}
+                                        onChange={(e) => setAdvantageRange(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">Any Advantage</option>
+                                        <option value="none">No Advantage</option>
+                                        <option value="small">Small (₦1 - ₦500)</option>
+                                        <option value="medium">Medium (₦501 - ₦2000)</option>
+                                        <option value="large">Large (₦2001+)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Date Filters */}
                             <div className="sh-field">
                                 <label className="sh-label">
                                     <FiCalendar />
@@ -575,6 +786,7 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* Action Buttons */}
                             <div className="sh-field sh-field--actions">
                                 <button 
                                     type="submit" 
@@ -588,7 +800,7 @@ const SalesHistoryPage = () => {
                                     onClick={clearFilters}
                                 >
                                     <FiX />
-                                    Clear Filters
+                                    Clear All Filters
                                 </button>
                             </div>
                         </div>
@@ -607,6 +819,14 @@ const SalesHistoryPage = () => {
                     <FiShoppingCart className="sh-empty-icon" />
                     <h3>No Sales Found</h3>
                     <p>No sales transactions found for the selected criteria.</p>
+                    {getActiveFilterCount() > 0 && (
+                        <button 
+                            className="sh-btn sh-btn--primary"
+                            onClick={clearFilters}
+                        >
+                            Clear Filters
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="sh-card">
@@ -614,8 +834,23 @@ const SalesHistoryPage = () => {
                         <div className="sh-card__title">
                             <FiFileText />
                             Sales Transactions
+                            {getActiveFilterCount() > 0 && (
+                                <span className="sh-filter-indicator">
+                                    Filtered ({sales.length} transactions)
+                                </span>
+                            )}
                         </div>
-                        <span className="sh-badge sh-badge--primary">{sales.length} transactions</span>
+                        <div className="sh-card__actions">
+                            <span className="sh-badge sh-badge--primary">{sales.length} transactions</span>
+                            {getActiveFilterCount() > 0 && (
+                                <button 
+                                    className="sh-btn sh-btn--ghost sh-btn--small"
+                                    onClick={clearFilters}
+                                >
+                                    <FiX /> Clear Filters
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="sh-card__body">
                         <div className="sh-table-container">
@@ -631,6 +866,12 @@ const SalesHistoryPage = () => {
                                         <th className="sh-table__cell sh-table__cell--header">Stock Source</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Total</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Discount</th>
+                                        {/* NEW: Advantage Amount Column */}
+                                        <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Advantage</th>
+                                        {/* NEW: Payment Reference Column */}
+                                        <th className="sh-table__cell sh-table__cell--header">Reference</th>
+                                        {/* NEW: Receipt Column */}
+                                        <th className="sh-table__cell sh-table__cell--header">Receipt</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--actions">Actions</th>
                                     </tr>
                                 </thead>
@@ -669,6 +910,38 @@ const SalesHistoryPage = () => {
                                             <td className="sh-table__cell sh-table__cell--amount">
                                                 {sale.discount_amount > 0 ? `-₦${parseFloat(sale.discount_amount).toFixed(2)}` : '-'}
                                             </td>
+                                            {/* NEW: Advantage Amount Cell */}
+                                            <td className="sh-table__cell sh-table__cell--amount">
+                                                {hasAdvantageAmount(sale) ? (
+                                                    <span className="sh-advantage-badge" title={`Advantage Amount: ₦${parseFloat(sale.advantage_total).toFixed(2)}`}>
+                                                        <FiTrendingUp className="sh-advantage-icon" />
+                                                        ₦{parseFloat(sale.advantage_total).toFixed(2)}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            {/* NEW: Payment Reference Cell */}
+                                            <td className="sh-table__cell sh-table__cell--reference">
+                                                {sale.payment_reference ? (
+                                                    <span className="sh-reference" title={sale.payment_reference}>
+                                                        {sale.payment_reference.length > 15 
+                                                            ? `${sale.payment_reference.substring(0, 15)}...` 
+                                                            : sale.payment_reference
+                                                        }
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            {/* NEW: Receipt Cell */}
+                                            <td className="sh-table__cell sh-table__cell--receipt">
+                                                {sale.payment_image_url ? (
+                                                    <button
+                                                        className="sh-action-btn sh-action-btn--info"
+                                                        onClick={() => handleViewReceipt(sale.payment_image_url)}
+                                                        title="View Receipt Image"
+                                                    >
+                                                        <FiImage />
+                                                    </button>
+                                                ) : '-'}
+                                            </td>
                                             <td className="sh-table__cell sh-table__cell--actions">
                                                 <button
                                                     className="sh-action-btn sh-action-btn--primary"
@@ -703,76 +976,115 @@ const SalesHistoryPage = () => {
                         <div className="sh-modal__body">
                             {saleDetails && (
                                 <div className="sh-details-grid">
-{/* Transaction Overview - Updated with better spacing */}
-<div className="sh-details-card">
-    <div className="sh-details-card__header">
-        <h5><FiShoppingCart /> Transaction Overview</h5>
-    </div>
-    <div className="sh-details-card__body">
-        <div className="sh-details-grid--compact">
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Transaction ID:</span>
-                <span className="sh-detail-value">#{saleDetails.id}</span>
-            </div>
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Date & Time:</span>
-                <span className="sh-detail-value">{format(new Date(saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
-            </div>
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Cashier:</span>
-                <span className="sh-detail-value">{saleDetails.cashier_name || 'N/A'}</span>
-            </div>
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Transaction Type:</span>
-                <span className="sh-detail-value">{saleDetails.transaction_type}</span>
-            </div>
-            {saleDetails.transaction_type === 'Retail' && saleDetails.customer_name && (
-                <div className="sh-detail-item">
-                    <span className="sh-detail-label">Customer:</span>
-                    <span className="sh-detail-value">{saleDetails.customer_name}</span>
-                </div>
-            )}
-            {saleDetails.transaction_type === 'B2B' && saleDetails.branch_name && (
-                <div className="sh-detail-item">
-                    <span className="sh-detail-label">Branch:</span>
-                    <span className="sh-detail-value">{saleDetails.branch_name}</span>
-                </div>
-            )}
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Payment Method:</span>
-                <span className="sh-detail-value">{saleDetails.payment_method}</span>
-            </div>
-            <div className="sh-detail-item">
-                <span className="sh-detail-label">Stock Source:</span>
-                <span className="sh-detail-value">
-                    <span className={`sh-badge ${saleDetails.stock_source === 'user_stock' ? 'sh-badge--info' : 'sh-badge--secondary'}`}>
-                        {saleDetails.stock_source === 'user_stock' ? 'User Allocated Stock' : 'Main Inventory'}
-                    </span>
-                </span>
-            </div>
-            {saleDetails.stock_source_user_id && (
-                <div className="sh-detail-item">
-                    <span className="sh-detail-label">Stock Allocated To:</span>
-                    <span className="sh-detail-value">{getUserName(saleDetails.stock_source_user_id)}</span>
-                </div>
-            )}
-            {saleDetails.payment_reference && (
-                <div className="sh-detail-item">
-                    <span className="sh-detail-label">Payment Reference:</span>
-                    <span className="sh-detail-value">{saleDetails.payment_reference}</span>
-                </div>
-            )}
-            {saleDetails.note && (
-                <div className="sh-detail-item">
-                    <span className="sh-detail-label">Note:</span>
-                    <span className="sh-detail-value">{saleDetails.note}</span>
-                </div>
-            )}
-        </div>
-    </div>
-</div>
+                                    {/* Transaction Overview - Updated with Payment Reference */}
+                                    <div className="sh-details-card">
+                                        <div className="sh-details-card__header">
+                                            <h5><FiShoppingCart /> Transaction Overview</h5>
+                                        </div>
+                                        <div className="sh-details-card__body">
+                                            <div className="sh-details-grid--compact">
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Transaction ID:</span>
+                                                    <span className="sh-detail-value">#{saleDetails.id}</span>
+                                                </div>
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Date & Time:</span>
+                                                    <span className="sh-detail-value">{format(new Date(saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
+                                                </div>
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Cashier:</span>
+                                                    <span className="sh-detail-value">{saleDetails.cashier_name || 'N/A'}</span>
+                                                </div>
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Transaction Type:</span>
+                                                    <span className="sh-detail-value">{saleDetails.transaction_type}</span>
+                                                </div>
+                                                {saleDetails.transaction_type === 'Retail' && saleDetails.customer_name && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Customer:</span>
+                                                        <span className="sh-detail-value">{saleDetails.customer_name}</span>
+                                                    </div>
+                                                )}
+                                                {saleDetails.transaction_type === 'B2B' && saleDetails.branch_name && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Branch:</span>
+                                                        <span className="sh-detail-value">{saleDetails.branch_name}</span>
+                                                    </div>
+                                                )}
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Payment Method:</span>
+                                                    <span className="sh-detail-value">{saleDetails.payment_method}</span>
+                                                </div>
+                                                {/* NEW: Payment Reference in Details */}
+                                                {saleDetails.payment_reference && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Payment Reference:</span>
+                                                        <span className="sh-detail-value sh-detail-value--mono">{saleDetails.payment_reference}</span>
+                                                    </div>
+                                                )}
+                                                <div className="sh-detail-item">
+                                                    <span className="sh-detail-label">Stock Source:</span>
+                                                    <span className="sh-detail-value">
+                                                        <span className={`sh-badge ${saleDetails.stock_source === 'user_stock' ? 'sh-badge--info' : 'sh-badge--secondary'}`}>
+                                                            {saleDetails.stock_source === 'user_stock' ? 'User Allocated Stock' : 'Main Inventory'}
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                {saleDetails.stock_source_user_id && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Stock Allocated To:</span>
+                                                        <span className="sh-detail-value">{getUserName(saleDetails.stock_source_user_id)}</span>
+                                                    </div>
+                                                )}
+                                                {/* NEW: Advantage Sale Indicator */}
+                                                {saleDetails.is_advantage_sale && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Sale Type:</span>
+                                                        <span className="sh-detail-value">
+                                                            <span className="sh-badge sh-badge--warning">
+                                                                <FiTrendingUp /> Advantage Sale
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {saleDetails.note && (
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Note:</span>
+                                                        <span className="sh-detail-value">{saleDetails.note}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                    {/* Items Sold */}
+                                    {/* NEW: Advantage Sale Details Card */}
+                                    {saleDetails.is_advantage_sale && (
+                                        <div className="sh-details-card sh-details-card--warning">
+                                            <div className="sh-details-card__header">
+                                                <h5><FiTrendingUp /> Advantage Sale Details</h5>
+                                            </div>
+                                            <div className="sh-details-card__body">
+                                                <div className="sh-details-grid--compact">
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Base Subtotal:</span>
+                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Advantage Amount Added:</span>
+                                                        <span className="sh-detail-value sh-detail-value--highlight">
+                                                            +₦{parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="sh-detail-item">
+                                                        <span className="sh-detail-label">Final Subtotal:</span>
+                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.subtotal).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Items Sold - Updated with Advantage Amount */}
                                     <div className="sh-details-card">
                                         <div className="sh-details-card__header">
                                             <h5><FiShoppingCart /> Items Sold</h5>
@@ -785,6 +1097,10 @@ const SalesHistoryPage = () => {
                                                             <th className="sh-table__cell sh-table__cell--header">Product Name</th>
                                                             <th className="sh-table__cell sh-table__cell--header">Quantity</th>
                                                             <th className="sh-table__cell sh-table__cell--header">Unit Price</th>
+                                                            {/* NEW: Advantage Amount Column in Items */}
+                                                            {saleDetails.is_advantage_sale && (
+                                                                <th className="sh-table__cell sh-table__cell--header">Advantage Amount</th>
+                                                            )}
                                                             <th className="sh-table__cell sh-table__cell--header">Discount %</th>
                                                             <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Line Total</th>
                                                         </tr>
@@ -802,6 +1118,12 @@ const SalesHistoryPage = () => {
                                                                 </td>
                                                                 <td className="sh-table__cell sh-table__cell--number">{item.quantity}</td>
                                                                 <td className="sh-table__cell sh-table__cell--amount">₦{parseFloat(item.price_at_sale).toFixed(2)}</td>
+                                                                {/* NEW: Advantage Amount in Items */}
+                                                                {saleDetails.is_advantage_sale && (
+                                                                    <td className="sh-table__cell sh-table__cell--amount">
+                                                                        {item.advantage_amount > 0 ? `+₦${parseFloat(item.advantage_amount).toFixed(2)}` : '-'}
+                                                                    </td>
+                                                                )}
                                                                 <td className="sh-table__cell sh-table__cell--number">
                                                                     {item.discount_applied > 0 ? `${item.discount_applied}%` : '-'}
                                                                 </td>
@@ -853,7 +1175,7 @@ const SalesHistoryPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Payment Summary */}
+                                    {/* Payment Summary - Updated with Advantage Amount */}
                                     <div className="sh-details-card">
                                         <div className="sh-details-card__header">
                                             <h5><FiCreditCard /> Payment Summary</h5>
@@ -861,6 +1183,19 @@ const SalesHistoryPage = () => {
                                         <div className="sh-details-card__body">
                                             <div className="sh-payment-summary">
                                                 <div className="sh-payment-breakdown">
+                                                    {/* NEW: Advantage Amount in Payment Summary */}
+                                                    {saleDetails.is_advantage_sale && (
+                                                        <>
+                                                            <div className="sh-payment-item">
+                                                                <span className="sh-payment-label">Base Subtotal:</span>
+                                                                <span className="sh-payment-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="sh-payment-item sh-payment-item--advantage">
+                                                                <span className="sh-payment-label">Advantage Amount:</span>
+                                                                <span className="sh-payment-value">+₦{parseFloat(saleDetails.advantage_total || 0).toFixed(2)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     <div className="sh-payment-item">
                                                         <span className="sh-payment-label">Subtotal:</span>
                                                         <span className="sh-payment-value">₦{parseFloat(saleDetails.subtotal || 0).toFixed(2)}</span>
@@ -910,7 +1245,7 @@ const SalesHistoryPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Additional Information */}
+                                    {/* Additional Information - Updated with Receipt Link */}
                                     <div className="sh-details-card">
                                         <div className="sh-details-card__header">
                                             <h5><FiFileText /> Additional Information</h5>
@@ -927,17 +1262,26 @@ const SalesHistoryPage = () => {
                                                         <span className="sh-detail-value">{format(new Date(saleDetails.updated_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
                                                     </div>
                                                 )}
+                                                {/* NEW: Enhanced Receipt Image Viewing */}
                                                 {saleDetails.payment_image_url && (
                                                     <div className="sh-detail-item">
-                                                        <span className="sh-detail-label">Payment Proof:</span>
-                                                        <a 
-                                                            href={saleDetails.payment_image_url} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer" 
-                                                            className="sh-btn sh-btn--outline sh-btn--small"
-                                                        >
-                                                            View Image
-                                                        </a>
+                                                        <span className="sh-detail-label">Receipt Proof:</span>
+                                                        <div className="sh-receipt-actions">
+                                                            <button 
+                                                                className="sh-btn sh-btn--outline sh-btn--small"
+                                                                onClick={() => handleViewReceipt(saleDetails.payment_image_url)}
+                                                            >
+                                                                <FiImage /> View Receipt
+                                                            </button>
+                                                            <a 
+                                                                href={saleDetails.payment_image_url} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="sh-btn sh-btn--ghost sh-btn--small"
+                                                            >
+                                                                <FiExternalLink /> Open in New Tab
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {saleDetails.transaction_type === 'B2B' && saleDetails.driver_name && (
@@ -968,6 +1312,61 @@ const SalesHistoryPage = () => {
                                 )}
                                 Print Receipt
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* NEW: Receipt Image Modal */}
+            {showReceiptModal && (
+                <div className="sh-modal">
+                    <div className="sh-modal__content sh-modal__content--lg">
+                        <div className="sh-modal__header">
+                            <h3 className="sh-modal__title">
+                                <FiImage className="sh-modal__icon" />
+                                Receipt Image
+                            </h3>
+                            <button className="sh-modal__close" onClick={closeReceiptModal}>
+                                <FiX />
+                            </button>
+                        </div>
+                        <div className="sh-modal__body">
+                            <div className="sh-receipt-image-container">
+                                <img 
+                                    src={receiptImageUrl} 
+                                    alt="Payment Receipt" 
+                                    className="sh-receipt-image"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'block';
+                                    }}
+                                />
+                                <div className="sh-receipt-fallback" style={{display: 'none'}}>
+                                    <FiImage className="sh-receipt-fallback-icon" />
+                                    <p>Unable to load receipt image</p>
+                                    <a 
+                                        href={receiptImageUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="sh-btn sh-btn--primary"
+                                    >
+                                        Open in New Tab
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="sh-modal__footer">
+                            <button className="sh-btn sh-btn--ghost" onClick={closeReceiptModal}>
+                                Close
+                            </button>
+                            <a 
+                                href={receiptImageUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="sh-btn sh-btn--primary"
+                            >
+                                <FiExternalLink /> Open in New Tab
+                            </a>
                         </div>
                     </div>
                 </div>
