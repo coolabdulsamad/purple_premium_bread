@@ -97,7 +97,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
     // 5️⃣ People & System
     [
       { name: 'Customers', path: '/customers', icon: <FaUsers />, roles: ['admin', 'sales', 'manager'] },
-      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin', 'accountant'] },
+      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin', 'accountant', 'manager'] },
       { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
       { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales'] },
       { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager'] },
