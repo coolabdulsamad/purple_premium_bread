@@ -19,6 +19,7 @@ import {
   FaBoxOpen,
   FaGift,
   FaCrown,
+  FaMotorcycle,
 } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -64,6 +65,8 @@ const NewSalePage = () => {
   const [inventory, setInventory] = useState({});
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
+  const [riders, setRiders] = useState([]);
+  
   const [carts, setCarts] = useState([
     {
       id: 1,
@@ -80,12 +83,17 @@ const NewSalePage = () => {
       total: 0,
       discount: 0,
       note: "",
-      // NEW: Advantage sale fields (frontend only)
+      // Advantage sale fields
       isAdvantageSale: false,
       advantageAmount: 0,
-      itemAdvantageAmounts: {}, // { productId: amount }
+      itemAdvantageAmounts: {},
+      // Rider sale fields
+      isRiderSale: false,
+      selectedRider: null,
+      riderCreditInfo: null,
     },
   ]);
+  
   const [activeCartId, setActiveCartId] = useState(1);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,7 +109,7 @@ const NewSalePage = () => {
 
   const activeCart = carts.find((c) => c.id === activeCartId);
 
-  /* ========= Data Fetch (Single useEffect - Fixed) ========= */
+  /* ========= Data Fetch ========= */
   useEffect(() => {
     let mounted = true;
 
@@ -121,11 +129,12 @@ const NewSalePage = () => {
           productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
         }
 
-        const [productsAndStockRes, customersRes, servicesRes] =
+        const [productsAndStockRes, customersRes, servicesRes, ridersRes] =
           await Promise.all([
             api.get(productsEndpoint),
             api.get(`/customers`),
             api.get(`/services/newsales`),
+            api.get(`/riders?status=active`),
           ]);
 
         const productsData = (productsAndStockRes.data || [])
@@ -144,6 +153,7 @@ const NewSalePage = () => {
         setProducts(productsData);
         setCustomers(customersRes.data);
         setServices(servicesRes.data);
+        setRiders(ridersRes.data?.riders || []);
 
         const inventoryMap = productsData.reduce((map, item) => {
           map[item.id] = item.quantity;
@@ -168,9 +178,24 @@ const NewSalePage = () => {
     return () => { mounted = false; };
   }, [userId, userRole]);
 
-  /* ========= Totals (UPDATED for Advantage Pricing - Frontend Only) ========= */
+  /* ========= Get Product Price Based on Rider ========= */
+  const getProductPrice = (product, cart) => {
+    if (cart.isRiderSale && cart.selectedRider) {
+      const rider = cart.selectedRider;
+      // Check if rider has custom price for this product
+      const riderProductPrice = rider.rider_product_prices?.find(
+        p => p.product_id === product.id
+      );
+      if (riderProductPrice) {
+        return riderProductPrice.price;
+      }
+    }
+    return product.price;
+  };
+
+  /* ========= Totals (UPDATED for Rider & Advantage Pricing) ========= */
   const getTotals = (cart) => {
-    // Calculate with advantage amounts included in the price
+    // Calculate subtotal with appropriate prices
     const subtotal = cart.items.reduce((sum, item) => {
       const basePrice = Number(item.price);
       const advantageAmount = cart.itemAdvantageAmounts[item.id] || 0;
@@ -209,10 +234,15 @@ const NewSalePage = () => {
     JSON.stringify(
       carts.map((c) => ({ 
         id: c.id, 
-        items: c.items, 
+        items: c.items.map(item => ({
+          ...item,
+          price: getProductPrice(item, c) // Recalculate prices based on rider
+        })),
         discount: c.discount,
         isAdvantageSale: c.isAdvantageSale,
-        itemAdvantageAmounts: c.itemAdvantageAmounts 
+        itemAdvantageAmounts: c.itemAdvantageAmounts,
+        isRiderSale: c.isRiderSale,
+        selectedRider: c.selectedRider
       }))
     ),
     JSON.stringify(services),
@@ -236,11 +266,13 @@ const NewSalePage = () => {
     });
   }, [products, searchTerm, category]);
 
-  /* ========= Cart Operations (UPDATED for Advantage Pricing) ========= */
+  /* ========= Cart Operations ========= */
   const addToCart = (product, cartId) => {
     setCarts((prev) =>
       prev.map((cart) => {
         if (cart.id !== cartId) return cart;
+        
+        const price = getProductPrice(product, cart);
         const existing = cart.items.find((i) => i.id === product.id);
         const stock = inventory[product.id] || 0;
 
@@ -277,7 +309,8 @@ const NewSalePage = () => {
               {
                 id: product.id,
                 name: product.name,
-                price: product.price,
+                price: price,
+                originalPrice: product.price,
                 quantity: 1,
               },
             ],
@@ -310,7 +343,6 @@ const NewSalePage = () => {
     );
   };
 
-  // NEW: Update advantage amount for a specific product
   const updateAdvantageAmount = (cartId, productId, amount) => {
     setCarts((prev) =>
       prev.map((cart) => {
@@ -322,6 +354,66 @@ const NewSalePage = () => {
         return {
           ...cart,
           itemAdvantageAmounts: newAmounts
+        };
+      })
+    );
+  };
+
+  const handleRiderSelect = (cartId, riderId) => {
+    const rider = riders.find(r => r.id === parseInt(riderId));
+    
+    setCarts((prev) =>
+      prev.map((cart) => {
+        if (cart.id !== cartId) return cart;
+        
+        // Update items with rider's custom prices
+        const updatedItems = cart.items.map(item => {
+          const riderPrice = rider?.rider_product_prices?.find(
+            p => p.product_id === item.id
+          );
+          return {
+            ...item,
+            price: riderPrice ? riderPrice.price : item.originalPrice || item.price,
+            originalPrice: item.originalPrice || item.price
+          };
+        });
+
+        return {
+          ...cart,
+          isRiderSale: true,
+          selectedRider: rider,
+          riderCreditInfo: rider ? {
+            creditLimit: rider.credit_limit,
+            currentBalance: rider.current_balance,
+            availableCredit: (rider.credit_limit || 0) - (rider.current_balance || 0)
+          } : null,
+          items: updatedItems
+        };
+      })
+    );
+
+    if (rider) {
+      toast(<CustomToast type="info" message={`Rider ${rider.fullname} selected`} />);
+    }
+  };
+
+  const clearRiderSelection = (cartId) => {
+    setCarts((prev) =>
+      prev.map((cart) => {
+        if (cart.id !== cartId) return cart;
+        
+        // Reset items to original prices
+        const updatedItems = cart.items.map(item => ({
+          ...item,
+          price: item.originalPrice || item.price
+        }));
+
+        return {
+          ...cart,
+          isRiderSale: false,
+          selectedRider: null,
+          riderCreditInfo: null,
+          items: updatedItems
         };
       })
     );
@@ -352,6 +444,9 @@ const NewSalePage = () => {
         isAdvantageSale: false,
         advantageAmount: 0,
         itemAdvantageAmounts: {},
+        isRiderSale: false,
+        selectedRider: null,
+        riderCreditInfo: null,
       },
     ]);
     setActiveCartId(nextId);
@@ -378,232 +473,276 @@ const NewSalePage = () => {
     });
   };
 
-/* ========= Checkout (UPDATED with Advantage Sale Data) - FIXED ========= */
-const handleCheckout = async (cartToProcess) => {
-  if (!cartToProcess || cartToProcess.items.length === 0) {
-    toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
-    return;
-  }
+  /* ========= Checkout (UPDATED with Rider Sale Data) ========= */
+  const handleCheckout = async (cartToProcess) => {
+    if (!cartToProcess || cartToProcess.items.length === 0) {
+      toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
+      return;
+    }
 
-  // Free stock validation
-  if (isFreeStockChecked) {
-    let isValid = true;
-    Object.entries(freeStockQuantities).forEach(([productId, freeQty]) => {
-      const item = cartToProcess.items.find(i => i.id === parseInt(productId));
-      if (freeQty > (item?.quantity || 0)) {
-        toast(<CustomToast type="error" message={`Free stock for ${item?.name || 'an item'} exceeds the quantity sold.` } />, {
-          toastId: 'free-stock-exceed-error'
+    // Validate rider credit if it's a rider sale with credit payment
+    if (cartToProcess.isRiderSale && 
+        cartToProcess.payment.paymentMethod === "Credit" && 
+        cartToProcess.selectedRider) {
+      
+      const rider = cartToProcess.selectedRider;
+      const availableCredit = (rider.credit_limit || 0) - (rider.current_balance || 0);
+      
+      if (cartToProcess.total > availableCredit) {
+        toast(<CustomToast type="error" message={`Rider's available credit (₦${availableCredit.toFixed(2)}) is insufficient for this sale.`} />, {
+          toastId: 'rider-credit-error'
         });
-        isValid = false;
+        return;
       }
-    });
-    if (!isValid) return;
-
-    if (!freeStockReason.trim()) {
-      toast(<CustomToast type="error" message="Please provide a reason for the free stock/incentive." />, {
-        toastId: 'free-stock-reason-error'
-      });
-      return;
-    }
-  }
-
-  const cashierId = getCashierIdFromToken();
-  if (!cashierId) {
-    toast(<CustomToast type="error" message="You must be logged in to process a sale." />, {
-      toastId: 'sale-error'
-    });
-    return;
-  }
-
-  let paymentImageUrl = null;
-  if (cartToProcess.payment.paymentImage) {
-    try {
-      const fd = new FormData();
-      fd.append("receiptImage", cartToProcess.payment.paymentImage);
-      const upload = await api.post(`/sales/upload-receipt`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      paymentImageUrl = upload.data.url;
-    } catch {
-      toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
-        toastId: 'receipt-error'
-      });
-      return;
-    }
-  }
-
-  const { subtotal, tax, total, discountAmount } = getTotals(cartToProcess);
-  
-  // NEW: Calculate advantage total and base subtotal
-  const baseSubtotal = cartToProcess.items.reduce((sum, item) => {
-    return sum + Number(item.price) * Number(item.quantity);
-  }, 0);
-  
-  const advantageTotal = cartToProcess.items.reduce((sum, item) => {
-    const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
-    return sum + (Number(advantageAmount) * Number(item.quantity));
-  }, 0);
-  
-  let amountPaid = 0;
-  let balanceDue = 0;
-  let status = "Paid";
-  let dueDate = null;
-  let customerId = null;
-
-  if (cartToProcess.payment.paymentMethod === "Credit") {
-    if (!cartToProcess.payment.customer) {
-      toast(<CustomToast type="error" message="Select a customer for credit sales." />, { toastId: 'sales-error' });
-      return;
     }
 
-    customerId = cartToProcess.payment.customer.id;
-    amountPaid = Number(cartToProcess.payment.amountPaid || 0);
-    balanceDue = total - amountPaid;
-
-    const remainingLimit =
-      Number(cartToProcess.payment.customer.credit_limit || 0) -
-      Number(cartToProcess.payment.customer.balance || 0);
-
-    if (balanceDue > remainingLimit && amountPaid < total) {
-      toast(<CustomToast type="error" message="Exceeds customer's remaining credit limit." />, { toastId: 'credit-error' });
-      return;
-    }
-
-    if (balanceDue > 0 && balanceDue < total) status = "Partially Paid";
-    if (balanceDue === total) status = "Unpaid";
-    if (balanceDue <= 0) {
-      status = "Paid";
-      balanceDue = 0;
-    }
-
-    dueDate = cartToProcess.payment.dueDate || null;
-    if (!dueDate && balanceDue > 0) {
-      toast(<CustomToast type="warning" message="Choose a due date for outstanding balance." />, {
-        toastId: 'balance-warn'
-      });
-      return;
-    }
-  } else {
-    amountPaid = total;
-    balanceDue = 0;
-    status = "Paid";
-  }
-
-  // Prepare items with advantage amounts
-  const cartItemsWithAdvantage = cartToProcess.items.map(item => {
-    const basePrice = Number(item.price);
-    const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
-    const finalPrice = basePrice + Number(advantageAmount);
-    
-    return {
-      ...item,
-      advantageAmount: advantageAmount, // Send advantage amount
-      finalPrice: finalPrice, // Send final price
-      price: basePrice // Keep original price for base calculation
-    };
-  });
-
-  const payload = {
-    cart: cartItemsWithAdvantage,
-    subtotal,
-    tax,
-    total,
-    discountAmount,
-    cashierId,
-    paymentMethod: cartToProcess.payment.paymentMethod,
-    customerId,
-    note: cartToProcess.note,
-    paymentReference: cartToProcess.payment.paymentReference,
-    paymentImageUrl,
-    status,
-    amountPaid,
-    balanceDue,
-    dueDate,
-    freeStock: isFreeStockChecked
-      ? { quantities: freeStockQuantities, reason: freeStockReason }
-      : null,
-    // NEW: Advantage sale data
-    isAdvantageSale: cartToProcess.isAdvantageSale,
-    advantageTotal: advantageTotal,
-    baseSubtotal: baseSubtotal
-  };
-
-  try {
-    await api.post(`/sales/process`, payload);
-    toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
-
-    // ✅ FIXED: Only reset the processed cart, keep other carts intact
-    setCarts((prev) =>
-      prev.map((cart) =>
-        cart.id === cartToProcess.id
-          ? {
-              id: cart.id,
-              name: cart.name,
-              items: [],
-              payment: {
-                paymentMethod: "Cash",
-                paymentReference: "",
-                paymentImage: null,
-                customer: null,
-                amountPaid: 0,
-                dueDate: "",
-              },
-              total: 0,
-              discount: 0,
-              note: "",
-              isAdvantageSale: false,
-              advantageAmount: 0,
-              itemAdvantageAmounts: {},
-            }
-          : cart
-      )
-    );
-
-    // ✅ Reset free stock states only for this specific cart
-    // Don't reset global free stock states as they might be used by other carts
-    setIsFreeStockChecked(false);
-    setFreeStockQuantities({});
-    setFreeStockReason("");
-
-    // ✅ Refresh stock data
-    const fetchAllData = async () => {
-      try {
-        let productsEndpoint;
-        if (userRole === 'sales') {
-          productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
-        } else {
-          productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+    // Free stock validation
+    if (isFreeStockChecked) {
+      let isValid = true;
+      Object.entries(freeStockQuantities).forEach(([productId, freeQty]) => {
+        const item = cartToProcess.items.find(i => i.id === parseInt(productId));
+        if (freeQty > (item?.quantity || 0)) {
+          toast(<CustomToast type="error" message={`Free stock for ${item?.name || 'an item'} exceeds the quantity sold.` } />, {
+            toastId: 'free-stock-exceed-error'
+          });
+          isValid = false;
         }
-        
-        const productsAndStockRes = await api.get(productsEndpoint);
-        const productsData = (productsAndStockRes.data || [])
-          .filter((p) => p.name || p.product_name)
-          .map(p => ({
-            id: p.id || p.product_id,
-            name: p.name || p.product_name,
-            price: p.price,
-            category: p.category || p.product_category,
-            image_url: p.image_url,
-            quantity: p.quantity
-          }));
+      });
+      if (!isValid) return;
 
-        setProducts(productsData);
-        const inventoryMap = productsData.reduce((map, item) => {
-          map[item.id] = item.quantity;
-          return map;
-        }, {});
-        setInventory(inventoryMap);
-      } catch (error) {
-        console.error("Stock refresh error:", error);
+      if (!freeStockReason.trim()) {
+        toast(<CustomToast type="error" message="Please provide a reason for the free stock/incentive." />, {
+          toastId: 'free-stock-reason-error'
+        });
+        return;
       }
-    };
+    }
+
+    const cashierId = getCashierIdFromToken();
+    if (!cashierId) {
+      toast(<CustomToast type="error" message="You must be logged in to process a sale." />, {
+        toastId: 'sale-error'
+      });
+      return;
+    }
+
+    let paymentImageUrl = null;
+    if (cartToProcess.payment.paymentImage) {
+      try {
+        const fd = new FormData();
+        fd.append("receiptImage", cartToProcess.payment.paymentImage);
+        const upload = await api.post(`/sales/upload-receipt`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        paymentImageUrl = upload.data.url;
+      } catch {
+        toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
+          toastId: 'receipt-error'
+        });
+        return;
+      }
+    }
+
+    const { subtotal, tax, total, discountAmount } = getTotals(cartToProcess);
     
-    fetchAllData();
-  } catch (error) {
-    console.error("Sale Processing Error:", error.response?.data || error.message);
-    toast(<CustomToast type="error" message="Failed to process sale." />, { toastId: 'sales-error' });
-  }
-};
+    // Calculate advantage total and base subtotal
+    const baseSubtotal = cartToProcess.items.reduce((sum, item) => {
+      return sum + Number(item.price) * Number(item.quantity);
+    }, 0);
+    
+    const advantageTotal = cartToProcess.items.reduce((sum, item) => {
+      const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
+      return sum + (Number(advantageAmount) * Number(item.quantity));
+    }, 0);
+    
+    let amountPaid = 0;
+    let balanceDue = 0;
+    let status = "Paid";
+    let dueDate = null;
+    let customerId = null;
+
+    if (cartToProcess.payment.paymentMethod === "Credit") {
+      if (!cartToProcess.payment.customer && !cartToProcess.isRiderSale) {
+        toast(<CustomToast type="error" message="Select a customer for credit sales." />, { toastId: 'sales-error' });
+        return;
+      }
+
+      // For rider sales, use rider's credit info
+      if (cartToProcess.isRiderSale && cartToProcess.selectedRider) {
+        customerId = cartToProcess.selectedRider.customer_id;
+      } else if (cartToProcess.payment.customer) {
+        customerId = cartToProcess.payment.customer.id;
+      }
+
+      amountPaid = Number(cartToProcess.payment.amountPaid || 0);
+      balanceDue = total - amountPaid;
+
+      // Check credit limit based on customer or rider
+      if (cartToProcess.isRiderSale && cartToProcess.selectedRider) {
+        const rider = cartToProcess.selectedRider;
+        const availableCredit = (rider.credit_limit || 0) - (rider.current_balance || 0);
+        
+        if (balanceDue > availableCredit && amountPaid < total) {
+          toast(<CustomToast type="error" message="Exceeds rider's remaining credit limit." />, { toastId: 'credit-error' });
+          return;
+        }
+      } else if (cartToProcess.payment.customer) {
+        const remainingLimit =
+          Number(cartToProcess.payment.customer.credit_limit || 0) -
+          Number(cartToProcess.payment.customer.balance || 0);
+
+        if (balanceDue > remainingLimit && amountPaid < total) {
+          toast(<CustomToast type="error" message="Exceeds customer's remaining credit limit." />, { toastId: 'credit-error' });
+          return;
+        }
+      }
+
+      if (balanceDue > 0 && balanceDue < total) status = "Partially Paid";
+      if (balanceDue === total) status = "Unpaid";
+      if (balanceDue <= 0) {
+        status = "Paid";
+        balanceDue = 0;
+      }
+
+      dueDate = cartToProcess.payment.dueDate || null;
+      if (!dueDate && balanceDue > 0) {
+        toast(<CustomToast type="warning" message="Choose a due date for outstanding balance." />, {
+          toastId: 'balance-warn'
+        });
+        return;
+      }
+    } else {
+      amountPaid = total;
+      balanceDue = 0;
+      status = "Paid";
+    }
+
+    // Prepare items with advantage amounts
+    const cartItemsWithAdvantage = cartToProcess.items.map(item => {
+      const basePrice = Number(item.price);
+      const advantageAmount = cartToProcess.itemAdvantageAmounts[item.id] || 0;
+      const finalPrice = basePrice + Number(advantageAmount);
+      
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        price: basePrice, // Keep original price for base calculation
+        advantageAmount: advantageAmount,
+        finalPrice: finalPrice,
+      };
+    });
+
+    const payload = {
+      cart: cartItemsWithAdvantage,
+      subtotal,
+      tax,
+      total,
+      discountAmount,
+      cashierId,
+      paymentMethod: cartToProcess.payment.paymentMethod,
+      customerId,
+      note: cartToProcess.note,
+      paymentReference: cartToProcess.payment.paymentReference,
+      paymentImageUrl,
+      status,
+      amountPaid,
+      balanceDue,
+      dueDate,
+      freeStock: isFreeStockChecked
+        ? { quantities: freeStockQuantities, reason: freeStockReason }
+        : null,
+      // Advantage sale data
+      isAdvantageSale: cartToProcess.isAdvantageSale,
+      advantageTotal: advantageTotal,
+      baseSubtotal: baseSubtotal,
+      // Rider sale data
+      isRiderSale: cartToProcess.isRiderSale,
+      riderId: cartToProcess.selectedRider?.id || null,
+    };
+
+    try {
+      await api.post(`/sales/process`, payload);
+      toast(<CustomToast type="success" message="Sale completed successfully." />, { toastId: 'sales-success' });
+
+      // Reset the processed cart
+      setCarts((prev) =>
+        prev.map((cart) =>
+          cart.id === cartToProcess.id
+            ? {
+                id: cart.id,
+                name: cart.name,
+                items: [],
+                payment: {
+                  paymentMethod: "Cash",
+                  paymentReference: "",
+                  paymentImage: null,
+                  customer: null,
+                  amountPaid: 0,
+                  dueDate: "",
+                },
+                total: 0,
+                discount: 0,
+                note: "",
+                isAdvantageSale: false,
+                advantageAmount: 0,
+                itemAdvantageAmounts: {},
+                isRiderSale: false,
+                selectedRider: null,
+                riderCreditInfo: null,
+              }
+            : cart
+        )
+      );
+
+      // Reset free stock states
+      setIsFreeStockChecked(false);
+      setFreeStockQuantities({});
+      setFreeStockReason("");
+
+      // Refresh stock data
+      const fetchAllData = async () => {
+        try {
+          let productsEndpoint;
+          if (userRole === 'sales') {
+            productsEndpoint = `${API_BASE_URL}/products/with-stock-source/${userId}`;
+          } else {
+            productsEndpoint = `${API_BASE_URL}/inventory/detailed`;
+          }
+          
+          const productsAndStockRes = await api.get(productsEndpoint);
+          const productsData = (productsAndStockRes.data || [])
+            .filter((p) => p.name || p.product_name)
+            .map(p => ({
+              id: p.id || p.product_id,
+              name: p.name || p.product_name,
+              price: p.price,
+              category: p.category || p.product_category,
+              image_url: p.image_url,
+              quantity: p.quantity
+            }));
+
+          setProducts(productsData);
+          const inventoryMap = productsData.reduce((map, item) => {
+            map[item.id] = item.quantity;
+            return map;
+          }, {});
+          setInventory(inventoryMap);
+
+          // Refresh riders list
+          const ridersRes = await api.get(`/riders?status=active`);
+          setRiders(ridersRes.data?.riders || []);
+
+        } catch (error) {
+          console.error("Stock refresh error:", error);
+        }
+      };
+      
+      fetchAllData();
+    } catch (error) {
+      console.error("Sale Processing Error:", error.response?.data || error.message);
+      toast(<CustomToast type="error" message="Failed to process sale." />, { toastId: 'sales-error' });
+    }
+  };
 
   /* ========= Discount Options ========= */
   const discountOptions = useMemo(
@@ -644,11 +783,13 @@ const handleCheckout = async (cartToProcess) => {
             {carts.map((cart) => (
               <button
                 key={cart.id}
-                className={`ppb-group ${cart.id === activeCartId ? "ppb-group--active" : ""
-                  }`}
+                className={`ppb-group ${cart.id === activeCartId ? "ppb-group--active" : ""}`}
                 onClick={() => setActiveCartId(cart.id)}
               >
-                <span className="ppb-group__name">{cart.name}</span>
+                <span className="ppb-group__name">
+                  {cart.name}
+                  {cart.isRiderSale && <FaMotorcycle className="ppb-group__rider-icon" />}
+                </span>
                 <span className="ppb-group__total">
                   {formatNaira(cart.total)}
                 </span>
@@ -667,104 +808,199 @@ const handleCheckout = async (cartToProcess) => {
           {/* active cart content */}
           {activeCart && (
             <>
-{/* items list */}
-<div className="ppb-items">
-  {activeCart.items.length ? (
-    activeCart.items.map((it) => {
-      const advantageAmount = activeCart.itemAdvantageAmounts[it.id] || 0;
-      const finalPrice = Number(it.price) + Number(advantageAmount);
-      
-      return (
-        <div className="ppb-item" key={it.id}>
-          <div className="ppb-item__main">
-            <div className="ppb-item__name">{it.name}</div>
-            <div className="ppb-item__price">
-              {formatNaira(it.price)}
-              {advantageAmount > 0 && (
-                <Badge bg="success" className="ppb-advantage-badge">
-                  +{formatNaira(advantageAmount)}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="ppb-item__controls">
-            <div className="ppb-stepper">
-              <button
-                className="ppb-stepper__btn"
-                onClick={() =>
-                  updateCartItem(
-                    activeCart.id,
-                    it.id,
-                    it.quantity - 1
-                  )
-                }
-                disabled={it.quantity <= 1}
-              >
-                <FaMinus />
-              </button>
-              <input
-                className="ppb-stepper__input"
-                type="number"
-                min="1"
-                max={inventory[it.id] || 0}
-                value={it.quantity}
-                onChange={(e) =>
-                  updateCartItem(
-                    activeCart.id,
-                    it.id,
-                    parseInt(e.target.value || "1", 10)
-                  )
-                }
-              />
-              <button
-                className="ppb-stepper__btn"
-                onClick={() =>
-                  updateCartItem(
-                    activeCart.id,
-                    it.id,
-                    it.quantity + 1
-                  )
-                }
-                disabled={it.quantity >= (inventory[it.id] || 0)}
-              >
-                <FaPlus />
-              </button>
-            </div>
-
-            <div className="ppb-line-total">
-              {formatNaira(finalPrice * Number(it.quantity))}
-            </div>
-          </div>
-
-          {/* Advantage Amount Input */}
-          {activeCart.isAdvantageSale && (
-            <div className="ppb-advantage-input">
-              <InputGroup size="sm">
-                <InputGroup.Text className="ppb-advantage-prefix">+₦</InputGroup.Text>
-                <FormControl
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Extra amount"
-                  value={activeCart.itemAdvantageAmounts[it.id] || ''}
-                  onChange={(e) => 
-                    updateAdvantageAmount(activeCart.id, it.id, e.target.value)
+              {/* Rider Selection Section */}
+              <div className="ppb-rider-section">
+                <FormCheck
+                  type="checkbox"
+                  id={`rider-sale-${activeCart.id}`}
+                  label={
+                    <span className="ppb-rider-label">
+                      <FaMotorcycle className="ppb-rider-icon" />
+                      Rider Sale (Delivery)
+                    </span>
                   }
-                  className="ppb-advantage-control"
+                  checked={activeCart.isRiderSale}
+                  onChange={(e) => {
+                    if (!e.target.checked) {
+                      clearRiderSelection(activeCart.id);
+                    } else {
+                      setCarts((prev) =>
+                        prev.map((c) =>
+                          c.id === activeCart.id
+                            ? { ...c, isRiderSale: true }
+                            : c
+                        )
+                      );
+                    }
+                  }}
                 />
-              </InputGroup>
-            </div>
-          )}
-        </div>
-      );
-    })
-  ) : (
-    <div className="ppb-empty">
-      <span>No items yet</span>
-    </div>
-  )}
-</div>
+
+                {activeCart.isRiderSale && (
+                  <div className="ppb-rider-select">
+                    <label>Select Rider</label>
+                    <Form.Select
+                      value={activeCart.selectedRider?.id || ''}
+                      onChange={(e) => handleRiderSelect(activeCart.id, e.target.value)}
+                    >
+                      <option value="">Choose a rider...</option>
+                      {riders.map(rider => (
+                        <option key={rider.id} value={rider.id}>
+                          {rider.fullname} - Bal: ₦{Number(rider.current_balance || 0).toFixed(2)}
+                        </option>
+                      ))}
+                    </Form.Select>
+
+                    {activeCart.selectedRider && activeCart.riderCreditInfo && (
+                      <div className="ppb-rider-credit-info">
+                        <div className="ppb-credit-item">
+                          <span>Credit Limit:</span>
+                          <span className="ppb-credit-value">
+                            ₦{Number(activeCart.riderCreditInfo.creditLimit).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="ppb-credit-item">
+                          <span>Current Balance:</span>
+                          <span className={`ppb-credit-value ${activeCart.riderCreditInfo.currentBalance > 0 ? 'text-danger' : 'text-success'}`}>
+                            ₦{Number(activeCart.riderCreditInfo.currentBalance).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="ppb-credit-item">
+                          <span>Available Credit:</span>
+                          <span className={`ppb-credit-value ${activeCart.riderCreditInfo.availableCredit > 0 ? 'text-success' : 'text-danger'}`}>
+                            ₦{Number(activeCart.riderCreditInfo.availableCredit).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeCart.selectedRider && activeCart.items.length > 0 && (
+                      <div className="ppb-rider-price-note">
+                        <small className="text-muted">
+                          * Rider-specific prices applied to eligible products
+                        </small>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* items list */}
+              <div className="ppb-items">
+                {activeCart.items.length ? (
+                  activeCart.items.map((it) => {
+                    const advantageAmount = activeCart.itemAdvantageAmounts[it.id] || 0;
+                    const finalPrice = Number(it.price) + Number(advantageAmount);
+                    
+                    // Check if this is a rider-specific price
+                    const isRiderPrice = it.price !== it.originalPrice && activeCart.isRiderSale;
+                    
+                    return (
+                      <div className="ppb-item" key={it.id}>
+                        <div className="ppb-item__main">
+                          <div className="ppb-item__name">
+                            {it.name}
+                            {isRiderPrice && (
+                              <Badge bg="info" className="ppb-rider-badge">
+                                <FaMotorcycle /> Rider Price
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="ppb-item__price">
+                            {isRiderPrice ? (
+                              <>
+                                <span className="ppb-original-price">
+                                  {formatNaira(it.originalPrice)}
+                                </span>
+                                {formatNaira(it.price)}
+                              </>
+                            ) : (
+                              formatNaira(it.price)
+                            )}
+                            {advantageAmount > 0 && (
+                              <Badge bg="success" className="ppb-advantage-badge">
+                                +{formatNaira(advantageAmount)}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="ppb-item__controls">
+                          <div className="ppb-stepper">
+                            <button
+                              className="ppb-stepper__btn"
+                              onClick={() =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  it.quantity - 1
+                                )
+                              }
+                              disabled={it.quantity <= 1}
+                            >
+                              <FaMinus />
+                            </button>
+                            <input
+                              className="ppb-stepper__input"
+                              type="number"
+                              min="1"
+                              max={inventory[it.id] || 0}
+                              value={it.quantity}
+                              onChange={(e) =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  parseInt(e.target.value || "1", 10)
+                                )
+                              }
+                            />
+                            <button
+                              className="ppb-stepper__btn"
+                              onClick={() =>
+                                updateCartItem(
+                                  activeCart.id,
+                                  it.id,
+                                  it.quantity + 1
+                                )
+                              }
+                              disabled={it.quantity >= (inventory[it.id] || 0)}
+                            >
+                              <FaPlus />
+                            </button>
+                          </div>
+
+                          <div className="ppb-line-total">
+                            {formatNaira(finalPrice * Number(it.quantity))}
+                          </div>
+                        </div>
+
+                        {/* Advantage Amount Input */}
+                        {activeCart.isAdvantageSale && (
+                          <div className="ppb-advantage-input">
+                            <InputGroup size="sm">
+                              <InputGroup.Text className="ppb-advantage-prefix">+₦</InputGroup.Text>
+                              <FormControl
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Extra amount"
+                                value={activeCart.itemAdvantageAmounts[it.id] || ''}
+                                onChange={(e) => 
+                                  updateAdvantageAmount(activeCart.id, it.id, e.target.value)
+                                }
+                                className="ppb-advantage-control"
+                              />
+                            </InputGroup>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="ppb-empty">
+                    <span>No items yet</span>
+                  </div>
+                )}
+              </div>
 
               {/* totals + options */}
               <div className="ppb-summary">
@@ -772,7 +1008,7 @@ const handleCheckout = async (cartToProcess) => {
                 <div className="ppb-advantage-sale">
                   <FormCheck
                     type="checkbox"
-                    id="advantage-sale-check"
+                    id={`advantage-sale-${activeCart.id}`}
                     label={
                       <>
                         <FaCrown className="ppb-advantage-icon" />
@@ -835,10 +1071,9 @@ const handleCheckout = async (cartToProcess) => {
                           prev.map((c) =>
                             c.id === activeCart.id
                               ? {
-                                ...c,
-                                discount:
-                                  parseInt(e.target.value || 0, 10) || 0,
-                              }
+                                  ...c,
+                                  discount: parseInt(e.target.value || 0, 10) || 0,
+                                }
                               : c
                           )
                         )
@@ -875,7 +1110,7 @@ const handleCheckout = async (cartToProcess) => {
                 <div className="ppb-free-stock">
                   <FormCheck
                     type="checkbox"
-                    id="free-stock-check"
+                    id={`free-stock-${activeCart.id}`}
                     label={
                       <>
                         <FaGift className="ppb-free-stock-icon" />
@@ -936,23 +1171,23 @@ const handleCheckout = async (cartToProcess) => {
                         className={`ppb-seg__btn ${activeCart.payment.paymentMethod === opt.key
                           ? "ppb-seg__btn--active"
                           : ""
-                          }`}
+                        }`}
                         onClick={() =>
                           setCarts((prev) =>
                             prev.map((c) =>
                               c.id === activeCart.id
                                 ? {
-                                  ...c,
-                                  payment: {
-                                    ...c.payment,
-                                    paymentMethod: opt.key,
-                                    paymentReference: "",
-                                    paymentImage: null,
-                                    customer: null,
-                                    amountPaid: 0,
-                                    dueDate: "",
-                                  },
-                                }
+                                    ...c,
+                                    payment: {
+                                      ...c.payment,
+                                      paymentMethod: opt.key,
+                                      paymentReference: "",
+                                      paymentImage: null,
+                                      customer: null,
+                                      amountPaid: 0,
+                                      dueDate: "",
+                                    },
+                                  }
                                 : c
                             )
                           )
@@ -978,12 +1213,12 @@ const handleCheckout = async (cartToProcess) => {
                                 prev.map((c) =>
                                   c.id === activeCart.id
                                     ? {
-                                      ...c,
-                                      payment: {
-                                        ...c.payment,
-                                        paymentReference: e.target.value,
-                                      },
-                                    }
+                                        ...c,
+                                        payment: {
+                                          ...c.payment,
+                                          paymentReference: e.target.value,
+                                        },
+                                      }
                                     : c
                                 )
                               )
@@ -1001,12 +1236,12 @@ const handleCheckout = async (cartToProcess) => {
                                 prev.map((c) =>
                                   c.id === activeCart.id
                                     ? {
-                                      ...c,
-                                      payment: {
-                                        ...c.payment,
-                                        paymentImage: e.target.files?.[0] || null,
-                                      },
-                                    }
+                                        ...c,
+                                        payment: {
+                                          ...c.payment,
+                                          paymentImage: e.target.files?.[0] || null,
+                                        },
+                                      }
                                     : c
                                 )
                               )
@@ -1037,17 +1272,18 @@ const handleCheckout = async (cartToProcess) => {
                               prev.map((c) =>
                                 c.id === activeCart.id
                                   ? {
-                                    ...c,
-                                    payment: {
-                                      ...c.payment,
-                                      customer: selected || null,
-                                      amountPaid: 0,
-                                    },
-                                  }
+                                      ...c,
+                                      payment: {
+                                        ...c.payment,
+                                        customer: selected || null,
+                                        amountPaid: 0,
+                                      },
+                                    }
                                   : c
                               )
                             );
                           }}
+                          disabled={activeCart.isRiderSale} // Disable customer selection for rider sales
                         >
                           <option value="">Select customer…</option>
                           {customers.map((cu) => (
@@ -1057,7 +1293,7 @@ const handleCheckout = async (cartToProcess) => {
                           ))}
                         </Form.Select>
 
-                        {activeCart.payment.customer && (
+                        {activeCart.payment.customer && !activeCart.isRiderSale && (
                           <div className="ppb-customer-info">
                             Balance:{" "}
                             {formatNaira(activeCart.payment.customer.balance)} •
@@ -1067,9 +1303,29 @@ const handleCheckout = async (cartToProcess) => {
                             )}
                           </div>
                         )}
+
+                        {activeCart.isRiderSale && activeCart.selectedRider && (
+                          <div className="ppb-rider-info">
+                            <div className="ppb-info-item">
+                              <span>Rider:</span>
+                              <strong>{activeCart.selectedRider.fullname}</strong>
+                            </div>
+                            <div className="ppb-info-item">
+                              <span>Current Balance:</span>
+                              <span className={activeCart.selectedRider.current_balance > 0 ? 'text-danger' : 'text-success'}>
+                                {formatNaira(activeCart.selectedRider.current_balance)}
+                              </span>
+                            </div>
+                            <div className="ppb-info-item">
+                              <span>Credit Limit:</span>
+                              <span>{formatNaira(activeCart.selectedRider.credit_limit)}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {!!activeCart.payment.customer && (
+                      {((activeCart.payment.customer && !activeCart.isRiderSale) || 
+                        (activeCart.isRiderSale && activeCart.selectedRider)) && (
                         <>
                           <div className="ppb-opt">
                             <label>Amount Paid</label>
@@ -1086,12 +1342,12 @@ const handleCheckout = async (cartToProcess) => {
                                     prev.map((c) =>
                                       c.id === activeCart.id
                                         ? {
-                                          ...c,
-                                          payment: {
-                                            ...c.payment,
-                                            amountPaid: e.target.value,
-                                          },
-                                        }
+                                            ...c,
+                                            payment: {
+                                              ...c.payment,
+                                              amountPaid: e.target.value,
+                                            },
+                                          }
                                         : c
                                     )
                                   )
@@ -1119,12 +1375,12 @@ const handleCheckout = async (cartToProcess) => {
                                   prev.map((c) =>
                                     c.id === activeCart.id
                                       ? {
-                                        ...c,
-                                        payment: {
-                                          ...c.payment,
-                                          dueDate: e.target.value,
-                                        },
-                                      }
+                                          ...c,
+                                          payment: {
+                                            ...c.payment,
+                                            dueDate: e.target.value,
+                                          },
+                                        }
                                       : c
                                   )
                                 )
@@ -1194,11 +1450,18 @@ const handleCheckout = async (cartToProcess) => {
               const stock = inventory[p.id] || 0;
               const statusClass =
                 stock > 10 ? "ppb-chip--ok" : stock > 0 ? "ppb-chip--low" : "ppb-chip--oos";
+              
+              // Get price for display (show rider price if applicable)
+              const displayPrice = activeCart?.isRiderSale && activeCart.selectedRider
+                ? getProductPrice(p, activeCart)
+                : p.price;
+              
+              const hasRiderPrice = displayPrice !== p.price;
+
               return (
                 <div
                   key={p.id}
-                  className={`ppb-product ${stock === 0 ? "ppb-product--oos" : ""
-                    }`}
+                  className={`ppb-product ${stock === 0 ? "ppb-product--oos" : ""}`}
                 >
                   <div className="ppb-product__media">
                     <img
@@ -1218,7 +1481,19 @@ const handleCheckout = async (cartToProcess) => {
                       <span className="ppb-badge">
                         {p.category || "General"}
                       </span>
-                      <span className="ppb-price">{formatNaira(p.price)}</span>
+                      <span className="ppb-price">
+                        {hasRiderPrice && (
+                          <small className="ppb-original-price-small">
+                            {formatNaira(p.price)}
+                          </small>
+                        )}
+                        {formatNaira(displayPrice)}
+                        {hasRiderPrice && (
+                          <Badge bg="info" className="ppb-rider-badge-small">
+                            <FaMotorcycle />
+                          </Badge>
+                        )}
+                      </span>
                     </div>
                     <Button
                       className="ppb-add"

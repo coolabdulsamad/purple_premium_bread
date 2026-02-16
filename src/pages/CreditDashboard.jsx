@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
-import { FaMoneyBillWave, FaCreditCard, FaUser, FaCalendarAlt, FaUpload, FaTimesCircle, FaSearch, FaTimes, FaChartLine, FaHandHoldingUsd, FaReceipt } from 'react-icons/fa';
+import { FaMoneyBillWave, FaCreditCard, FaUser, FaCalendarAlt, FaUpload, FaTimesCircle, FaSearch, FaTimes, FaChartLine, FaHandHoldingUsd, FaReceipt, FaMoneyBill } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CustomerCreditManagement from './CustomerCreditManagement';
 import AllPayments from './AllPayments';
+import RiderPayments from './RiderPayments';
 import useAuth from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import '../assets/styles/credit-dashboard.css';
@@ -73,11 +74,19 @@ const CreditDashboard = () => {
                     <FaReceipt className="tab-icon" />
                     All Payments
                 </button>
+                <button
+                    className={`tab-btn ${activeTab === 'riderPayments' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('riderPayments')}
+                >
+                    <FaMoneyBill className="tab-icon" />
+                    Rider Payments
+                </button>
             </div>
 
             <div className="tab-content">
                 {activeTab === 'creditManagement' && <CustomerCreditManagement />}
                 {activeTab === 'allPayments' && <AllPayments />}
+                {activeTab === 'riderPayments' && <RiderPayments />}
             </div>
         </div>
     );

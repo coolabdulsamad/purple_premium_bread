@@ -1,0 +1,812 @@
+/* src/assets/styles/registerRider.css */
+
+.register-rider-page {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 80px);
+    background-color: #f8f9fa;
+}
+
+/* Register Header */
+.register-header {
+    margin-bottom: 24px;
+    background: white;
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.3s ease;
+}
+
+.back-btn:hover {
+    color: #7B1FA2;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-icon {
+    font-size: 32px;
+    color: #7B1FA2;
+}
+
+.header-title h1 {
+    margin: 0 0 4px 0;
+    font-size: 24px;
+    color: #333;
+    font-weight: 600;
+}
+
+.header-subtitle {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Form Tabs */
+.form-tabs {
+    display: flex;
+    gap: 4px;
+    background: white;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.tab-btn svg {
+    font-size: 18px;
+}
+
+.tab-btn:hover {
+    background: #F3E5F5;
+    color: #7B1FA2;
+}
+
+.tab-btn.active {
+    background: #7B1FA2;
+    color: white;
+}
+
+/* Form Container */
+.rider-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.tab-content {
+    padding: 32px;
+    min-height: 500px;
+}
+
+.form-section {
+    margin-bottom: 32px;
+}
+
+.form-section h3 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: #7B1FA2;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.section-note {
+    color: #666;
+    font-size: 13px;
+    margin: -12px 0 20px 0;
+    font-style: italic;
+}
+
+/* Form Grid - THIS IS KEY FOR SHOWING FIELDS */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+/* Individual Form Group */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 0;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Form Inputs - THESE NEED TO BE VISIBLE */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    background-color: white;
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, 0.1);
+}
+
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Placeholder styling */
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #999;
+    opacity: 1;
+}
+
+/* Select styling */
+.form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+/* Image Upload */
+.image-upload-container {
+    position: relative;
+    width: 100%;
+}
+
+.upload-placeholder {
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+    position: relative;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.upload-placeholder.small {
+    min-height: 80px;
+    padding: 12px;
+}
+
+.upload-placeholder:hover {
+    border-color: #7B1FA2;
+    background: #F3E5F5;
+}
+
+.upload-placeholder svg {
+    font-size: 24px;
+    color: #999;
+}
+
+.upload-placeholder.small svg {
+    font-size: 20px;
+}
+
+.upload-placeholder span {
+    color: #666;
+    font-size: 14px;
+}
+
+.upload-placeholder input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.image-preview {
+    position: relative;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.image-preview img {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.image-preview.small img {
+    max-width: 100px;
+    max-height: 100px;
+}
+
+.remove-image {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.remove-image:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.1);
+}
+
+/* Product Price Section */
+.add-product-price-btn {
+    background: white;
+    border: 2px dashed #7B1FA2;
+    color: #7B1FA2;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.add-product-price-btn:hover {
+    background: #F3E5F5;
+    transform: translateY(-2px);
+}
+
+.product-price-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.product-price-form .form-group {
+    margin: 0;
+}
+
+.product-price-form .form-group label {
+    margin-bottom: 4px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cancel-btn,
+.add-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.cancel-btn {
+    background: #e0e0e0;
+    color: #666;
+}
+
+.cancel-btn:hover {
+    background: #d0d0d0;
+}
+
+.add-btn {
+    background: #7B1FA2;
+    color: white;
+}
+
+.add-btn:hover {
+    background: #6A1B9A;
+}
+
+.product-prices-list {
+    margin-top: 20px;
+}
+
+.product-prices-list h4 {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 12px 0;
+}
+
+.prices-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.prices-table th,
+.prices-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.prices-table th {
+    background: #f8f9fa;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+}
+
+.prices-table td {
+    font-size: 14px;
+    color: #333;
+}
+
+.prices-table tr:last-child td {
+    border-bottom: none;
+}
+
+.remove-price-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.remove-price-btn:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+/* Tab Pane - Ensure visibility */
+.tab-pane {
+    display: block;
+    width: 100%;
+}
+
+/* Form Actions Bottom */
+.form-actions-bottom {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 24px 32px;
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+}
+
+.submit-btn {
+    padding: 14px 32px;
+    background: #7B1FA2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: #6A1B9A;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(123, 31, 162, 0.2);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cancel-btn {
+    padding: 14px 32px;
+    background: white;
+    color: #666;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+/* Loading State */
+.register-rider-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #7B1FA2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.spinner.small {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error and Success Banners */
+.error-banner,
+.success-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.error-banner {
+    background: #FFEBEE;
+    color: #dc3545;
+    border-left: 4px solid #dc3545;
+}
+
+.success-banner {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border-left: 4px solid #2E7D32;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .register-rider-page {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .register-header {
+        padding: 16px;
+    }
+    
+    .header-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .form-tabs {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .tab-btn {
+        justify-content: flex-start;
+        padding: 12px;
+    }
+    
+    .tab-content {
+        padding: 20px;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .product-price-form {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .form-actions {
+        justify-content: flex-end;
+    }
+    
+    .form-actions-bottom {
+        padding: 16px 20px;
+        flex-direction: column;
+    }
+    
+    .submit-btn,
+    .cancel-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .prices-table {
+        font-size: 12px;
+    }
+    
+    .prices-table th,
+    .prices-table td {
+        padding: 8px;
+    }
+    
+    .upload-placeholder {
+        min-height: 80px;
+        padding: 12px;
+    }
+    
+    .upload-placeholder.small {
+        min-height: 60px;
+    }
+}
+
+
+/* Add to registerRider.css */
+
+/* Tab Completion Indicators */
+.tab-btn {
+    position: relative;
+}
+
+.tab-complete-icon {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    color: #4CAF50;
+    font-size: 14px;
+    background: white;
+    border-radius: 50%;
+}
+
+.tab-btn.completed {
+    border-left: 3px solid #4CAF50;
+}
+
+/* Required field indicators */
+.required-field {
+    color: #dc3545;
+    font-size: 12px;
+    font-weight: normal;
+    margin-left: 5px;
+}
+
+.optional-field {
+    color: #999;
+    font-size: 12px;
+    font-weight: normal;
+    margin-left: 5px;
+}
+
+.required {
+    color: #dc3545;
+    margin-left: 3px;
+}
+
+/* Validation Errors */
+.validation-errors {
+    background: #FFEBEE;
+    border-left: 4px solid #dc3545;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.error-message:last-child {
+    margin-bottom: 0;
+}
+
+.error-message svg {
+    font-size: 14px;
+}
+
+/* Error input styling */
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+    border-color: #dc3545;
+    background-color: #fff8f8;
+}
+
+.form-group input.error:focus,
+.form-group select.error:focus,
+.form-group textarea.error:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+/* Navigation Buttons */
+.form-actions-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+}
+
+.nav-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.prev-btn {
+    background: #e0e0e0;
+    color: #666;
+}
+
+.prev-btn:hover:not(:disabled) {
+    background: #d0d0d0;
+}
+
+.next-btn {
+    background: #7B1FA2;
+    color: white;
+}
+
+.next-btn:hover:not(:disabled) {
+    background: #6A1B9A;
+    transform: translateX(2px);
+}
+
+.nav-btn:disabled,
+.submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Disabled add product button */
+.add-product-price-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+    border-color: #ccc;
+    color: #999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-actions-bottom {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+    
+    .nav-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .nav-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .cancel-btn {
+        width: 100%;
+    }
+}

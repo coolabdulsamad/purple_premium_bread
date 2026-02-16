@@ -1,0 +1,694 @@
+/* src/assets/styles/RiderSalesPage.css */
+
+.rs-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+.rs-header {
+    margin-bottom: 2rem;
+}
+
+.rs-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1rem;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rs-back-btn:hover {
+    background: #f5f5f5;
+    color: #7B1FA2;
+    border-color: #7B1FA2;
+}
+
+.rs-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.rs-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rs-title-icon {
+    font-size: 2rem;
+    color: #7B1FA2;
+}
+
+.rs-title {
+    margin: 0;
+    color: #333;
+    font-size: 1.8rem;
+}
+
+.rs-subtitle {
+    margin: 0.25rem 0 0;
+    color: #666;
+}
+
+.rs-subtitle strong {
+    color: #7B1FA2;
+}
+
+.rs-header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Summary Cards */
+.rs-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.rs-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.rs-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(123, 31, 162, 0.15);
+}
+
+.rs-summary-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.rs-summary-content {
+    flex: 1;
+}
+
+.rs-summary-label {
+    display: block;
+    color: #666;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.rs-summary-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Card Styles */
+.rs-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.rs-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background: #faf5ff;
+}
+
+.rs-card__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #7B1FA2;
+}
+
+.rs-card__body {
+    padding: 1.5rem;
+}
+
+/* Filters */
+.rs-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.rs-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rs-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.rs-input {
+    padding: 0.75rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.rs-input:focus {
+    outline: none;
+    border-color: #7B1FA2;
+    box-shadow: 0 0 0 3px rgba(123, 31, 162, 0.1);
+}
+
+/* Table Styles */
+.rs-table-container {
+    overflow-x: auto;
+    border-radius: 0.5rem;
+    border: 1px solid #e0e0e0;
+}
+
+.rs-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+.rs-table th {
+    background: #faf5ff;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #7B1FA2;
+    border-bottom: 2px solid #7B1FA2;
+    font-size: 0.9rem;
+}
+
+.rs-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: middle;
+}
+
+.rs-table tbody tr:hover td {
+    background: #faf5ff;
+}
+
+.rs-text-right {
+    text-align: right;
+}
+
+.rs-amount {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+.rs-text-danger {
+    color: #c62828;
+}
+
+.rs-text-success {
+    color: #2e7d32;
+}
+
+.rs-mono {
+    font-family: 'Courier New', monospace;
+}
+
+.rs-date {
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+/* Badges */
+.rs-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.rs-badge--primary {
+    background: #7B1FA2;
+    color: white;
+}
+
+.rs-badge--secondary {
+    background: #e0e0e0;
+    color: #333;
+}
+
+/* Status Badges */
+.rs-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.rs-status--paid {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+}
+
+.rs-status--unpaid {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #c62828;
+}
+
+.rs-status--partially-paid {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #e65100;
+}
+
+/* Action Buttons */
+.rs-action-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    margin-right: 0.25rem;
+}
+
+.rs-action-btn--primary {
+    background: #7B1FA2;
+}
+
+.rs-action-btn--primary:hover {
+    background: #4a148c;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(123, 31, 162, 0.3);
+}
+
+.rs-action-btn--info {
+    background: #2196f3;
+}
+
+.rs-action-btn--info:hover {
+    background: #1976d2;
+    transform: translateY(-2px);
+}
+
+/* Items Preview with Tooltip */
+.rs-items-preview {
+    position: relative;
+    cursor: help;
+}
+
+.rs-items-count {
+    color: #7B1FA2;
+    font-weight: 500;
+    text-decoration: underline dashed;
+}
+
+.rs-items-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #7B1FA2;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: none;
+    z-index: 10;
+    min-width: 200px;
+}
+
+.rs-items-preview:hover .rs-items-tooltip {
+    display: block;
+}
+
+.rs-tooltip-item {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
+}
+
+.rs-tooltip-item:last-child {
+    border-bottom: none;
+}
+
+/* Modal Styles */
+.rs-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.rs-modal__content {
+    background: white;
+    border-radius: 1rem;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(123, 31, 162, 0.3);
+}
+
+.rs-modal__content--lg {
+    max-width: 1000px;
+}
+
+.rs-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #7B1FA2;
+    background: #faf5ff;
+}
+
+.rs-modal__header h3 {
+    margin: 0;
+    color: #7B1FA2;
+}
+
+.rs-modal__close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.rs-modal__close:hover {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.rs-modal__body {
+    padding: 2rem;
+}
+
+.rs-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+/* Details Sections */
+.rs-details-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.rs-details-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.rs-details-section h4 {
+    margin: 0 0 1.5rem;
+    color: #7B1FA2;
+    font-size: 1.1rem;
+}
+
+.rs-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.rs-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.rs-detail-label {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+/* Details Table */
+.rs-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.rs-details-table th {
+    background: #faf5ff;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #7B1FA2;
+    border-bottom: 2px solid #7B1FA2;
+}
+
+.rs-details-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Payment Summary */
+.rs-payment-summary {
+    max-width: 400px;
+    margin-left: auto;
+}
+
+.rs-payment-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.rs-payment-row:last-child {
+    border-bottom: none;
+}
+
+.rs-payment-total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #7B1FA2;
+    border-top: 2px solid #7B1FA2;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+}
+
+.rs-payment-discount {
+    color: #c62828;
+}
+
+.rs-payment-balance {
+    font-weight: 600;
+    color: #c62828;
+}
+
+/* Receipt Image */
+.rs-receipt-image {
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+}
+
+/* Button Styles */
+.rs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rs-btn--primary {
+    background: #7B1FA2;
+    color: white;
+}
+
+.rs-btn--primary:hover:not(:disabled) {
+    background: #4a148c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(123, 31, 162, 0.3);
+}
+
+.rs-btn--outline {
+    background: white;
+    border: 2px solid #7B1FA2;
+    color: #7B1FA2;
+}
+
+.rs-btn--outline:hover {
+    background: #faf5ff;
+    transform: translateY(-2px);
+}
+
+.rs-btn--ghost {
+    background: transparent;
+    color: #666;
+}
+
+.rs-btn--ghost:hover {
+    background: #f5f5f5;
+}
+
+.rs-btn--small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.rs-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Loading State */
+.rs-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 1rem;
+    color: #7B1FA2;
+}
+
+.rs-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3e5f5;
+    border-top: 4px solid #7B1FA2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.rs-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1rem;
+}
+
+.rs-empty-icon {
+    font-size: 4rem;
+    color: #e0e0e0;
+    margin-bottom: 1rem;
+}
+
+.rs-empty h3 {
+    margin: 0 0 0.5rem;
+    color: #333;
+}
+
+.rs-empty p {
+    margin: 0;
+    color: #666;
+}
+
+/* Error State */
+.rs-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: #ffebee;
+    border: 1px solid #c62828;
+    border-radius: 1rem;
+    color: #c62828;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rs-page {
+        padding: 1rem;
+    }
+
+    .rs-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .rs-summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .rs-filters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rs-modal__content {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .rs-payment-summary {
+        margin-left: 0;
+    }
+}

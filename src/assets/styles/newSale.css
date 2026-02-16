@@ -1151,3 +1151,244 @@ body { background: var(--ppb-bg); margin: 0; font-family: -apple-system, BlinkMa
     order: 2;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Add to newSale.css */
+
+/* Rider Sale Styles */
+.ppb-rider-section {
+    padding: 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.ppb-rider-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ppb-rider-icon {
+    color: #7B1FA2;
+}
+
+.ppb-group__rider-icon {
+    margin-left: 6px;
+    font-size: 12px;
+    color: #7B1FA2;
+}
+
+.ppb-rider-select {
+    margin-top: 12px;
+}
+
+.ppb-rider-select label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ppb-rider-credit-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.ppb-credit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.ppb-credit-item:not(:last-child) {
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.ppb-credit-value {
+    font-weight: 600;
+}
+
+.ppb-rider-price-note {
+    margin-top: 8px;
+    padding: 8px;
+    background: #E8F5E9;
+    border-radius: 6px;
+    color: #2E7D32;
+}
+
+.ppb-rider-badge {
+    margin-left: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.ppb-rider-badge-small {
+    margin-left: 4px;
+    font-size: 8px;
+    padding: 2px;
+}
+
+.ppb-original-price {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 12px;
+    margin-right: 6px;
+}
+
+.ppb-original-price-small {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+.ppb-rider-info {
+    margin-top: 12px;
+    padding: 12px;
+    background: #F3E5F5;
+    border-radius: 8px;
+}
+
+.ppb-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.ppb-info-item:not(:last-child) {
+    border-bottom: 1px dashed rgba(123, 31, 162, 0.2);
+}
+
+.ppb-info-item span:first-child {
+    color: #666;
+}
+
+.ppb-info-item span:last-child {
+    font-weight: 600;
+}
+
+/* Rider Payments Page Styles (add to credit-dashboard.css) */
+.rider-payments-container {
+    padding: 20px;
+}
+
+.rider-profile-mini {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.rider-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.rider-avatar-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #F3E5F5;
+    color: #7B1FA2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.rider-details-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.rider-details-content {
+    max-width: 100%;
+}
+
+.rider-info {
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.rider-info p {
+    margin-bottom: 8px;
+}
+
+.rider-info strong {
+    color: #666;
+    margin-right: 8px;
+}
+
+/* Loading States */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.empty-state svg {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #ccc;
+}
+
+.empty-state h4 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .rider-profile-mini {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .ppb-rider-credit-info {
+        margin-top: 16px;
+    }
+    
+    .ppb-credit-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

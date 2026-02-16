@@ -2,17 +2,17 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import Layout from './components/Layout'; 
+import Layout from './components/Layout';
 import AdminPage from './pages/AdminPage';
 import ProductManagementPage from './pages/ProductManagementPage';
-import ProductionDashboard from './pages/ProductionDashboard'; 
-import CustomersPage from './pages/CustomersPage'; 
-import POSDashboard from './pages/POSDashboard'; 
+import ProductionDashboard from './pages/ProductionDashboard';
+import CustomersPage from './pages/CustomersPage';
+import POSDashboard from './pages/POSDashboard';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import BranchesPage from './pages/BranchesPage';
-import RecipeManagement from './pages/RecipeManagement'; 
-import AlertsDashboard from './pages/AlertsDashboard'; 
-import StaffManagement from './pages/StaffManagement'; 
+import RecipeManagement from './pages/RecipeManagement';
+import AlertsDashboard from './pages/AlertsDashboard';
+import StaffManagement from './pages/StaffManagement';
 import RawInventoryDashboard from './pages/RawInventoryDashboard';
 import CreditDashboard from './pages/CreditDashboard';
 import ReportDashboard from './pages/ReportDashboard';
@@ -25,19 +25,24 @@ import ExchangeHistoryPage from './pages/ExchangeHistoryPage';
 import OperatingExpensesPage from './pages/OperatingExpensesPage';
 import SalaryManagementPage from './pages/SalaryManagementPage';
 import Services from './pages/Services';
+import RidersPage from './pages/RidersPage';
+import RegisterRider from './pages/RegisterRider';
+import EditRider from './pages/EditRider';
+import RiderSalesPage from './pages/RiderSalesPage';
+import AnalysisPage from './pages/AnalysisPage';
 
 function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <Layout>
               <Dashboard />
             </Layout>
-          } 
+          }
         />
         <Route path="/pos" element={<Layout><POSDashboard /></Layout>} />
         <Route path="/admin" element={<Layout><AdminPage /></Layout>} />
@@ -56,16 +61,21 @@ function App() {
         <Route path='/wastestock' element={<Layout><WasteStock /></Layout>} />
         <Route path='/sales_management' element={<Layout><SalesManagementDashboard /></Layout>} />
         <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
+        <Route path="/riders" element={<Layout><RidersPage /></Layout>} />
+        <Route path="/riders/register" element={<Layout><RegisterRider /></Layout>} />
         <Route path="/exchanges-history" element={<Layout><ExchangeHistoryPage /></Layout>} />
         <Route path="/salary-management" element={<Layout><SalaryManagementPage /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
+        <Route path="/riders/edit/:id" element={<Layout><EditRider /></Layout>} />
+        <Route path="/riders/sales/:riderId" element={<Layout><RiderSalesPage /></Layout>} />
+        <Route path="/analysis" element={<Layout><AnalysisPage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 
       {/* ✅ Global Toast Container (always mounted) */}
-      <ToastContainer 
-        position="top-right" 
-        autoClose={3000} 
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
         hideProgressBar
         newestOnTop
         closeOnClick

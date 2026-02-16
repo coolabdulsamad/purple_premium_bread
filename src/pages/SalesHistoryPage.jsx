@@ -1,11 +1,11 @@
 // SalesHistoryPage.jsx - Enhanced with Receipt Link, Payment Reference, Advantage Amount, and New Filters
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-    FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign, 
-    FiList, FiUser, FiGift, FiPackage, FiFileText, FiCreditCard, 
-    FiShoppingCart, FiImage, FiExternalLink, FiTrendingUp, 
-    FiFilter, FiHash 
+import {
+    FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign,
+    FiList, FiUser, FiGift, FiPackage, FiFileText, FiCreditCard,
+    FiShoppingCart, FiImage, FiExternalLink, FiTrendingUp,
+    FiFilter, FiHash
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
@@ -31,7 +31,7 @@ const SalesHistoryPage = () => {
     const [hasReceipt, setHasReceipt] = useState(''); // 'true', 'false'
     const [hasReference, setHasReference] = useState(''); // 'true', 'false'
     const [advantageRange, setAdvantageRange] = useState(''); // 'none', 'small', 'medium', 'large'
-    
+
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [saleDetails, setSaleDetails] = useState(null);
     const [companyDetails, setCompanyDetails] = useState({});
@@ -40,17 +40,21 @@ const SalesHistoryPage = () => {
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [receiptImageUrl, setReceiptImageUrl] = useState('');
     const [showFilters, setShowFilters] = useState(false); // For mobile filter toggle
+    // Add these new filter states
+    const [isRiderSale, setIsRiderSale] = useState(''); // 'true', 'false'
+    const [riderId, setRiderId] = useState(''); // For filtering by specific rider
+    const [riders, setRiders] = useState([]); // For rider dropdown
 
     const fetchSales = async () => {
         setLoading(true);
         setError('');
         try {
-            const params = { 
-                search, 
-                startDate, 
-                endDate, 
-                transactionType, 
-                paymentMethod, 
+            const params = {
+                search,
+                startDate,
+                endDate,
+                transactionType,
+                paymentMethod,
                 status,
                 stockSource,
                 hasFreeStock,
@@ -59,16 +63,19 @@ const SalesHistoryPage = () => {
                 saleType: saleType || undefined,
                 hasReceipt: hasReceipt || undefined,
                 hasReference: hasReference || undefined,
-                advantageRange: advantageRange || undefined
+                advantageRange: advantageRange || undefined,
+                // NEW: Rider filters
+                isRiderSale: isRiderSale || undefined,
+                riderId: riderId || undefined
             };
-            
+
             // Remove undefined parameters
             Object.keys(params).forEach(key => {
                 if (params[key] === undefined || params[key] === '') {
                     delete params[key];
                 }
             });
-            
+
             const response = await axios.get(`${API_BASE_URL}/sales`, { params });
             setSales(response.data);
         } catch (err) {
@@ -109,11 +116,21 @@ const SalesHistoryPage = () => {
         }
     };
 
+    const fetchRiders = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/riders?status=active&limit=1000`);
+            setRiders(response.data.riders || []);
+        } catch (err) {
+            console.error('Error fetching riders:', err);
+        }
+    };
+
     useEffect(() => {
         fetchCompanyDetails();
         fetchUsers();
+        fetchRiders(); // Add this line
         fetchSales();
-    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange, saleType, hasReceipt, hasReference, advantageRange]);
+    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange, saleType, hasReceipt, hasReference, advantageRange, isRiderSale, riderId]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -149,7 +166,7 @@ const SalesHistoryPage = () => {
 
     // NEW: Function to get advantage range label
     const getAdvantageRangeLabel = (range) => {
-        switch(range) {
+        switch (range) {
             case 'none': return 'No Advantage';
             case 'small': return 'Small (₦1 - ₦500)';
             case 'medium': return 'Medium (₦501 - ₦2000)';
@@ -160,11 +177,11 @@ const SalesHistoryPage = () => {
 
     const handlePrintReceipt = async () => {
         if (!saleDetails) return;
-        
+
         setPrintLoading(true);
         try {
             const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
-            
+
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
@@ -449,7 +466,7 @@ const SalesHistoryPage = () => {
 
             printWindow.document.close();
             toast.success('Receipt opened in new window for printing.');
-            
+
         } catch (error) {
             console.error('Print error:', error);
             toast.error('Failed to generate receipt.');
@@ -483,14 +500,17 @@ const SalesHistoryPage = () => {
         setHasReceipt('');
         setHasReference('');
         setAdvantageRange('');
+        // NEW: Clear rider filters
+        setIsRiderSale('');
+        setRiderId('');
     };
 
     // NEW: Get active filter count
     const getActiveFilterCount = () => {
         const filters = [
-            search, startDate, endDate, transactionType, paymentMethod, 
-            status, stockSource, hasFreeStock, discountRange, saleType, 
-            hasReceipt, hasReference, advantageRange
+            search, startDate, endDate, transactionType, paymentMethod,
+            status, stockSource, hasFreeStock, discountRange, saleType,
+            hasReceipt, hasReference, advantageRange, isRiderSale, riderId
         ];
         return filters.filter(filter => filter !== '').length;
     };
@@ -498,7 +518,7 @@ const SalesHistoryPage = () => {
     return (
         <div className="sh-page">
             <Toaster position="top-right" />
-            
+
             {/* Header Section */}
             <div className="sh-header">
                 <div className="sh-header-content">
@@ -511,7 +531,7 @@ const SalesHistoryPage = () => {
                     </p>
                 </div>
                 <div className="sh-header-actions">
-                    <button 
+                    <button
                         className={`sh-btn sh-btn--outline sh-btn--icon ${showFilters ? 'sh-btn--active' : ''}`}
                         onClick={() => setShowFilters(!showFilters)}
                     >
@@ -755,6 +775,49 @@ const SalesHistoryPage = () => {
                                 </div>
                             </div>
 
+                            {/* NEW: Rider Sale Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiMotorcycle />
+                                    Rider Sale
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={isRiderSale}
+                                        onChange={(e) => setIsRiderSale(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Sales</option>
+                                        <option value="true">Rider Sales Only</option>
+                                        <option value="false">Regular Sales Only</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* NEW: Specific Rider Filter */}
+                            {isRiderSale === 'true' && (
+                                <div className="sh-field">
+                                    <label className="sh-label">
+                                        <FiUser />
+                                        Select Rider
+                                    </label>
+                                    <div className="sh-input">
+                                        <select
+                                            value={riderId}
+                                            onChange={(e) => setRiderId(e.target.value)}
+                                            className="sh-input__field"
+                                        >
+                                            <option value="">All Riders</option>
+                                            {riders.map(rider => (
+                                                <option key={rider.id} value={rider.id}>
+                                                    {rider.fullname} - Bal: ₦{Number(rider.current_balance || 0).toFixed(2)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Date Filters */}
                             <div className="sh-field">
                                 <label className="sh-label">
@@ -788,13 +851,13 @@ const SalesHistoryPage = () => {
 
                             {/* Action Buttons */}
                             <div className="sh-field sh-field--actions">
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     className="sh-btn sh-btn--primary"
                                 >
                                     Apply Filters
                                 </button>
-                                <button 
+                                <button
                                     type="button"
                                     className="sh-btn sh-btn--ghost"
                                     onClick={clearFilters}
@@ -820,7 +883,7 @@ const SalesHistoryPage = () => {
                     <h3>No Sales Found</h3>
                     <p>No sales transactions found for the selected criteria.</p>
                     {getActiveFilterCount() > 0 && (
-                        <button 
+                        <button
                             className="sh-btn sh-btn--primary"
                             onClick={clearFilters}
                         >
@@ -843,7 +906,7 @@ const SalesHistoryPage = () => {
                         <div className="sh-card__actions">
                             <span className="sh-badge sh-badge--primary">{sales.length} transactions</span>
                             {getActiveFilterCount() > 0 && (
-                                <button 
+                                <button
                                     className="sh-btn sh-btn--ghost sh-btn--small"
                                     onClick={clearFilters}
                                 >
@@ -859,18 +922,16 @@ const SalesHistoryPage = () => {
                                     <tr>
                                         <th className="sh-table__cell sh-table__cell--header">S/N</th>
                                         <th className="sh-table__cell sh-table__cell--header">Date</th>
-                                        <th className="sh-table__cell sh-table__cell--header">Customer/Branch</th>
+                                        <th className="sh-table__cell sh-table__cell--header">Customer/Rider</th>
                                         <th className="sh-table__cell sh-table__cell--header">Type</th>
+                                        <th className="sh-table__cell sh-table__cell--header">Sale Type</th>
                                         <th className="sh-table__cell sh-table__cell--header">Payment</th>
                                         <th className="sh-table__cell sh-table__cell--header">Status</th>
                                         <th className="sh-table__cell sh-table__cell--header">Stock Source</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Total</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Discount</th>
-                                        {/* NEW: Advantage Amount Column */}
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--amount">Advantage</th>
-                                        {/* NEW: Payment Reference Column */}
                                         <th className="sh-table__cell sh-table__cell--header">Reference</th>
-                                        {/* NEW: Receipt Column */}
                                         <th className="sh-table__cell sh-table__cell--header">Receipt</th>
                                         <th className="sh-table__cell sh-table__cell--header sh-table__cell--actions">Actions</th>
                                     </tr>
@@ -883,10 +944,37 @@ const SalesHistoryPage = () => {
                                                 {format(new Date(sale.created_at), 'MMM d, yyyy h:mm a')}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--customer">
-                                                {sale.customer_name || sale.branch_name || 'Walk-in Customer'}
+                                                {sale.is_rider_sale ? (
+                                                    <div className="sh-rider-info">
+                                                        <FiMotorcycle className="sh-rider-icon" />
+                                                        <div>
+                                                            <div className="sh-rider-name">{sale.rider_name || 'Rider'}</div>
+                                                            {sale.rider_balance > 0 && (
+                                                                <div className="sh-rider-balance">
+                                                                    Bal: ₦{parseFloat(sale.rider_balance).toFixed(2)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    sale.customer_name || sale.branch_name || 'Walk-in Customer'
+                                                )}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--type">
                                                 {sale.transaction_type}
+                                            </td>
+                                            <td className="sh-table__cell sh-table__cell--type">
+                                                {sale.is_rider_sale ? (
+                                                    <span className="sh-badge sh-badge--warning">
+                                                        <FiMotorcycle /> Rider Sale
+                                                    </span>
+                                                ) : sale.is_advantage_sale ? (
+                                                    <span className="sh-badge sh-badge--info">
+                                                        <FiTrendingUp /> Advantage
+                                                    </span>
+                                                ) : (
+                                                    <span className="sh-badge sh-badge--secondary">Regular</span>
+                                                )}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--method">
                                                 {sale.payment_method}
@@ -910,7 +998,6 @@ const SalesHistoryPage = () => {
                                             <td className="sh-table__cell sh-table__cell--amount">
                                                 {sale.discount_amount > 0 ? `-₦${parseFloat(sale.discount_amount).toFixed(2)}` : '-'}
                                             </td>
-                                            {/* NEW: Advantage Amount Cell */}
                                             <td className="sh-table__cell sh-table__cell--amount">
                                                 {hasAdvantageAmount(sale) ? (
                                                     <span className="sh-advantage-badge" title={`Advantage Amount: ₦${parseFloat(sale.advantage_total).toFixed(2)}`}>
@@ -919,18 +1006,16 @@ const SalesHistoryPage = () => {
                                                     </span>
                                                 ) : '-'}
                                             </td>
-                                            {/* NEW: Payment Reference Cell */}
                                             <td className="sh-table__cell sh-table__cell--reference">
                                                 {sale.payment_reference ? (
                                                     <span className="sh-reference" title={sale.payment_reference}>
-                                                        {sale.payment_reference.length > 15 
-                                                            ? `${sale.payment_reference.substring(0, 15)}...` 
+                                                        {sale.payment_reference.length > 15
+                                                            ? `${sale.payment_reference.substring(0, 15)}...`
                                                             : sale.payment_reference
                                                         }
                                                     </span>
                                                 ) : '-'}
                                             </td>
-                                            {/* NEW: Receipt Cell */}
                                             <td className="sh-table__cell sh-table__cell--receipt">
                                                 {sale.payment_image_url ? (
                                                     <button
@@ -950,6 +1035,15 @@ const SalesHistoryPage = () => {
                                                 >
                                                     <FiEye />
                                                 </button>
+                                                {sale.is_rider_sale && (
+                                                    <button
+                                                        className="sh-action-btn sh-action-btn--warning"
+                                                        onClick={() => navigate(`/riders/sales/${sale.rider_id}`)}
+                                                        title="View Rider Sales"
+                                                    >
+                                                        <FiMotorcycle />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
@@ -1267,15 +1361,15 @@ const SalesHistoryPage = () => {
                                                     <div className="sh-detail-item">
                                                         <span className="sh-detail-label">Receipt Proof:</span>
                                                         <div className="sh-receipt-actions">
-                                                            <button 
+                                                            <button
                                                                 className="sh-btn sh-btn--outline sh-btn--small"
                                                                 onClick={() => handleViewReceipt(saleDetails.payment_image_url)}
                                                             >
                                                                 <FiImage /> View Receipt
                                                             </button>
-                                                            <a 
-                                                                href={saleDetails.payment_image_url} 
-                                                                target="_blank" 
+                                                            <a
+                                                                href={saleDetails.payment_image_url}
+                                                                target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="sh-btn sh-btn--ghost sh-btn--small"
                                                             >
@@ -1300,8 +1394,8 @@ const SalesHistoryPage = () => {
                             <button className="sh-btn sh-btn--ghost" onClick={closeDetailsModal}>
                                 Close
                             </button>
-                            <button 
-                                className="sh-btn sh-btn--primary" 
+                            <button
+                                className="sh-btn sh-btn--primary"
                                 onClick={handlePrintReceipt}
                                 disabled={printLoading}
                             >
@@ -1332,21 +1426,21 @@ const SalesHistoryPage = () => {
                         </div>
                         <div className="sh-modal__body">
                             <div className="sh-receipt-image-container">
-                                <img 
-                                    src={receiptImageUrl} 
-                                    alt="Payment Receipt" 
+                                <img
+                                    src={receiptImageUrl}
+                                    alt="Payment Receipt"
                                     className="sh-receipt-image"
                                     onError={(e) => {
                                         e.target.style.display = 'none';
                                         e.target.nextSibling.style.display = 'block';
                                     }}
                                 />
-                                <div className="sh-receipt-fallback" style={{display: 'none'}}>
+                                <div className="sh-receipt-fallback" style={{ display: 'none' }}>
                                     <FiImage className="sh-receipt-fallback-icon" />
                                     <p>Unable to load receipt image</p>
-                                    <a 
-                                        href={receiptImageUrl} 
-                                        target="_blank" 
+                                    <a
+                                        href={receiptImageUrl}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="sh-btn sh-btn--primary"
                                     >
@@ -1359,9 +1453,9 @@ const SalesHistoryPage = () => {
                             <button className="sh-btn sh-btn--ghost" onClick={closeReceiptModal}>
                                 Close
                             </button>
-                            <a 
-                                href={receiptImageUrl} 
-                                target="_blank" 
+                            <a
+                                href={receiptImageUrl}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="sh-btn sh-btn--primary"
                             >
