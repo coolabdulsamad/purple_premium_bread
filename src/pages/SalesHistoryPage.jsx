@@ -5,11 +5,13 @@ import {
     FiEye, FiPrinter, FiX, FiSearch, FiCalendar, FiDollarSign,
     FiList, FiUser, FiGift, FiPackage, FiFileText, FiCreditCard,
     FiShoppingCart, FiImage, FiExternalLink, FiTrendingUp,
-    FiFilter, FiHash
+    FiFilter, FiHash,
+    FiMonitor
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
+import { Monitor } from 'lucide-react';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
@@ -45,85 +47,201 @@ const SalesHistoryPage = () => {
     const [riderId, setRiderId] = useState(''); // For filtering by specific rider
     const [riders, setRiders] = useState([]); // For rider dropdown
 
-    const fetchSales = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const params = {
-                search,
-                startDate,
-                endDate,
-                transactionType,
-                paymentMethod,
-                status,
-                stockSource,
-                hasFreeStock,
-                discountRange,
-                // NEW: Add new filter parameters
-                saleType: saleType || undefined,
-                hasReceipt: hasReceipt || undefined,
-                hasReference: hasReference || undefined,
-                advantageRange: advantageRange || undefined,
-                // NEW: Rider filters
-                isRiderSale: isRiderSale || undefined,
-                riderId: riderId || undefined
-            };
-
-            // Remove undefined parameters
-            Object.keys(params).forEach(key => {
-                if (params[key] === undefined || params[key] === '') {
-                    delete params[key];
-                }
-            });
-
-            const response = await axios.get(`${API_BASE_URL}/sales`, { params });
-            setSales(response.data);
-        } catch (err) {
-            setError('Failed to fetch sales history.');
-            console.error('Sales fetch error:', err.response?.data || err.message);
-            toast.error('Failed to fetch sales history.');
-        } finally {
-            setLoading(false);
-        }
+    // Add this helper function at the top of the component
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('token');
+        return {
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        };
     };
 
-    const fetchUsers = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/users`);
-            setUsers(response.data);
-        } catch (err) {
-            console.error('Error fetching users:', err);
-        }
-    };
+    // Update fetchSales function
+const fetchSales = async () => {
+    setLoading(true);
+    setError('');
+    try {
+        const params = {
+            search,
+            startDate,
+            endDate,
+            transactionType,
+            paymentMethod,
+            status,
+            stockSource,
+            hasFreeStock,
+            discountRange,
+            saleType: saleType || undefined,
+            hasReceipt: hasReceipt || undefined,
+            hasReference: hasReference || undefined,
+            advantageRange: advantageRange || undefined,
+            isRiderSale: isRiderSale || undefined,
+            riderId: riderId || undefined
+        };
 
-    const fetchSaleDetails = async (saleId) => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/sales/details/${saleId}`);
-            setSaleDetails(response.data);
-            setShowDetailsModal(true);
-        } catch (err) {
-            console.error('Sale details fetch error:', err.response?.data || err.message);
-            toast.error('Failed to fetch sale details.');
-        }
-    };
+        // Remove undefined parameters
+        Object.keys(params).forEach(key => {
+            if (params[key] === undefined || params[key] === '') {
+                delete params[key];
+            }
+        });
 
-    const fetchCompanyDetails = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/company`);
-            setCompanyDetails(response.data);
-        } catch (err) {
-            console.error('Company details fetch error:', err.response?.data || err.message);
+        const response = await axios.get(`${API_BASE_URL}/sales`, {
+            params,
+            ...getAuthHeaders()
+        });
+        setSales(response.data);
+    } catch (err) {
+        setError('Failed to fetch sales history.');
+        console.error('Sales fetch error:', err.response?.data || err.message);
+        toast.error('Failed to fetch sales history.');
+        
+        // Handle 401 error - redirect to login
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
         }
-    };
+    } finally {
+        setLoading(false);
+    }
+};
 
-    const fetchRiders = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/riders?status=active&limit=1000`);
-            setRiders(response.data.riders || []);
-        } catch (err) {
-            console.error('Error fetching riders:', err);
+// Update fetchUsers function
+const fetchUsers = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/users`, getAuthHeaders());
+        setUsers(response.data);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
         }
-    };
+    }
+};
+
+// Update fetchSaleDetails function
+const fetchSaleDetails = async (saleId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/sales/details/${saleId}`, getAuthHeaders());
+        setSaleDetails(response.data);
+        setShowDetailsModal(true);
+    } catch (err) {
+        console.error('Sale details fetch error:', err.response?.data || err.message);
+        toast.error('Failed to fetch sale details.');
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    }
+};
+
+// Update fetchCompanyDetails function
+const fetchCompanyDetails = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/sales/company`, getAuthHeaders());
+        setCompanyDetails(response.data);
+    } catch (err) {
+        console.error('Company details fetch error:', err.response?.data || err.message);
+        // Don't show error toast for company details as it's not critical
+    }
+};
+
+// Update fetchRiders function
+const fetchRiders = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/riders?status=active&limit=1000`, getAuthHeaders());
+        setRiders(response.data.riders || []);
+    } catch (err) {
+        console.error('Error fetching riders:', err);
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    }
+};
+
+    // const fetchSales = async () => {
+    //     setLoading(true);
+    //     setError('');
+    //     try {
+    //         const params = {
+    //             search,
+    //             startDate,
+    //             endDate,
+    //             transactionType,
+    //             paymentMethod,
+    //             status,
+    //             stockSource,
+    //             hasFreeStock,
+    //             discountRange,
+    //             // NEW: Add new filter parameters
+    //             saleType: saleType || undefined,
+    //             hasReceipt: hasReceipt || undefined,
+    //             hasReference: hasReference || undefined,
+    //             advantageRange: advantageRange || undefined,
+    //             // NEW: Rider filters
+    //             isRiderSale: isRiderSale || undefined,
+    //             riderId: riderId || undefined
+    //         };
+
+    //         // Remove undefined parameters
+    //         Object.keys(params).forEach(key => {
+    //             if (params[key] === undefined || params[key] === '') {
+    //                 delete params[key];
+    //             }
+    //         });
+
+    //         const response = await axios.get(`${API_BASE_URL}/sales`, { params });
+    //         setSales(response.data);
+    //     } catch (err) {
+    //         setError('Failed to fetch sales history.');
+    //         console.error('Sales fetch error:', err.response?.data || err.message);
+    //         toast.error('Failed to fetch sales history.');
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+    // const fetchUsers = async () => {
+    //     try {
+    //         const response = await axios.get(`${API_BASE_URL}/users`);
+    //         setUsers(response.data);
+    //     } catch (err) {
+    //         console.error('Error fetching users:', err);
+    //     }
+    // };
+
+    // const fetchSaleDetails = async (saleId) => {
+    //     try {
+    //         const response = await axios.get(`${API_BASE_URL}/sales/details/${saleId}`);
+    //         setSaleDetails(response.data);
+    //         setShowDetailsModal(true);
+    //     } catch (err) {
+    //         console.error('Sale details fetch error:', err.response?.data || err.message);
+    //         toast.error('Failed to fetch sale details.');
+    //     }
+    // };
+
+    // const fetchCompanyDetails = async () => {
+    //     try {
+    //         const response = await axios.get(`${API_BASE_URL}/company`);
+    //         setCompanyDetails(response.data);
+    //     } catch (err) {
+    //         console.error('Company details fetch error:', err.response?.data || err.message);
+    //     }
+    // };
+
+    // const fetchRiders = async () => {
+    //     try {
+    //         const response = await axios.get(`${API_BASE_URL}/riders?status=active&limit=1000`);
+    //         setRiders(response.data.riders || []);
+    //     } catch (err) {
+    //         console.error('Error fetching riders:', err);
+    //     }
+    // };
 
     useEffect(() => {
         fetchCompanyDetails();
@@ -778,7 +896,7 @@ const SalesHistoryPage = () => {
                             {/* NEW: Rider Sale Filter */}
                             <div className="sh-field">
                                 <label className="sh-label">
-                                    <FiMotorcycle />
+                                    <FiMonitor />
                                     Rider Sale
                                 </label>
                                 <div className="sh-input">
@@ -946,7 +1064,7 @@ const SalesHistoryPage = () => {
                                             <td className="sh-table__cell sh-table__cell--customer">
                                                 {sale.is_rider_sale ? (
                                                     <div className="sh-rider-info">
-                                                        <FiMotorcycle className="sh-rider-icon" />
+                                                        <Monitor className="sh-rider-icon" />
                                                         <div>
                                                             <div className="sh-rider-name">{sale.rider_name || 'Rider'}</div>
                                                             {sale.rider_balance > 0 && (
@@ -966,7 +1084,7 @@ const SalesHistoryPage = () => {
                                             <td className="sh-table__cell sh-table__cell--type">
                                                 {sale.is_rider_sale ? (
                                                     <span className="sh-badge sh-badge--warning">
-                                                        <FiMotorcycle /> Rider Sale
+                                                        <FiMonitor /> Rider Sale
                                                     </span>
                                                 ) : sale.is_advantage_sale ? (
                                                     <span className="sh-badge sh-badge--info">
@@ -1041,7 +1159,7 @@ const SalesHistoryPage = () => {
                                                         onClick={() => navigate(`/riders/sales/${sale.rider_id}`)}
                                                         title="View Rider Sales"
                                                     >
-                                                        <FiMotorcycle />
+                                                        <FiMonitor />
                                                     </button>
                                                 )}
                                             </td>

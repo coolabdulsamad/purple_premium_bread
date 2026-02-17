@@ -9,7 +9,9 @@ import {
     FaDollarSign, FaChartLine, FaChartPie, FaCog, FaExclamationTriangle,
     FaTruck, FaBalanceScale, FaShoppingCart, FaIdCard, FaDatabase,
     FaChevronDown, FaChevronUp, FaSearch, FaColumns, FaCrown,
-    FaStar, FaRocket, FaGem, FaAward, FaCoins
+    FaStar, FaRocket, FaGem, FaAward, FaCoins,
+    FaMotorcycle,
+    FaCreditCard
 } from 'react-icons/fa';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import {
@@ -71,7 +73,7 @@ const AnalysisPage = () => {
     const [stockIssuesAnalysis, setStockIssuesAnalysis] = useState([]);
     const [wasteAnalysis, setWasteAnalysis] = useState([]);
 
-        // NEW: Advantage Sales Analysis Data
+    // NEW: Advantage Sales Analysis Data
     const [advantageSalesAnalysis, setAdvantageSalesAnalysis] = useState([]);
     const [advantageSalesSummary, setAdvantageSalesSummary] = useState({});
     const [advantageVsRegularComparison, setAdvantageVsRegularComparison] = useState(null);
@@ -87,7 +89,7 @@ const AnalysisPage = () => {
         totalSalaries: 0,
         inventoryValue: 0,
         wasteValue: 0,
-                // NEW: Advantage KPIs
+        // NEW: Advantage KPIs
         totalAdvantageSales: 0,
         totalAdvantageAmount: 0,
         totalRegularSales: 0,
@@ -154,12 +156,18 @@ const AnalysisPage = () => {
         wasteProductId: '',
         wasteBranchId: '',
         wasteLimit: 10,
-                // NEW: Advantage Analysis Filters
+        // NEW: Advantage Analysis Filters
         advantageSalesBranchId: '',
         advantageSalesProductId: '',
         advantageSalesStaffId: '',
         advantageSalesLimit: 10,
-        advantageComparisonPeriod: 'month'
+        advantageComparisonPeriod: 'month',
+        riderSalesRiderId: '',
+        riderSalesPeriod: 'month',
+        riderCreditLimit: 10,
+        riderProductRiderId: '',
+        riderProductLimit: 10,
+        riderCollectionLimit: 10
     });
 
     // Dropdown data states
@@ -169,6 +177,14 @@ const AnalysisPage = () => {
     const [allBranches, setAllBranches] = useState([]);
     const [allRawMaterials, setAllRawMaterials] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
+
+    // Add these state variables near your other state declarations
+    const [riderSalesTrend, setRiderSalesTrend] = useState([]);
+    const [riderCreditAnalysis, setRiderCreditAnalysis] = useState([]);
+    const [riderProductPerformance, setRiderProductPerformance] = useState([]);
+    const [riderCollectionEfficiency, setRiderCollectionEfficiency] = useState([]);
+    // At the top of your AnalysisPage component, with other state declarations
+    const [allRiders, setAllRiders] = useState([]);  // Add this line
 
     // Toggle card expansion
     const toggleCardExpansion = (cardId) => {
@@ -203,30 +219,44 @@ const AnalysisPage = () => {
     // Filter data based on search term
     const filterData = (data, searchTerm, searchableFields) => {
         if (!searchTerm) return data;
-        
-        return data.filter(item => 
-            searchableFields.some(field => 
+
+        return data.filter(item =>
+            searchableFields.some(field =>
                 String(item[field] || '').toLowerCase().includes(searchTerm.toLowerCase())
             )
         );
     };
 
+    // Add this helper function at the top of your component, after the API_BASE_URL
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('token'); // or wherever you store your token
+        return {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        };
+    };
+
     const fetchDropdownData = async () => {
         try {
+            const headers = getAuthHeaders();
+
             const [
                 productsRes,
                 categoriesRes,
                 customersRes,
                 branchesRes,
                 rawMaterialsRes,
-                usersRes
+                usersRes,
+                ridersRes
             ] = await Promise.all([
-                axios.get(`${API_BASE_URL}/products`),
-                axios.get(`${API_BASE_URL}/categories`),
-                axios.get(`${API_BASE_URL}/customers`),
-                axios.get(`${API_BASE_URL}/branches`),
-                axios.get(`${API_BASE_URL}/raw-materials`),
-                axios.get(`${API_BASE_URL}/users`),
+                axios.get(`${API_BASE_URL}/products`, headers),
+                axios.get(`${API_BASE_URL}/categories`, headers),
+                axios.get(`${API_BASE_URL}/customers`, headers),
+                axios.get(`${API_BASE_URL}/branches`, headers),
+                axios.get(`${API_BASE_URL}/raw-materials`, headers),
+                axios.get(`${API_BASE_URL}/users`, headers),
+                axios.get(`${API_BASE_URL}/riders?status=active`, headers),
             ]);
 
             setAllProducts(productsRes.data);
@@ -236,13 +266,56 @@ const AnalysisPage = () => {
             setAllRawMaterials(rawMaterialsRes.data);
             setAllUsers(usersRes.data);
 
+            // Handle riders data (could be in different formats)
+            const ridersData = ridersRes.data?.riders || ridersRes.data || [];
+            setAllRiders(ridersData);
+
         } catch (err) {
             console.error('Error fetching dropdown data for analysis:', err);
+            // Optionally show user-friendly error message
+            // toast.error('Failed to load filter options. Please check your authentication.');
         }
     };
 
+    // const fetchDropdownData = async () => {
+    //     try {
+    //         const [
+    //             productsRes,
+    //             categoriesRes,
+    //             customersRes,
+    //             branchesRes,
+    //             rawMaterialsRes,
+    //             usersRes,
+    //             ridersRes  // Add riders fetch here
+    //         ] = await Promise.all([
+    //             axios.get(`${API_BASE_URL}/products`),
+    //             axios.get(`${API_BASE_URL}/categories`),
+    //             axios.get(`${API_BASE_URL}/customers`),
+    //             axios.get(`${API_BASE_URL}/branches`),
+    //             axios.get(`${API_BASE_URL}/raw-materials`),
+    //             axios.get(`${API_BASE_URL}/users`),
+    //             axios.get(`${API_BASE_URL}/riders?status=active`),  // Fetch riders
+    //         ]);
+
+    //         setAllProducts(productsRes.data);
+    //         setAllCategories(categoriesRes.data);
+    //         setAllCustomers(customersRes.data);
+    //         setAllBranches(branchesRes.data);
+    //         setAllRawMaterials(rawMaterialsRes.data);
+    //         setAllUsers(usersRes.data);
+
+    //         // Handle riders data (could be in different formats)
+    //         const ridersData = ridersRes.data?.riders || ridersRes.data || [];
+    //         setAllRiders(ridersData);
+
+    //     } catch (err) {
+    //         console.error('Error fetching dropdown data for analysis:', err);
+    //     }
+    // };
+
     const fetchKPIData = async () => {
         try {
+            const headers = getAuthHeaders();
             const today = new Date();
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -260,26 +333,23 @@ const AnalysisPage = () => {
             const kpiParams = buildKpiParams();
 
             const kpiCalls = [
-                axios.get(`${API_BASE_URL}/analysis/sales-summary?${kpiParams}`),
-                axios.get(`${API_BASE_URL}/analysis/customer-count?${kpiParams}`),
-                axios.get(`${API_BASE_URL}/analysis/operating-expenses?${kpiParams}&limit=1000`),
-                axios.get(`${API_BASE_URL}/analysis/salaries?${kpiParams}&limit=1000`),
-                axios.get(`${API_BASE_URL}/analysis/inventory-value`),
-                axios.get(`${API_BASE_URL}/analysis/waste-analysis?${kpiParams}&limit=1000`),
-                //                 // NEW: Fetch advantage sales summary
-                // axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${kpiParams}&limit=1`).catch(() => ({ data: { reportData: [], summary: {} } })),
-                            // Fetch advantage sales data with proper calculation
-            axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${kpiParams}`).catch(() => ({ 
-                data: { 
-                    reportData: [], 
-                    summary: {
-                        totalAdvantageSales: 0,
-                        totalAdvantageAmount: 0,
-                        totalSalesAmount: 0,
-                        averageAdvantagePerSale: 0
-                    } 
-                } 
-            })),
+                axios.get(`${API_BASE_URL}/analysis/sales-summary?${kpiParams}`, headers),
+                axios.get(`${API_BASE_URL}/analysis/customer-count?${kpiParams}`, headers),
+                axios.get(`${API_BASE_URL}/analysis/operating-expenses?${kpiParams}&limit=1000`, headers),
+                axios.get(`${API_BASE_URL}/analysis/salaries?${kpiParams}&limit=1000`, headers),
+                axios.get(`${API_BASE_URL}/analysis/inventory-value`, headers),
+                axios.get(`${API_BASE_URL}/analysis/waste-analysis?${kpiParams}&limit=1000`, headers),
+                axios.get(`${API_BASE_URL}/reports/advantage-sales-analysis?${kpiParams}`, headers).catch(() => ({
+                    data: {
+                        reportData: [],
+                        summary: {
+                            totalAdvantageSales: 0,
+                            totalAdvantageAmount: 0,
+                            totalSalesAmount: 0,
+                            averageAdvantagePerSale: 0
+                        }
+                    }
+                })),
             ];
 
             const kpiResponses = await Promise.all(kpiCalls.map(promise =>
@@ -295,56 +365,56 @@ const AnalysisPage = () => {
             const salariesData = kpiResponses[3].data.reportData || [];
             const inventoryData = kpiResponses[4].data.reportData || { total_value: 0 };
             const wasteData = kpiResponses[5].data.reportData || [];
-                        const advantageData = kpiResponses[6].data;
+            const advantageData = kpiResponses[6].data;
 
             const totalExpenses = expensesData.reduce((sum, exp) => sum + (parseFloat(exp.total_amount) || 0), 0);
             const totalSalaries = salariesData.reduce((sum, sal) => sum + (parseFloat(sal.net_salary) || 0), 0);
             const totalWasteValue = wasteData.reduce((sum, waste) => sum + (parseFloat(waste.waste_value) || 0), 0);
 
-// CORRECT Advantage Metrics Calculation - Frontend Only
-const advantageSummary = advantageData.summary || {};
+            // CORRECT Advantage Metrics Calculation - Frontend Only
+            const advantageSummary = advantageData.summary || {};
 
-// These come from your API response
-const totalAdvantageSalesCount = parseInt(advantageSummary.totalAdvantageSales) || 0; // Number of advantage sales transactions
-const totalAdvantageAmount = parseFloat(advantageSummary.totalAdvantageAmount) || 0; // Total advantage premium amount (the 800)
-const totalSalesAmount = parseFloat(salesData.total_sales) || 0; // Total sales amount from all transactions
+            // These come from your API response
+            const totalAdvantageSalesCount = parseInt(advantageSummary.totalAdvantageSales) || 0; // Number of advantage sales transactions
+            const totalAdvantageAmount = parseFloat(advantageSummary.totalAdvantageAmount) || 0; // Total advantage premium amount (the 800)
+            const totalSalesAmount = parseFloat(salesData.total_sales) || 0; // Total sales amount from all transactions
 
-// CORRECT: Total sales from advantage transactions (base + premium)
-const totalAdvantageSalesAmount = totalAdvantageAmount + 
-    (advantageData.reportData?.reduce((sum, sale) => sum + parseFloat(sale.base_subtotal || sale.base_sales_amount || 0), 0) || 0);
+            // CORRECT: Total sales from advantage transactions (base + premium)
+            const totalAdvantageSalesAmount = totalAdvantageAmount +
+                (advantageData.reportData?.reduce((sum, sale) => sum + parseFloat(sale.base_subtotal || sale.base_sales_amount || 0), 0) || 0);
 
-// CORRECT: Regular sales should come from actual regular transactions, not calculated
-const totalRegularSalesAmount = totalSalesAmount - totalAdvantageSalesAmount;
-const totalRegularSalesCount = (parseInt(salesData.total_transactions) || 0) - totalAdvantageSalesCount;
+            // CORRECT: Regular sales should come from actual regular transactions, not calculated
+            const totalRegularSalesAmount = totalSalesAmount - totalAdvantageSalesAmount;
+            const totalRegularSalesCount = (parseInt(salesData.total_transactions) || 0) - totalAdvantageSalesCount;
 
-// CORRECT Profit Allocation
-const advantageProfitMargin = 0.85; // 85% profit margin for advantage sales
-const regularProfitMargin = 0.70; // 70% profit margin for regular sales
+            // CORRECT Profit Allocation
+            const advantageProfitMargin = 0.85; // 85% profit margin for advantage sales
+            const regularProfitMargin = 0.70; // 70% profit margin for regular sales
 
-const advantageProfit = totalAdvantageSalesAmount * advantageProfitMargin;
-const regularProfit = (parseFloat(salesData.total_profit) || 0) - advantageProfit;
+            const advantageProfit = totalAdvantageSalesAmount * advantageProfitMargin;
+            const regularProfit = (parseFloat(salesData.total_profit) || 0) - advantageProfit;
 
-setKpiData({
-    totalSales: totalSalesAmount,
-    totalProfit: parseFloat(salesData.total_profit) || 0,
-    totalTransactions: parseInt(salesData.total_transactions) || 0,
-    totalCustomers: parseInt(customersData.total_customers) || 0,
-    totalExpenses: totalExpenses,
-    totalSalaries: totalSalaries,
-    inventoryValue: parseFloat(inventoryData.total_value) || 0,
-    wasteValue: totalWasteValue,
-    
-    // CORRECTED Advantage metrics
-    totalAdvantageSales: totalAdvantageSalesCount, // Number of transactions
-    totalAdvantageAmount: totalAdvantageAmount, // Total premium amount (the 800)
-    totalAdvantageSalesAmount: totalAdvantageSalesAmount, // Total sales from advantage transactions (7800)
-    totalRegularSales: totalRegularSalesAmount, // Regular sales amount
-    totalRegularSalesCount: totalRegularSalesCount, // Number of regular transactions
-    advantageProfit: advantageProfit,
-    regularProfit: regularProfit,
-    advantageSalesCount: totalAdvantageSalesCount,
-    regularSalesCount: totalRegularSalesCount
-});
+            setKpiData({
+                totalSales: totalSalesAmount,
+                totalProfit: parseFloat(salesData.total_profit) || 0,
+                totalTransactions: parseInt(salesData.total_transactions) || 0,
+                totalCustomers: parseInt(customersData.total_customers) || 0,
+                totalExpenses: totalExpenses,
+                totalSalaries: totalSalaries,
+                inventoryValue: parseFloat(inventoryData.total_value) || 0,
+                wasteValue: totalWasteValue,
+
+                // CORRECTED Advantage metrics
+                totalAdvantageSales: totalAdvantageSalesCount, // Number of transactions
+                totalAdvantageAmount: totalAdvantageAmount, // Total premium amount (the 800)
+                totalAdvantageSalesAmount: totalAdvantageSalesAmount, // Total sales from advantage transactions (7800)
+                totalRegularSales: totalRegularSalesAmount, // Regular sales amount
+                totalRegularSalesCount: totalRegularSalesCount, // Number of regular transactions
+                advantageProfit: advantageProfit,
+                regularProfit: regularProfit,
+                advantageSalesCount: totalAdvantageSalesCount,
+                regularSalesCount: totalRegularSalesCount
+            });
 
         } catch (err) {
             console.error('Error fetching KPI data:', err);
@@ -358,13 +428,13 @@ setKpiData({
                 inventoryValue: 0,
                 wasteValue: 0,
                 totalAdvantageSales: 0,
-            totalAdvantageAmount: 0,
-            totalRegularSales: 0,
-            totalRegularSalesCount: 0,
-            advantageProfit: 0,
-            regularProfit: 0,
-            advantageSalesCount: 0,
-            regularSalesCount: 0
+                totalAdvantageAmount: 0,
+                totalRegularSales: 0,
+                totalRegularSalesCount: 0,
+                advantageProfit: 0,
+                regularProfit: 0,
+                advantageSalesCount: 0,
+                regularSalesCount: 0
             });
         }
     };
@@ -373,6 +443,7 @@ setKpiData({
         setLoading(true);
         setError('');
         try {
+            const headers = getAuthHeaders();
             const buildParams = (filters, includeGlobal = true) => {
                 const params = new URLSearchParams();
 
@@ -396,15 +467,15 @@ setKpiData({
 
             const allCalls = [
                 // Overview Tab
-                axios.get(`${API_BASE_URL}/analysis/sales-comparison?${buildParams({ period: analysisFilters.salesComparisonPeriod })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/sales-comparison?${buildParams({ period: analysisFilters.salesComparisonPeriod })}`, headers).catch(error => {
                     console.error('Sales comparison API call failed:', error);
                     return { data: {} };
                 }),
-                axios.get(`${API_BASE_URL}/analysis/profit-margin-trend?${buildParams({ period: analysisFilters.profitMarginTrendPeriod, limit: 12 })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/profit-margin-trend?${buildParams({ period: analysisFilters.profitMarginTrendPeriod, limit: 12 })}`, headers).catch(error => {
                     console.error('Profit margin trend API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                axios.get(`${API_BASE_URL}/analysis/inventory-turnover?${buildParams({ productId: analysisFilters.inventoryTurnoverProductId })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/inventory-turnover?${buildParams({ productId: analysisFilters.inventoryTurnoverProductId })}`, headers).catch(error => {
                     console.error('Inventory turnover API call failed:', error);
                     return { data: {} };
                 }),
@@ -412,90 +483,125 @@ setKpiData({
                     category: analysisFilters.salesTrendCategory,
                     productId: analysisFilters.salesTrendProductId,
                     period: analysisFilters.salesTrendPeriod
-                })}`).catch(error => {
+                })}`, headers).catch(error => {
                     console.error('Sales trend API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                axios.get(`${API_BASE_URL}/analysis/top-customers-by-sales?${buildParams({ limit: analysisFilters.topCustomersLimit })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/top-customers-by-sales?${buildParams({ limit: analysisFilters.topCustomersLimit })}`, headers).catch(error => {
                     console.error('Top customers API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                axios.get(`${API_BASE_URL}/analysis/production-waste-over-time?${buildParams({ period: analysisFilters.productionWastePeriod })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/production-waste-over-time?${buildParams({ period: analysisFilters.productionWastePeriod })}`, headers).catch(error => {
                     console.error('Production waste API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/raw-material-stock-value-trend?${buildParams({
                     rawMaterialId: analysisFilters.rawMaterialStockId,
                     period: analysisFilters.rawMaterialStockPeriod
-                })}`).catch(error => {
+                })}`, headers).catch(error => {
                     console.error('Raw material stock API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/customer-lifetime-value?${buildParams({
                     customerId: analysisFilters.cltvCustomerId,
                     limit: analysisFilters.cltvLimit
-                })}`).catch(error => {
+                })}`, headers).catch(error => {
                     console.error('CLTV API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                
+
+                // Rider Sales Trend
+                axios.get(`${API_BASE_URL}/analysis/rider-sales-trend?${buildParams({
+                    riderId: analysisFilters.riderSalesRiderId,
+                    period: analysisFilters.riderSalesPeriod,
+                    limit: 12
+                }, false)}`, headers).catch(error => {
+                    console.error('Rider sales trend API call failed:', error);
+                    return { data: { reportData: [] } };
+                }),
+
+                // Rider Credit Analysis
+                axios.get(`${API_BASE_URL}/analysis/rider-credit-analysis?${buildParams({
+                    limit: analysisFilters.riderCreditLimit
+                }, false)}`, headers).catch(error => {
+                    console.error('Rider credit analysis API call failed:', error);
+                    return { data: { reportData: [], summary: {} } };
+                }),
+
+                // Rider Product Performance
+                axios.get(`${API_BASE_URL}/analysis/rider-product-performance?${buildParams({
+                    riderId: analysisFilters.riderProductRiderId,
+                    limit: analysisFilters.riderProductLimit
+                }, false)}`, headers).catch(error => {
+                    console.error('Rider product performance API call failed:', error);
+                    return { data: { reportData: [] } };
+                }),
+
+                // Rider Collection Efficiency
+                axios.get(`${API_BASE_URL}/analysis/rider-collection-efficiency?${buildParams({
+                    limit: analysisFilters.riderCollectionLimit
+                }, false)}`, headers).catch(error => {
+                    console.error('Rider collection efficiency API call failed:', error);
+                    return { data: { reportData: [], summary: {} } };
+                }),
+
                 // Sales & Profit Tab
                 axios.get(`${API_BASE_URL}/analysis/free-items?${buildParams({
                     productId: analysisFilters.freeItemsProductId,
                     limit: analysisFilters.freeItemsLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Free items API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                axios.get(`${API_BASE_URL}/analysis/discounts?${buildParams({ limit: analysisFilters.discountLimit })}`).catch(error => {
+                axios.get(`${API_BASE_URL}/analysis/discounts?${buildParams({ limit: analysisFilters.discountLimit })}`, headers).catch(error => {
                     console.error('Discounts API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/exchanges?${buildParams({
                     status: analysisFilters.exchangeStatus,
                     limit: analysisFilters.exchangeLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Exchanges API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                
+
                 // Inventory Tab
                 axios.get(`${API_BASE_URL}/analysis/stock-allocation?${buildParams({
                     userId: analysisFilters.stockAllocationUserId,
                     productId: analysisFilters.stockAllocationProductId,
                     limit: analysisFilters.stockAllocationLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Stock allocation API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                
+
                 // Operations Tab
                 axios.get(`${API_BASE_URL}/analysis/salaries?${buildParams({
                     userId: analysisFilters.salaryUserId,
                     limit: analysisFilters.salaryLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Salaries API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/operating-expenses?${buildParams({
                     category: analysisFilters.expensesCategory,
                     limit: analysisFilters.expensesLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Operating expenses API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
-                
+
                 // Staff & Branches Tab
                 axios.get(`${API_BASE_URL}/analysis/staff-performance?${buildParams({
                     role: analysisFilters.staffPerformanceRole,
                     limit: analysisFilters.staffPerformanceLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Staff performance API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/branch-performance?${buildParams({
                     metric: analysisFilters.branchPerformanceMetric
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Branch performance API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
@@ -503,14 +609,14 @@ setKpiData({
                     issueType: analysisFilters.stockIssuesType,
                     productId: analysisFilters.stockIssuesProductId,
                     limit: analysisFilters.stockIssuesLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Stock issues API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
                 axios.get(`${API_BASE_URL}/analysis/waste-analysis?${buildParams({
                     productId: analysisFilters.wasteProductId,
                     limit: analysisFilters.wasteLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Waste analysis API call failed:', error);
                     return { data: { reportData: [] } };
                 }),
@@ -521,18 +627,18 @@ setKpiData({
                     productId: analysisFilters.advantageSalesProductId,
                     staffId: analysisFilters.advantageSalesStaffId,
                     limit: analysisFilters.advantageSalesLimit
-                }, false)}`).catch(error => {
+                }, false)}`, headers).catch(error => {
                     console.error('Advantage sales analysis API call failed:', error);
                     return { data: { reportData: [], summary: {} } };
                 }),
 
-                        // Replace it with a simpler version that doesn't depend on kpiData:
-        axios.get(`${API_BASE_URL}/analysis/sales-comparison?${buildParams({ 
-            period: analysisFilters.advantageComparisonPeriod 
-        })}`).catch(error => {
-            console.error('Advantage comparison API call failed:', error);
-            return { data: {} };
-        }),
+                // Replace it with a simpler version that doesn't depend on kpiData:
+                axios.get(`${API_BASE_URL}/analysis/sales-comparison?${buildParams({
+                    period: analysisFilters.advantageComparisonPeriod
+                }, false)}`, headers).catch(error => {
+                    console.error('Advantage comparison API call failed:', error);
+                    return { data: {} };
+                }),
             ];
 
             const responses = await Promise.all(allCalls);
@@ -546,26 +652,60 @@ setKpiData({
             setProductionWasteTrend(responses[5].data.reportData || []);
             setRawMaterialStockValueTrend(responses[6].data.reportData || []);
             setCustomerLifetimeValue(responses[7].data.reportData || []);
-            
+
             // Sales & Profit Tab
             setFreeItemsAnalysis(responses[8].data.reportData || []);
             setDiscountAnalysis(responses[9].data.reportData || []);
             setExchangeAnalysis(responses[10].data.reportData || []);
-            
+
             // Inventory Tab
             setStockAllocationAnalysis(responses[11].data.reportData || []);
-            
+
             // Operations Tab
             setSalaryAnalysis(responses[12].data.reportData || []);
             setOperatingExpensesAnalysis(responses[13].data.reportData || []);
-            
+
             // Staff & Branches Tab
             setStaffPerformance(responses[14].data.reportData || []);
             setBranchPerformance(responses[15].data.reportData || []);
             setStockIssuesAnalysis(responses[16].data.reportData || []);
             setWasteAnalysis(responses[17].data.reportData || []);
 
-                        // NEW: Set advantage data
+            // Set rider data
+            // const riderIndex = responses.length - 4; // Adjust index based on where you added them
+            // setRiderSalesTrend(responses[riderIndex].data.reportData || []);
+            // setRiderCreditAnalysis(responses[riderIndex + 1].data.reportData || []);
+            // setRiderProductPerformance(responses[riderIndex + 2].data.reportData || []);
+            // setRiderCollectionEfficiency(responses[riderIndex + 3].data.reportData || []);
+
+            // Set rider data - find the section where you set the data and replace with:
+            // const riderStartIndex = 8; // Adjust this based on your actual response indices
+            // setRiderSalesTrend(responses[18]?.data?.reportData || []);
+            // setRiderCreditAnalysis(responses[19]?.data?.reportData || []);
+            // setRiderProductPerformance(responses[20]?.data?.reportData || []);
+            // setRiderCollectionEfficiency(responses[21]?.data?.reportData || []);
+
+            // In your fetchData function, after getting all responses, set the rider data:
+
+            // Calculate the correct indices based on your API calls
+            // Rider calls are at positions 8, 9, 10, 11 (adjust if needed)
+            const riderStartIndex = 8; // Adjust this based on your actual API call order
+
+            // Log to debug the actual data structure
+            console.log('Raw Rider API Responses:', {
+                salesTrend: responses[riderStartIndex]?.data,
+                creditAnalysis: responses[riderStartIndex + 1]?.data,
+                productPerformance: responses[riderStartIndex + 2]?.data,
+                collectionEfficiency: responses[riderStartIndex + 3]?.data
+            });
+
+            // Set rider data with proper error handling
+            setRiderSalesTrend(responses[riderStartIndex]?.data?.reportData || []);
+            setRiderCreditAnalysis(responses[riderStartIndex + 1]?.data?.reportData || []);
+            setRiderProductPerformance(responses[riderStartIndex + 2]?.data?.reportData || []);
+            setRiderCollectionEfficiency(responses[riderStartIndex + 3]?.data?.reportData || []);
+
+            // NEW: Set advantage data
             const advantageResponse = responses[responses.length - 2]; // Second to last response
             const advantageComparisonResponse = responses[responses.length - 1]; // Last response
 
@@ -575,6 +715,14 @@ setKpiData({
 
 
             await fetchKPIData();
+
+            // Also log to debug:
+            console.log('Rider Data:', {
+                salesTrend: responses[18]?.data,
+                creditAnalysis: responses[19]?.data,
+                productPerformance: responses[20]?.data,
+                collectionEfficiency: responses[21]?.data
+            });
 
             console.log('Analysis updated successfully');
 
@@ -586,8 +734,57 @@ setKpiData({
         }
     }, [analysisFilters, globalFilters]);
 
+    // useEffect(() => {
+    //     fetchDropdownData();
+    //     const today = new Date();
+    //     const thirtyDaysAgo = new Date();
+    //     thirtyDaysAgo.setDate(today.getDate() - 30);
+    //     const defaultStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+    //     const defaultEndDate = today.toISOString().split('T')[0];
+
+    //     setGlobalFilters(prev => ({
+    //         ...prev,
+    //         startDate: defaultStartDate,
+    //         endDate: defaultEndDate
+    //     }));
+    // }, []);
+
+    // Add this helper near your other helper functions
+    const safeNumber = (value, decimals = 2) => {
+        const num = value !== undefined && value !== null ? parseFloat(value) : 0;
+        return isNaN(num) ? 0 : num;
+    };
+
+    const safeToFixed = (value, decimals = 2) => {
+        const num = safeNumber(value, decimals);
+        return num.toFixed(decimals);
+    };
+
+    // Helper function to render efficiency badge with color
+    const renderEfficiencyBadge = (efficiency) => {
+        const eff = parseFloat(efficiency || 0);
+        let statusClass = 'analysis-status--approved';
+        let displayText = `${eff.toFixed(1)}%`;
+
+        if (eff < 50) {
+            statusClass = 'analysis-status--rejected';
+        } else if (eff < 80) {
+            statusClass = 'analysis-status--pending';
+        }
+
+        return (
+            <span className={`analysis-status ${statusClass}`}>
+                {displayText}
+            </span>
+        );
+    };
+
     useEffect(() => {
-        fetchDropdownData();
+        const loadDropdownData = async () => {
+            await fetchDropdownData();
+        };
+        loadDropdownData();
+
         const today = new Date();
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(today.getDate() - 30);
@@ -795,9 +992,9 @@ setKpiData({
         labels: branchPerformance.map(item => item.branch_name),
         datasets: [
             {
-                label: analysisFilters.branchPerformanceMetric === 'sales' ? 'Total Sales (₦)' : 
-                       analysisFilters.branchPerformanceMetric === 'profit' ? 'Total Profit (₦)' :
-                       analysisFilters.branchPerformanceMetric === 'customers' ? 'Unique Customers' : 'Total Transactions',
+                label: analysisFilters.branchPerformanceMetric === 'sales' ? 'Total Sales (₦)' :
+                    analysisFilters.branchPerformanceMetric === 'profit' ? 'Total Profit (₦)' :
+                        analysisFilters.branchPerformanceMetric === 'customers' ? 'Unique Customers' : 'Total Transactions',
                 data: branchPerformance.map(item => item.performance_metric),
                 backgroundColor: 'rgba(153, 102, 255, 0.7)',
                 borderColor: 'rgb(153, 102, 255)',
@@ -897,204 +1094,296 @@ setKpiData({
         ],
     };
 
-// CORRECTED Advantage vs Regular Comparison Chart
-const advantageVsRegularChartData = {
-    labels: ['Sales Amount (₦)', 'Profit (₦)', 'Transaction Count'],
-    datasets: [
-        {
-            label: 'Regular',
-            data: [
-                kpiData.totalRegularSales || 0,
-                kpiData.regularProfit || 0,
-                kpiData.regularSalesCount || 0
-            ],
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgb(54, 162, 235)',
-            borderWidth: 1,
-        },
-        {
-            label: 'Advantage',
-            data: [
-                kpiData.totalAdvantageSalesAmount || 0, // This is now the total sales amount (7800)
-                kpiData.advantageProfit || 0,
-                kpiData.advantageSalesCount || 0
-            ],
-            backgroundColor: 'rgba(255, 205, 86, 0.7)',
-            borderColor: 'rgb(255, 205, 86)',
-            borderWidth: 1,
-        }
-    ],
-};
+    // CORRECTED Advantage vs Regular Comparison Chart
+    const advantageVsRegularChartData = {
+        labels: ['Sales Amount (₦)', 'Profit (₦)', 'Transaction Count'],
+        datasets: [
+            {
+                label: 'Regular',
+                data: [
+                    kpiData.totalRegularSales || 0,
+                    kpiData.regularProfit || 0,
+                    kpiData.regularSalesCount || 0
+                ],
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1,
+            },
+            {
+                label: 'Advantage',
+                data: [
+                    kpiData.totalAdvantageSalesAmount || 0, // This is now the total sales amount (7800)
+                    kpiData.advantageProfit || 0,
+                    kpiData.advantageSalesCount || 0
+                ],
+                backgroundColor: 'rgba(255, 205, 86, 0.7)',
+                borderColor: 'rgb(255, 205, 86)',
+                borderWidth: 1,
+            }
+        ],
+    };
 
-// CORRECTED Advantage Sales Trend Chart - Shows sales amount and premium amount trends
-const advantageSalesTrendChartData = {
-    labels: advantageSalesAnalysis
-        .reduce((acc, sale) => {
-            const date = new Date(sale.sale_date).toISOString().split('T')[0];
-            if (!acc.includes(date)) acc.push(date);
-            return acc;
-        }, [])
-        .slice(0, 7),
-    datasets: [
-        {
-            label: 'Advantage Sales Amount (₦)',
-            data: advantageSalesAnalysis.reduce((acc, sale) => {
+    // CORRECTED Advantage Sales Trend Chart - Shows sales amount and premium amount trends
+    const advantageSalesTrendChartData = {
+        labels: advantageSalesAnalysis
+            .reduce((acc, sale) => {
                 const date = new Date(sale.sale_date).toISOString().split('T')[0];
-                const index = acc.findIndex(item => item.date === date);
-                const saleAmount = parseFloat(sale.total_amount || 0);
-                
-                if (index === -1) {
-                    acc.push({ 
-                        date, 
-                        salesAmount: saleAmount,
-                        premiumAmount: parseFloat(sale.advantage_total || 0),
-                        count: 1 
-                    });
-                } else {
-                    acc[index].salesAmount += saleAmount;
-                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
-                    acc[index].count += 1;
-                }
+                if (!acc.includes(date)) acc.push(date);
                 return acc;
-            }, []).map(item => item.salesAmount),
-            borderColor: 'rgb(255, 205, 86)',
-            backgroundColor: 'rgba(255, 205, 86, 0.5)',
-            tension: 0.1,
-            fill: false,
-            yAxisID: 'y-amount'
-        },
-        {
-            label: 'Advantage Premium Amount (₦)',
-            data: advantageSalesAnalysis.reduce((acc, sale) => {
-                const date = new Date(sale.sale_date).toISOString().split('T')[0];
-                const index = acc.findIndex(item => item.date === date);
-                
-                if (index === -1) {
-                    acc.push({ 
-                        date, 
-                        salesAmount: parseFloat(sale.total_amount || 0),
-                        premiumAmount: parseFloat(sale.advantage_total || 0),
-                        count: 1 
-                    });
-                } else {
-                    acc[index].salesAmount += parseFloat(sale.total_amount || 0);
-                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
-                    acc[index].count += 1;
-                }
-                return acc;
-            }, []).map(item => item.premiumAmount),
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-            tension: 0.1,
-            fill: false,
-            yAxisID: 'y-amount'
-        },
-        {
-            label: 'Advantage Sales Count',
-            data: advantageSalesAnalysis.reduce((acc, sale) => {
-                const date = new Date(sale.sale_date).toISOString().split('T')[0];
-                const index = acc.findIndex(item => item.date === date);
-                
-                if (index === -1) {
-                    acc.push({ 
-                        date, 
-                        salesAmount: parseFloat(sale.total_amount || 0),
-                        premiumAmount: parseFloat(sale.advantage_total || 0),
-                        count: 1 
-                    });
-                } else {
-                    acc[index].salesAmount += parseFloat(sale.total_amount || 0);
-                    acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
-                    acc[index].count += 1;
-                }
-                return acc;
-            }, []).map(item => item.count),
-            borderColor: 'rgb(54, 162, 235)',
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            tension: 0.1,
-            fill: false,
-            yAxisID: 'y-count'
-        }
-    ],
-};
+            }, [])
+            .slice(0, 7),
+        datasets: [
+            {
+                label: 'Advantage Sales Amount (₦)',
+                data: advantageSalesAnalysis.reduce((acc, sale) => {
+                    const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                    const index = acc.findIndex(item => item.date === date);
+                    const saleAmount = parseFloat(sale.total_amount || 0);
 
-// CORRECTED Chart Options for Advantage Sales Trend
-const advantageTrendChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'top',
-        },
-        tooltip: {
-            callbacks: {
-                label: function(context) {
-                    let label = context.dataset.label || '';
-                    if (label) {
-                        label += ': ';
-                    }
-                    if (context.dataset.label.includes('Count')) {
-                        label += context.parsed.y + ' sales';
+                    if (index === -1) {
+                        acc.push({
+                            date,
+                            salesAmount: saleAmount,
+                            premiumAmount: parseFloat(sale.advantage_total || 0),
+                            count: 1
+                        });
                     } else {
-                        label += '₦' + context.parsed.y.toLocaleString('en-US', { 
-                            minimumFractionDigits: 2, 
-                            maximumFractionDigits: 2 
+                        acc[index].salesAmount += saleAmount;
+                        acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                        acc[index].count += 1;
+                    }
+                    return acc;
+                }, []).map(item => item.salesAmount),
+                borderColor: 'rgb(255, 205, 86)',
+                backgroundColor: 'rgba(255, 205, 86, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-amount'
+            },
+            {
+                label: 'Advantage Premium Amount (₦)',
+                data: advantageSalesAnalysis.reduce((acc, sale) => {
+                    const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                    const index = acc.findIndex(item => item.date === date);
+
+                    if (index === -1) {
+                        acc.push({
+                            date,
+                            salesAmount: parseFloat(sale.total_amount || 0),
+                            premiumAmount: parseFloat(sale.advantage_total || 0),
+                            count: 1
+                        });
+                    } else {
+                        acc[index].salesAmount += parseFloat(sale.total_amount || 0);
+                        acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                        acc[index].count += 1;
+                    }
+                    return acc;
+                }, []).map(item => item.premiumAmount),
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-amount'
+            },
+            {
+                label: 'Advantage Sales Count',
+                data: advantageSalesAnalysis.reduce((acc, sale) => {
+                    const date = new Date(sale.sale_date).toISOString().split('T')[0];
+                    const index = acc.findIndex(item => item.date === date);
+
+                    if (index === -1) {
+                        acc.push({
+                            date,
+                            salesAmount: parseFloat(sale.total_amount || 0),
+                            premiumAmount: parseFloat(sale.advantage_total || 0),
+                            count: 1
+                        });
+                    } else {
+                        acc[index].salesAmount += parseFloat(sale.total_amount || 0);
+                        acc[index].premiumAmount += parseFloat(sale.advantage_total || 0);
+                        acc[index].count += 1;
+                    }
+                    return acc;
+                }, []).map(item => item.count),
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-count'
+            }
+        ],
+    };
+
+    // CORRECTED Chart Options for Advantage Sales Trend
+    const advantageTrendChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.dataset.label.includes('Count')) {
+                            label += context.parsed.y + ' sales';
+                        } else {
+                            label += '₦' + context.parsed.y.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            'y-count': {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Number of Sales'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
+                ticks: {
+                    callback: function (value) {
+                        return value + ' sales';
+                    }
+                }
+            },
+            'y-amount': {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Amount (₦)'
+                },
+                ticks: {
+                    callback: function (value) {
+                        return '₦' + value.toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
                         });
                     }
-                    return label;
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)'
                 }
             }
         }
-    },
-    scales: {
-        'y-count': {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            title: {
-                display: true,
-                text: 'Number of Sales'
+    };
+
+    // Rider Sales Trend Chart Data
+    const riderSalesTrendChartData = {
+        labels: riderSalesTrend.map(item => item.period_label),
+        datasets: [
+            {
+                label: 'Total Sales (₦)',
+                data: riderSalesTrend.map(item => item.total_sales),
+                borderColor: 'rgb(255, 159, 64)',
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-sales'
             },
-            grid: {
-                drawOnChartArea: false,
+            {
+                label: 'Total Profit (₦)',
+                data: riderSalesTrend.map(item => item.total_profit),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-sales'
             },
-            ticks: {
-                callback: function(value) {
-                    return value + ' sales';
-                }
+            {
+                label: 'Transaction Count',
+                data: riderSalesTrend.map(item => item.total_transactions),
+                borderColor: 'rgb(153, 102, 255)',
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                tension: 0.1,
+                fill: false,
+                yAxisID: 'y-count'
             }
-        },
-        'y-amount': {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            title: {
-                display: true,
-                text: 'Amount (₦)'
+        ]
+    };
+
+    // Rider Sales Trend Chart Options
+    const riderTrendChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
             },
-            ticks: {
-                callback: function(value) {
-                    return '₦' + value.toLocaleString('en-US', { 
-                        minimumFractionDigits: 0, 
-                        maximumFractionDigits: 0 
-                    });
-                }
-            }
         },
-        x: {
-            grid: {
-                color: 'rgba(0, 0, 0, 0.1)'
+        scales: {
+            'y-count': {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Number of Transactions'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            },
+            'y-sales': {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Amount (₦)'
+                },
+                ticks: {
+                    callback: function (value) {
+                        return '₦' + value.toLocaleString();
+                    }
+                }
             }
         }
-    }
-};
+    };
+
+    // Rider Collection Efficiency Chart Data
+    const collectionEfficiencyChartData = {
+        labels: riderCollectionEfficiency.map(item => item.rider_name),
+        datasets: [
+            {
+                label: 'Collection Efficiency (%)',
+                data: riderCollectionEfficiency.map(item => item.collection_efficiency_percentage),
+                backgroundColor: riderCollectionEfficiency.map(item =>
+                    item.collection_efficiency_percentage >= 80 ? 'rgba(75, 192, 192, 0.7)' :
+                        item.collection_efficiency_percentage >= 50 ? 'rgba(255, 205, 86, 0.7)' :
+                            'rgba(255, 99, 132, 0.7)'
+                ),
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1,
+            },
+        ],
+    };
 
 
     // Format currency helper
     const formatCurrency = (amount) => {
-        return `₦${parseFloat(amount || 0).toLocaleString('en-US', { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
+        const value = amount !== undefined && amount !== null ? parseFloat(amount) : 0;
+        return `₦${value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         })}`;
     };
 
@@ -1112,7 +1401,7 @@ const advantageTrendChartOptions = {
     const renderTableWithControls = (tableId, data, columns, searchableFields = []) => {
         const filteredData = filterData(data, searchTerms[tableId], searchableFields);
         const hiddenColumns = tableConfigs[tableId]?.hiddenColumns || {};
-        
+
         return (
             <div className="analysis-table-section">
                 <div className="analysis-table-controls">
@@ -1151,7 +1440,7 @@ const advantageTrendChartOptions = {
                             <tr>
                                 {columns.map((col, index) => (
                                     !hiddenColumns[index] && (
-                                        <th 
+                                        <th
                                             key={index}
                                             className={col.align === 'right' ? 'analysis-table__cell--right' : ''}
                                         >
@@ -1167,7 +1456,7 @@ const advantageTrendChartOptions = {
                                     <tr key={rowIndex}>
                                         {columns.map((col, colIndex) => (
                                             !hiddenColumns[colIndex] && (
-                                                <td 
+                                                <td
                                                     key={colIndex}
                                                     className={col.align === 'right' ? 'analysis-table__cell--right' : ''}
                                                 >
@@ -1209,16 +1498,16 @@ const advantageTrendChartOptions = {
                 </h1>
                 <p className="analysis-subtitle">Advanced insights across all business operations</p>
                 {/* // Add this in your global filters section or header */}
-<div className="analysis-header-actions">
-    <button 
-        className="analysis-btn analysis-btn--primary"
-        onClick={fetchData}
-        disabled={loading}
-    >
-        <FaSyncAlt className="analysis-btn__icon" />
-        {loading ? 'Refreshing...' : 'Refresh Data'}
-    </button>
-</div>
+                <div className="analysis-header-actions">
+                    <button
+                        className="analysis-btn analysis-btn--primary"
+                        onClick={fetchData}
+                        disabled={loading}
+                    >
+                        <FaSyncAlt className="analysis-btn__icon" />
+                        {loading ? 'Refreshing...' : 'Refresh Data'}
+                    </button>
+                </div>
             </div>
 
             {error && (
@@ -1227,7 +1516,7 @@ const advantageTrendChartOptions = {
                     {error}
                 </div>
             )}
-            
+
             <div className="analysis-warning">
                 <FaExclamationTriangle className="analysis-warning-icon" />
                 <div className="analysis-warning-content">
@@ -1323,7 +1612,7 @@ const advantageTrendChartOptions = {
                         </div>
 
                         <div className="analysis-field analysis-field--actions">
-                            <button 
+                            <button
                                 className="analysis-btn analysis-btn--secondary"
                                 onClick={clearGlobalFilters}
                             >
@@ -1338,131 +1627,86 @@ const advantageTrendChartOptions = {
             {/* KPI Summary Cards */}
             <div className="analysis-kpi-grid">
 
-{/* Total Sales Card - Shows proper breakdown
-<div className="analysis-kpi-card analysis-kpi-card--sales">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaShoppingCart />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">
-                {formatCurrency(kpiData.totalSales)}
-            </h3>
-            <p className="analysis-kpi-label">Total Sales</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-breakdown">
-                    Regular: {formatCurrency(kpiData.totalRegularSales)} | 
-                    Advantage: <span className="text-warning">{formatCurrency(kpiData.totalAdvantageAmount)}</span>
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
+                {/* // Update the Total Sales Card breakdown: */}
+                <div className="analysis-kpi-card analysis-kpi-card--sales">
+                    <div className="analysis-kpi-card__content">
+                        <div className="analysis-kpi-icon">
+                            <FaShoppingCart />
+                        </div>
+                        <div className="analysis-kpi-info">
+                            <h3 className="analysis-kpi-value">
+                                {formatCurrency(kpiData.totalSales)}
+                            </h3>
+                            <p className="analysis-kpi-label">Total Sales</p>
+                            <div className="analysis-kpi-meta">
+                                <span className="analysis-kpi-breakdown">
+                                    Regular: {formatCurrency(kpiData.totalRegularSales)} |
+                                    Advantage: {formatCurrency(kpiData.totalAdvantageSalesAmount)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-{/* Advantage Sales Card - Shows count and amount separately */}{/*}
-<div className="analysis-kpi-card analysis-kpi-card--advantage">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaCrown />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">
-                {kpiData.totalAdvantageSales}
-            </h3>
-            <p className="analysis-kpi-label">Advantage Sales</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-period">
-                    Premium Amount: {formatCurrency(kpiData.totalAdvantageAmount)}
-                </span>
-                <span className="analysis-kpi-trend analysis-kpi-trend--positive">
-                    <FaChartLine /> Premium
-                </span>
-            </div>
-        </div>
-    </div>
-</div> */}
+                {/* Total Profit Card - Shows profit breakdown */}
+                <div className="analysis-kpi-card analysis-kpi-card--profit">
+                    <div className="analysis-kpi-card__content">
+                        <div className="analysis-kpi-icon">
+                            <FaChartLine />
+                        </div>
+                        <div className="analysis-kpi-info">
+                            <h3 className="analysis-kpi-value">
+                                {formatCurrency(kpiData.totalProfit)}
+                            </h3>
+                            <p className="analysis-kpi-label">Total Profit</p>
+                            <div className="analysis-kpi-meta">
+                                <span className="analysis-kpi-breakdown">
+                                    Regular: {formatCurrency(kpiData.regularProfit)} |
+                                    Advantage: <span className="text-warning">{formatCurrency(kpiData.advantageProfit)}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-
-{/* // Update the Total Sales Card breakdown: */}
-<div className="analysis-kpi-card analysis-kpi-card--sales">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaShoppingCart />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">
-                {formatCurrency(kpiData.totalSales)}
-            </h3>
-            <p className="analysis-kpi-label">Total Sales</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-breakdown">
-                    Regular: {formatCurrency(kpiData.totalRegularSales)} | 
-                    Advantage: {formatCurrency(kpiData.totalAdvantageSalesAmount)}
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-
-{/* Total Profit Card - Shows profit breakdown */}
-<div className="analysis-kpi-card analysis-kpi-card--profit">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaChartLine />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">
-                {formatCurrency(kpiData.totalProfit)}
-            </h3>
-            <p className="analysis-kpi-label">Total Profit</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-breakdown">
-                    Regular: {formatCurrency(kpiData.regularProfit)} | 
-                    Advantage: <span className="text-warning">{formatCurrency(kpiData.advantageProfit)}</span>
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-
-{/* // In your KPI cards section, update the Advantage Sales Card: */}
-<div className="analysis-kpi-card analysis-kpi-card--advantage">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaCrown />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">
-                {kpiData.totalAdvantageSales}
-            </h3>
-            <p className="analysis-kpi-label">Advantage Sales</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-period">
-                    Sales: {formatCurrency(kpiData.totalAdvantageSalesAmount)} | 
-                    Premium: {formatCurrency(kpiData.totalAdvantageAmount)}
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-{/* Transactions Breakdown Card - NEW */}
-<div className="analysis-kpi-card analysis-kpi-card--transactions">
-    <div className="analysis-kpi-card__content">
-        <div className="analysis-kpi-icon">
-            <FaIdCard />
-        </div>
-        <div className="analysis-kpi-info">
-            <h3 className="analysis-kpi-value">{kpiData.totalTransactions}</h3>
-            <p className="analysis-kpi-label">Total Transactions</p>
-            <div className="analysis-kpi-meta">
-                <span className="analysis-kpi-breakdown">
-                    Regular: {kpiData.regularSalesCount} | 
-                    Advantage: <span className="text-warning">{kpiData.advantageSalesCount}</span>
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
+                {/* // In your KPI cards section, update the Advantage Sales Card: */}
+                <div className="analysis-kpi-card analysis-kpi-card--advantage">
+                    <div className="analysis-kpi-card__content">
+                        <div className="analysis-kpi-icon">
+                            <FaCrown />
+                        </div>
+                        <div className="analysis-kpi-info">
+                            <h3 className="analysis-kpi-value">
+                                {kpiData.totalAdvantageSales}
+                            </h3>
+                            <p className="analysis-kpi-label">Advantage Sales</p>
+                            <div className="analysis-kpi-meta">
+                                <span className="analysis-kpi-period">
+                                    Sales: {formatCurrency(kpiData.totalAdvantageSalesAmount)} |
+                                    Premium: {formatCurrency(kpiData.totalAdvantageAmount)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {/* Transactions Breakdown Card - NEW */}
+                <div className="analysis-kpi-card analysis-kpi-card--transactions">
+                    <div className="analysis-kpi-card__content">
+                        <div className="analysis-kpi-icon">
+                            <FaIdCard />
+                        </div>
+                        <div className="analysis-kpi-info">
+                            <h3 className="analysis-kpi-value">{kpiData.totalTransactions}</h3>
+                            <p className="analysis-kpi-label">Total Transactions</p>
+                            <div className="analysis-kpi-meta">
+                                <span className="analysis-kpi-breakdown">
+                                    Regular: {kpiData.regularSalesCount} |
+                                    Advantage: <span className="text-warning">{kpiData.advantageSalesCount}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Total Profit Card
                 <div className="analysis-kpi-card analysis-kpi-card--profit">
@@ -1658,7 +1902,7 @@ const advantageTrendChartOptions = {
                     </div>
                 </div>
 
-                                {/* Advantage Contribution Card - NEW */}
+                {/* Advantage Contribution Card - NEW */}
                 <div className="analysis-kpi-card analysis-kpi-card--contribution">
                     <div className="analysis-kpi-card__content">
                         <div className="analysis-kpi-icon">
@@ -1682,102 +1926,63 @@ const advantageTrendChartOptions = {
                 </div>
             </div>
 
-            {/* Navigation Tabs
+            {/* Navigation Tabs - UPDATED WITH ADVANTAGE TAB */}
             <div className="analysis-tabs">
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'overview' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('overview')}
                 >
                     <FaChartBar className="analysis-tab-icon" />
                     Overview
                 </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'sales' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('sales')}
                 >
                     <FaShoppingCart className="analysis-tab-icon" />
                     Sales & Profit
                 </button>
-                <button 
-                    className={`analysis-tab ${activeTab === 'inventory' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('inventory')}
-                >
-                    <FaWarehouse className="analysis-tab-icon" />
-                    Inventory
-                </button>
-                <button 
-                    className={`analysis-tab ${activeTab === 'customers' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('customers')}
-                >
-                    <FaUsers className="analysis-tab-icon" />
-                    Customers
-                </button>
-                <button 
-                    className={`analysis-tab ${activeTab === 'operations' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('operations')}
-                >
-                    <FaCog className="analysis-tab-icon" />
-                    Operations
-                </button>
-                <button 
-                    className={`analysis-tab ${activeTab === 'staff' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('staff')}
-                >
-                    <FaUserTie className="analysis-tab-icon" />
-                    Staff & Branches
-                </button>
-            </div> */}
-
-                        {/* Navigation Tabs - UPDATED WITH ADVANTAGE TAB */}
-            <div className="analysis-tabs">
-                <button 
-                    className={`analysis-tab ${activeTab === 'overview' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('overview')}
-                >
-                    <FaChartBar className="analysis-tab-icon" />
-                    Overview
-                </button>
-                <button 
-                    className={`analysis-tab ${activeTab === 'sales' ? 'analysis-tab--active' : ''}`}
-                    onClick={() => setActiveTab('sales')}
-                >
-                    <FaShoppingCart className="analysis-tab-icon" />
-                    Sales & Profit
-                </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'advantage' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('advantage')}
                 >
                     <FaCrown className="analysis-tab-icon" />
                     Advantage Sales
                 </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'inventory' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('inventory')}
                 >
                     <FaWarehouse className="analysis-tab-icon" />
                     Inventory
                 </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'customers' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('customers')}
                 >
                     <FaUsers className="analysis-tab-icon" />
                     Customers
                 </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'operations' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('operations')}
                 >
                     <FaCog className="analysis-tab-icon" />
                     Operations
                 </button>
-                <button 
+                <button
                     className={`analysis-tab ${activeTab === 'staff' ? 'analysis-tab--active' : ''}`}
                     onClick={() => setActiveTab('staff')}
                 >
                     <FaUserTie className="analysis-tab-icon" />
                     Staff & Branches
+                </button>
+                <button
+                    className={`analysis-tab ${activeTab === 'riders' ? 'analysis-tab--active' : ''}`}
+                    onClick={() => setActiveTab('riders')}
+                >
+                    <FaMotorcycle className="analysis-tab-icon" />
+                    Riders
                 </button>
             </div>
 
@@ -1805,13 +2010,13 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('salesComparison')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('salesComparison')}
                                     >
@@ -1821,8 +2026,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={salesComparisonChartData} 
+                                    <Bar
+                                        data={salesComparisonChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -1867,13 +2072,13 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('profitMarginTrend')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('profitMarginTrend')}
                                     >
@@ -1883,8 +2088,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Line 
-                                        data={profitMarginTrendChartData} 
+                                    <Line
+                                        data={profitMarginTrendChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -1911,13 +2116,13 @@ const advantageTrendChartOptions = {
                                             <option value="20">Top 20</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('topCustomers')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('topCustomers')}
                                     >
@@ -1931,13 +2136,19 @@ const advantageTrendChartOptions = {
                                     topCustomers,
                                     [
                                         { header: 'Customer Name', field: 'customer_name' },
-                                        { header: 'Total Sales (₦)', field: 'total_sales_amount', align: 'right', 
-                                          render: (row) => formatCurrency(row.total_sales_amount) },
-                                        { header: 'Total Profit (₦)', field: 'total_profit', align: 'right',
-                                          render: (row) => formatCurrency(row.total_profit) },
+                                        {
+                                            header: 'Total Sales (₦)', field: 'total_sales_amount', align: 'right',
+                                            render: (row) => formatCurrency(row.total_sales_amount)
+                                        },
+                                        {
+                                            header: 'Total Profit (₦)', field: 'total_profit', align: 'right',
+                                            render: (row) => formatCurrency(row.total_profit)
+                                        },
                                         { header: 'Total Transactions', field: 'total_transactions', align: 'right' },
-                                        { header: 'Average Transaction (₦)', field: 'avg_transaction_amount', align: 'right',
-                                          render: (row) => formatCurrency(row.avg_transaction_amount) },
+                                        {
+                                            header: 'Average Transaction (₦)', field: 'avg_transaction_amount', align: 'right',
+                                            render: (row) => formatCurrency(row.avg_transaction_amount)
+                                        },
                                     ],
                                     ['customer_name']
                                 )}
@@ -1965,13 +2176,13 @@ const advantageTrendChartOptions = {
                                             <option value="transactions">Transactions</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('branchPerformance')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('branchPerformance')}
                                     >
@@ -1981,8 +2192,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={branchPerformanceChartData} 
+                                    <Bar
+                                        data={branchPerformanceChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -1992,7 +2203,7 @@ const advantageTrendChartOptions = {
                 </div>
             )}
 
-                        {/* NEW: Advantage Sales Tab Content */}
+            {/* NEW: Advantage Sales Tab Content */}
             {activeTab === 'advantage' && (
                 <div className="analysis-tab-content">
                     <div className="analysis-cards-grid">
@@ -2016,7 +2227,7 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('advantageComparison')}
                                     >
@@ -2026,51 +2237,51 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={advantageVsRegularChartData} 
+                                    <Bar
+                                        data={advantageVsRegularChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
                             </div>
                         </div>
 
-{/* Advantage Sales Trend */}
-<div className="analysis-card analysis-card--chart">
-    <div className="analysis-card__header">
-        <div className="analysis-card__title">
-            <FaChartLine className="analysis-card__icon" />
-            Advantage Sales Trend
-        </div>
-        <div className="analysis-card__actions">
-            <button 
-                className="analysis-btn analysis-btn--ghost analysis-btn--small"
-                onClick={() => toggleCardExpansion('advantageTrend')}
-            >
-                {expandedCards.advantageTrend ? <FaChevronUp /> : <FaChevronDown />}
-            </button>
-        </div>
-    </div>
-    <div className="analysis-card__body">
-        <div className="analysis-chart-container">
-            <Line 
-                data={advantageSalesTrendChartData} 
-                options={advantageTrendChartOptions}
-            />
-        </div>
-        {expandedCards.advantageTrend && (
-            <div className="analysis-card__expanded">
-                <div className="analysis-trend-explanation">
-                    <h4>Trend Explanation:</h4>
-                    <ul>
-                        <li><strong>Advantage Sales Amount</strong>: Total value of advantage sales transactions</li>
-                        <li><strong>Advantage Premium Amount</strong>: Additional premium charged for advantage sales</li>
-                        <li><strong>Advantage Sales Count</strong>: Number of advantage sales transactions</li>
-                    </ul>
-                </div>
-            </div>
-        )}
-    </div>
-</div>
+                        {/* Advantage Sales Trend */}
+                        <div className="analysis-card analysis-card--chart">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaChartLine className="analysis-card__icon" />
+                                    Advantage Sales Trend
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <button
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => toggleCardExpansion('advantageTrend')}
+                                    >
+                                        {expandedCards.advantageTrend ? <FaChevronUp /> : <FaChevronDown />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                <div className="analysis-chart-container">
+                                    <Line
+                                        data={advantageSalesTrendChartData}
+                                        options={advantageTrendChartOptions}
+                                    />
+                                </div>
+                                {expandedCards.advantageTrend && (
+                                    <div className="analysis-card__expanded">
+                                        <div className="analysis-trend-explanation">
+                                            <h4>Trend Explanation:</h4>
+                                            <ul>
+                                                <li><strong>Advantage Sales Amount</strong>: Total value of advantage sales transactions</li>
+                                                <li><strong>Advantage Premium Amount</strong>: Additional premium charged for advantage sales</li>
+                                                <li><strong>Advantage Sales Count</strong>: Number of advantage sales transactions</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         {/* Advantage Sales Analysis Table */}
                         <div className="analysis-card">
@@ -2092,7 +2303,7 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('advantageSales')}
                                     >
@@ -2109,14 +2320,22 @@ const advantageTrendChartOptions = {
                                         { header: 'Date', field: 'sale_date', render: (row) => formatDate(row.sale_date) },
                                         { header: 'Customer', field: 'customer_name' },
                                         { header: 'Branch', field: 'branch_name' },
-                                        { header: 'Base Sales (₦)', field: 'base_subtotal', align: 'right', 
-                                          render: (row) => formatCurrency(row.base_subtotal || row.base_sales_amount) },
-                                        { header: 'Advantage Amount (₦)', field: 'advantage_total', align: 'right',
-                                          render: (row) => <span className="text-warning">{formatCurrency(row.advantage_total)}</span> },
-                                        { header: 'Total Sales (₦)', field: 'total_amount', align: 'right',
-                                          render: (row) => formatCurrency(row.total_amount) },
-                                        { header: 'Profit (₦)', field: 'total_profit', align: 'right',
-                                          render: (row) => formatCurrency(row.total_profit) },
+                                        {
+                                            header: 'Base Sales (₦)', field: 'base_subtotal', align: 'right',
+                                            render: (row) => formatCurrency(row.base_subtotal || row.base_sales_amount)
+                                        },
+                                        {
+                                            header: 'Advantage Amount (₦)', field: 'advantage_total', align: 'right',
+                                            render: (row) => <span className="text-warning">{formatCurrency(row.advantage_total)}</span>
+                                        },
+                                        {
+                                            header: 'Total Sales (₦)', field: 'total_amount', align: 'right',
+                                            render: (row) => formatCurrency(row.total_amount)
+                                        },
+                                        {
+                                            header: 'Profit (₦)', field: 'total_profit', align: 'right',
+                                            render: (row) => formatCurrency(row.total_profit)
+                                        },
                                         { header: 'Status', field: 'status' },
                                     ],
                                     ['sale_id', 'customer_name', 'branch_name']
@@ -2124,64 +2343,64 @@ const advantageTrendChartOptions = {
                             </div>
                         </div>
 
-{/* // CORRECTED Advantage Sales Summary */}
-<div className="analysis-card">
-    <div className="analysis-card__header">
-        <div className="analysis-card__title">
-            <FaAward className="analysis-card__icon" />
-            Advantage Sales Summary
-        </div>
-    </div>
-    <div className="analysis-card__body">
-        <div className="analysis-summary-stats">
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Total Advantage Sales</div>
-                <div className="analysis-summary-stat__value">{kpiData.totalAdvantageSales}</div>
-                <div className="analysis-summary-stat__subtext">Number of transactions</div>
-            </div>
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Total Advantage Sales Amount</div>
-                <div className="analysis-summary-stat__value text-warning">
-                    {formatCurrency(kpiData.totalAdvantageSalesAmount)}
-                </div>
-                <div className="analysis-summary-stat__subtext">Total sales value</div>
-            </div>
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Total Advantage Premium</div>
-                <div className="analysis-summary-stat__value">
-                    {formatCurrency(kpiData.totalAdvantageAmount)}
-                </div>
-                <div className="analysis-summary-stat__subtext">Additional premium revenue</div>
-            </div>
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Average Advantage per Sale</div>
-                <div className="analysis-summary-stat__value">
-                    {kpiData.totalAdvantageSales > 0 ? 
-                        formatCurrency(kpiData.totalAdvantageSalesAmount / kpiData.totalAdvantageSales) : 
-                        formatCurrency(0)}
-                </div>
-                <div className="analysis-summary-stat__subtext">Average transaction value</div>
-            </div>
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Average Premium per Sale</div>
-                <div className="analysis-summary-stat__value">
-                    {kpiData.totalAdvantageSales > 0 ? 
-                        formatCurrency(kpiData.totalAdvantageAmount / kpiData.totalAdvantageSales) : 
-                        formatCurrency(0)}
-                </div>
-                <div className="analysis-summary-stat__subtext">Average premium amount</div>
-            </div>
-            <div className="analysis-summary-stat">
-                <div className="analysis-summary-stat__label">Contribution to Total Sales</div>
-                <div className="analysis-summary-stat__value">
-                    {kpiData.totalSales > 0 ? 
-                        ((kpiData.totalAdvantageSalesAmount / kpiData.totalSales) * 100).toFixed(1) + '%' : '0%'}
-                </div>
-                <div className="analysis-summary-stat__subtext">Revenue share</div>
-            </div>
-        </div>
-    </div>
-</div>
+                        {/* // CORRECTED Advantage Sales Summary */}
+                        <div className="analysis-card">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaAward className="analysis-card__icon" />
+                                    Advantage Sales Summary
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                <div className="analysis-summary-stats">
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Total Advantage Sales</div>
+                                        <div className="analysis-summary-stat__value">{kpiData.totalAdvantageSales}</div>
+                                        <div className="analysis-summary-stat__subtext">Number of transactions</div>
+                                    </div>
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Total Advantage Sales Amount</div>
+                                        <div className="analysis-summary-stat__value text-warning">
+                                            {formatCurrency(kpiData.totalAdvantageSalesAmount)}
+                                        </div>
+                                        <div className="analysis-summary-stat__subtext">Total sales value</div>
+                                    </div>
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Total Advantage Premium</div>
+                                        <div className="analysis-summary-stat__value">
+                                            {formatCurrency(kpiData.totalAdvantageAmount)}
+                                        </div>
+                                        <div className="analysis-summary-stat__subtext">Additional premium revenue</div>
+                                    </div>
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Average Advantage per Sale</div>
+                                        <div className="analysis-summary-stat__value">
+                                            {kpiData.totalAdvantageSales > 0 ?
+                                                formatCurrency(kpiData.totalAdvantageSalesAmount / kpiData.totalAdvantageSales) :
+                                                formatCurrency(0)}
+                                        </div>
+                                        <div className="analysis-summary-stat__subtext">Average transaction value</div>
+                                    </div>
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Average Premium per Sale</div>
+                                        <div className="analysis-summary-stat__value">
+                                            {kpiData.totalAdvantageSales > 0 ?
+                                                formatCurrency(kpiData.totalAdvantageAmount / kpiData.totalAdvantageSales) :
+                                                formatCurrency(0)}
+                                        </div>
+                                        <div className="analysis-summary-stat__subtext">Average premium amount</div>
+                                    </div>
+                                    <div className="analysis-summary-stat">
+                                        <div className="analysis-summary-stat__label">Contribution to Total Sales</div>
+                                        <div className="analysis-summary-stat__value">
+                                            {kpiData.totalSales > 0 ?
+                                                ((kpiData.totalAdvantageSalesAmount / kpiData.totalSales) * 100).toFixed(1) + '%' : '0%'}
+                                        </div>
+                                        <div className="analysis-summary-stat__subtext">Revenue share</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -2190,39 +2409,39 @@ const advantageTrendChartOptions = {
             {activeTab === 'sales' && (
                 <div className="analysis-tab-content">
                     <div className="analysis-cards-grid">
-{/* // In Sales & Profit tab, update the Sales Breakdown chart: */}
-<div className="analysis-card analysis-card--chart">
-    <div className="analysis-card__header">
-        <div className="analysis-card__title">
-            <FaChartBar className="analysis-card__icon" />
-            Sales Breakdown
-        </div>
-    </div>
-    <div className="analysis-card__body">
-        <div className="analysis-chart-container">
-            <Doughnut 
-                data={{
-                    labels: ['Regular Sales', 'Advantage Sales'],
-                    datasets: [
-                        {
-                            data: [kpiData.totalRegularSales, kpiData.totalAdvantageSalesAmount], // Use total advantage sales amount
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 205, 86, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgb(54, 162, 235)',
-                                'rgb(255, 205, 86)'
-                            ],
-                            borderWidth: 1,
-                        },
-                    ],
-                }}
-                options={commonChartOptions}
-            />
-        </div>
-    </div>
-</div>
+                        {/* // In Sales & Profit tab, update the Sales Breakdown chart: */}
+                        <div className="analysis-card analysis-card--chart">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaChartBar className="analysis-card__icon" />
+                                    Sales Breakdown
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                <div className="analysis-chart-container">
+                                    <Doughnut
+                                        data={{
+                                            labels: ['Regular Sales', 'Advantage Sales'],
+                                            datasets: [
+                                                {
+                                                    data: [kpiData.totalRegularSales, kpiData.totalAdvantageSalesAmount], // Use total advantage sales amount
+                                                    backgroundColor: [
+                                                        'rgba(54, 162, 235, 0.7)',
+                                                        'rgba(255, 205, 86, 0.7)'
+                                                    ],
+                                                    borderColor: [
+                                                        'rgb(54, 162, 235)',
+                                                        'rgb(255, 205, 86)'
+                                                    ],
+                                                    borderWidth: 1,
+                                                },
+                                            ],
+                                        }}
+                                        options={commonChartOptions}
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Sales Trend by Category/Product */}
                         <div className="analysis-card analysis-card--chart">
@@ -2244,13 +2463,13 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('salesTrend')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('salesTrend')}
                                     >
@@ -2260,8 +2479,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Line 
-                                        data={salesTrendByCatProdChartData} 
+                                    <Line
+                                        data={salesTrendByCatProdChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2288,13 +2507,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('discount')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('discount')}
                                     >
@@ -2304,8 +2523,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Line 
-                                        data={discountAnalysisChartData} 
+                                    <Line
+                                        data={discountAnalysisChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2332,13 +2551,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('freeItems')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('freeItems')}
                                     >
@@ -2350,15 +2569,38 @@ const advantageTrendChartOptions = {
                                 {renderTableWithControls(
                                     'freeItems',
                                     freeItemsAnalysis,
+                                    // Rider Product Performance columns - update these fields
                                     [
                                         { header: 'Product Name', field: 'product_name' },
-                                        { header: 'Total Free Quantity', field: 'total_quantity', align: 'right' },
-                                        { header: 'Total Free Value (₦)', field: 'total_free_value', align: 'right',
-                                          render: (row) => formatCurrency(row.total_free_value) },
-                                        { header: 'Free Percentage (%)', field: 'free_percentage', align: 'right',
-                                          render: (row) => `${parseFloat(row.free_percentage || 0).toFixed(2)}%` },
-                                        { header: 'Period', field: 'period_label' },
-                                        { header: 'Reason', field: 'reason' },
+                                        { header: 'Category', field: 'category' },
+                                        {
+                                            header: 'Total Quantity', field: 'total_quantity_sold', align: 'right',
+                                            render: (row) => {
+                                                const qty = row.total_quantity_sold;
+                                                return qty !== undefined && qty !== null ? qty.toFixed(0) : '0';
+                                            }
+                                        },
+                                        {
+                                            header: 'Total Sales (₦)', field: 'total_sales_amount', align: 'right',
+                                            render: (row) => formatCurrency(row.total_sales_amount)
+                                        },
+                                        {
+                                            header: 'Total Profit (₦)', field: 'total_profit', align: 'right',
+                                            render: (row) => {
+                                                const profit = row.total_profit;
+                                                return profit !== undefined && profit !== null ? (
+                                                    <span className="text-success">{formatCurrency(profit)}</span>
+                                                ) : formatCurrency(0);
+                                            }
+                                        },
+                                        {
+                                            header: 'Profit Margin %', field: 'profit_margin_percentage', align: 'right',
+                                            render: (row) => `${safeToFixed(row.profit_margin_percentage, 1)}%`  // Using safeToFixed
+                                        },
+                                        {
+                                            header: 'Avg Price (₦)', field: 'avg_selling_price', align: 'right',
+                                            render: (row) => formatCurrency(row.avg_selling_price)
+                                        },
                                     ],
                                     ['product_name', 'period_label']
                                 )}
@@ -2385,13 +2627,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('exchange')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('exchange')}
                                     >
@@ -2406,8 +2648,10 @@ const advantageTrendChartOptions = {
                                     [
                                         { header: 'Product Name', field: 'product_name' },
                                         { header: 'Exchange Quantity', field: 'exchange_quantity', align: 'right' },
-                                        { header: 'Exchange Value (₦)', field: 'exchange_value', align: 'right',
-                                          render: (row) => formatCurrency(row.exchange_value) },
+                                        {
+                                            header: 'Exchange Value (₦)', field: 'exchange_value', align: 'right',
+                                            render: (row) => formatCurrency(row.exchange_value)
+                                        },
                                         { header: 'Exchange Reason', field: 'exchange_reason' },
                                         { header: 'Status', field: 'status' },
                                         { header: 'Period', field: 'period_label' },
@@ -2444,13 +2688,13 @@ const advantageTrendChartOptions = {
                                             {allProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('inventoryTurnover')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('inventoryTurnover')}
                                     >
@@ -2512,13 +2756,13 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('rawMaterialStock')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('rawMaterialStock')}
                                     >
@@ -2528,8 +2772,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Line 
-                                        data={rawMaterialStockValueTrendChartData} 
+                                    <Line
+                                        data={rawMaterialStockValueTrendChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2556,13 +2800,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('stockAllocation')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('stockAllocation')}
                                     >
@@ -2579,8 +2823,10 @@ const advantageTrendChartOptions = {
                                         { header: 'Staff Name', field: 'user_name' },
                                         { header: 'Branch Name', field: 'branch_name' },
                                         { header: 'Allocated Quantity', field: 'allocated_quantity', align: 'right' },
-                                        { header: 'Allocation Date', field: 'allocation_date',
-                                          render: (row) => formatDate(row.allocation_date) },
+                                        {
+                                            header: 'Allocation Date', field: 'allocation_date',
+                                            render: (row) => formatDate(row.allocation_date)
+                                        },
                                         { header: 'Status', field: 'status' },
                                     ],
                                     ['product_name', 'user_name', 'branch_name', 'status']
@@ -2608,13 +2854,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('stockIssues')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('stockIssues')}
                                     >
@@ -2624,8 +2870,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={stockIssuesChartData} 
+                                    <Bar
+                                        data={stockIssuesChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2639,8 +2885,10 @@ const advantageTrendChartOptions = {
                                                 { header: 'Product Name', field: 'product_name' },
                                                 { header: 'Branch Name', field: 'branch_name' },
                                                 { header: 'Total Quantity', field: 'total_quantity', align: 'right' },
-                                                { header: 'Total Value (₦)', field: 'total_value', align: 'right',
-                                                  render: (row) => formatCurrency(row.total_value) },
+                                                {
+                                                    header: 'Total Value (₦)', field: 'total_value', align: 'right',
+                                                    render: (row) => formatCurrency(row.total_value)
+                                                },
                                                 { header: 'Period', field: 'period_label' },
                                             ],
                                             ['issue_type', 'product_name', 'branch_name']
@@ -2677,13 +2925,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('cltv')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('cltv')}
                                     >
@@ -2697,15 +2945,23 @@ const advantageTrendChartOptions = {
                                     customerLifetimeValue,
                                     [
                                         { header: 'Customer Name', field: 'customer_name' },
-                                        { header: 'Total Revenue (₦)', field: 'total_revenue', align: 'right',
-                                          render: (row) => formatCurrency(row.total_revenue) },
-                                        { header: 'Total Profit (₦)', field: 'total_profit', align: 'right',
-                                          render: (row) => formatCurrency(row.total_profit) },
+                                        {
+                                            header: 'Total Revenue (₦)', field: 'total_revenue', align: 'right',
+                                            render: (row) => formatCurrency(row.total_revenue)
+                                        },
+                                        {
+                                            header: 'Total Profit (₦)', field: 'total_profit', align: 'right',
+                                            render: (row) => formatCurrency(row.total_profit)
+                                        },
                                         { header: 'Total Transactions', field: 'total_transactions', align: 'right' },
-                                        { header: 'Average Transaction (₦)', field: 'avg_transaction_value', align: 'right',
-                                          render: (row) => formatCurrency(row.avg_transaction_value) },
-                                        { header: 'Customer Since', field: 'first_transaction_date',
-                                          render: (row) => formatDate(row.first_transaction_date) },
+                                        {
+                                            header: 'Average Transaction (₦)', field: 'avg_transaction_value', align: 'right',
+                                            render: (row) => formatCurrency(row.avg_transaction_value)
+                                        },
+                                        {
+                                            header: 'Customer Since', field: 'first_transaction_date',
+                                            render: (row) => formatDate(row.first_transaction_date)
+                                        },
                                     ],
                                     ['customer_name']
                                 )}
@@ -2739,13 +2995,13 @@ const advantageTrendChartOptions = {
                                             <option value="month">Monthly</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('productionWaste')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('productionWaste')}
                                     >
@@ -2755,8 +3011,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Line 
-                                        data={productionWasteTrendChartData} 
+                                    <Line
+                                        data={productionWasteTrendChartData}
                                         options={{
                                             ...commonChartOptions,
                                             scales: {
@@ -2809,13 +3065,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('expenses')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('expenses')}
                                     >
@@ -2825,8 +3081,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Pie 
-                                        data={operatingExpensesChartData} 
+                                    <Pie
+                                        data={operatingExpensesChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2837,8 +3093,10 @@ const advantageTrendChartOptions = {
                                             operatingExpensesAnalysis,
                                             [
                                                 { header: 'Category', field: 'category' },
-                                                { header: 'Total Amount (₦)', field: 'total_amount', align: 'right',
-                                                  render: (row) => formatCurrency(row.total_amount) },
+                                                {
+                                                    header: 'Total Amount (₦)', field: 'total_amount', align: 'right',
+                                                    render: (row) => formatCurrency(row.total_amount)
+                                                },
                                                 { header: 'Period', field: 'period_label' },
                                             ],
                                             ['category', 'period_label']
@@ -2868,13 +3126,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('waste')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('waste')}
                                     >
@@ -2884,8 +3142,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={wasteAnalysisChartData} 
+                                    <Bar
+                                        data={wasteAnalysisChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2897,8 +3155,10 @@ const advantageTrendChartOptions = {
                                             [
                                                 { header: 'Product Name', field: 'product_name' },
                                                 { header: 'Waste Quantity', field: 'total_waste_quantity', align: 'right' },
-                                                { header: 'Waste Value (₦)', field: 'waste_value', align: 'right',
-                                                  render: (row) => formatCurrency(row.waste_value) },
+                                                {
+                                                    header: 'Waste Value (₦)', field: 'waste_value', align: 'right',
+                                                    render: (row) => formatCurrency(row.waste_value)
+                                                },
                                                 { header: 'Waste Reason', field: 'waste_reason' },
                                                 { header: 'Period', field: 'period_label' },
                                             ],
@@ -2936,13 +3196,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('staffPerformance')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('staffPerformance')}
                                     >
@@ -2952,8 +3212,8 @@ const advantageTrendChartOptions = {
                             </div>
                             <div className="analysis-card__body">
                                 <div className="analysis-chart-container">
-                                    <Bar 
-                                        data={staffPerformanceChartData} 
+                                    <Bar
+                                        data={staffPerformanceChartData}
                                         options={commonChartOptions}
                                     />
                                 </div>
@@ -2965,11 +3225,15 @@ const advantageTrendChartOptions = {
                                             [
                                                 { header: 'Staff Name', field: 'staff_name' },
                                                 { header: 'Role', field: 'role' },
-                                                { header: 'Total Sales (₦)', field: 'total_sales', align: 'right',
-                                                  render: (row) => formatCurrency(row.total_sales) },
+                                                {
+                                                    header: 'Total Sales (₦)', field: 'total_sales', align: 'right',
+                                                    render: (row) => formatCurrency(row.total_sales)
+                                                },
                                                 { header: 'Total Transactions', field: 'total_transactions', align: 'right' },
-                                                { header: 'Average Transaction (₦)', field: 'avg_transaction_value', align: 'right',
-                                                  render: (row) => formatCurrency(row.avg_transaction_value) },
+                                                {
+                                                    header: 'Average Transaction (₦)', field: 'avg_transaction_value', align: 'right',
+                                                    render: (row) => formatCurrency(row.avg_transaction_value)
+                                                },
                                                 { header: 'Period', field: 'period_label' },
                                             ],
                                             ['staff_name', 'role', 'period_label']
@@ -2999,13 +3263,13 @@ const advantageTrendChartOptions = {
                                             <option value="50">Top 50</option>
                                         </select>
                                     </div>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => clearSectionFilters('salary')}
                                     >
                                         <FaTrashAlt className="analysis-btn__icon" />
                                     </button>
-                                    <button 
+                                    <button
                                         className="analysis-btn analysis-btn--ghost analysis-btn--small"
                                         onClick={() => toggleCardExpansion('salary')}
                                     >
@@ -3020,17 +3284,528 @@ const advantageTrendChartOptions = {
                                     [
                                         { header: 'Staff Name', field: 'staff_name' },
                                         { header: 'Role', field: 'role' },
-                                        { header: 'Basic Salary (₦)', field: 'basic_salary', align: 'right',
-                                          render: (row) => formatCurrency(row.basic_salary) },
-                                        { header: 'Allowances (₦)', field: 'allowances', align: 'right',
-                                          render: (row) => formatCurrency(row.allowances) },
-                                        { header: 'Deductions (₦)', field: 'deductions', align: 'right',
-                                          render: (row) => formatCurrency(row.deductions) },
-                                        { header: 'Net Salary (₦)', field: 'net_salary', align: 'right',
-                                          render: (row) => formatCurrency(row.net_salary) },
+                                        {
+                                            header: 'Basic Salary (₦)', field: 'basic_salary', align: 'right',
+                                            render: (row) => formatCurrency(row.basic_salary)
+                                        },
+                                        {
+                                            header: 'Allowances (₦)', field: 'allowances', align: 'right',
+                                            render: (row) => formatCurrency(row.allowances)
+                                        },
+                                        {
+                                            header: 'Deductions (₦)', field: 'deductions', align: 'right',
+                                            render: (row) => formatCurrency(row.deductions)
+                                        },
+                                        {
+                                            header: 'Net Salary (₦)', field: 'net_salary', align: 'right',
+                                            render: (row) => formatCurrency(row.net_salary)
+                                        },
                                         { header: 'Pay Period', field: 'pay_period' },
                                     ],
                                     ['staff_name', 'role', 'pay_period']
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Riders Tab Content - COMPLETELY UPDATED */}
+            {activeTab === 'riders' && (
+                <div className="analysis-tab-content">
+                    <div className="analysis-cards-grid">
+                        {/* Rider Sales Trend Chart */}
+                        <div className="analysis-card analysis-card--chart">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaChartLine className="analysis-card__icon" />
+                                    Rider Sales Trend
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderSalesPeriod"
+                                            value={analysisFilters.riderSalesPeriod}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="day">Daily</option>
+                                            <option value="week">Weekly</option>
+                                            <option value="month">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderSalesRiderId"
+                                            value={analysisFilters.riderSalesRiderId}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="">All Riders</option>
+                                            {Array.isArray(allRiders) && allRiders.map(rider => (
+                                                <option key={rider.id} value={rider.id}>{rider.fullname}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => {
+                                            setAnalysisFilters(prev => ({
+                                                ...prev,
+                                                riderSalesRiderId: '',
+                                                riderSalesPeriod: 'month'
+                                            }));
+                                        }}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                {riderSalesTrend && riderSalesTrend.length > 0 ? (
+                                    <div className="analysis-chart-container">
+                                        <Line
+                                            data={{
+                                                labels: riderSalesTrend.map(item => item.period_label),
+                                                datasets: [
+                                                    {
+                                                        label: 'Total Sales (₦)',
+                                                        data: riderSalesTrend.map(item => parseFloat(item.total_sales || 0)),
+                                                        borderColor: 'rgb(255, 159, 64)',
+                                                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                                                        tension: 0.1,
+                                                        fill: false,
+                                                        yAxisID: 'y-sales'
+                                                    },
+                                                    {
+                                                        label: 'Total Profit (₦)',
+                                                        data: riderSalesTrend.map(item => parseFloat(item.total_profit || 0)),
+                                                        borderColor: 'rgb(75, 192, 192)',
+                                                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                                                        tension: 0.1,
+                                                        fill: false,
+                                                        yAxisID: 'y-sales'
+                                                    },
+                                                    {
+                                                        label: 'Transaction Count',
+                                                        data: riderSalesTrend.map(item => parseInt(item.total_transactions || 0)),
+                                                        borderColor: 'rgb(153, 102, 255)',
+                                                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                                                        tension: 0.1,
+                                                        fill: false,
+                                                        yAxisID: 'y-count'
+                                                    }
+                                                ]
+                                            }}
+                                            options={{
+                                                responsive: true,
+                                                maintainAspectRatio: false,
+                                                plugins: {
+                                                    legend: { position: 'top' },
+                                                },
+                                                scales: {
+                                                    'y-count': {
+                                                        type: 'linear',
+                                                        display: true,
+                                                        position: 'left',
+                                                        title: { display: true, text: 'Number of Transactions' },
+                                                        grid: { drawOnChartArea: false }
+                                                    },
+                                                    'y-sales': {
+                                                        type: 'linear',
+                                                        display: true,
+                                                        position: 'right',
+                                                        title: { display: true, text: 'Amount (₦)' },
+                                                        ticks: {
+                                                            callback: function (value) {
+                                                                return '₦' + value.toLocaleString();
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="analysis-empty-state">
+                                        <FaChartLine className="analysis-empty-icon" />
+                                        <p>No rider sales trend data available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Rider Credit Analysis */}
+                        <div className="analysis-card">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaCreditCard className="analysis-card__icon" />
+                                    Rider Credit Analysis
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderCreditLimit"
+                                            value={analysisFilters.riderCreditLimit}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="5">Top 5</option>
+                                            <option value="10">Top 10</option>
+                                            <option value="20">Top 20</option>
+                                        </select>
+                                    </div>
+                                    <button
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => {
+                                            setAnalysisFilters(prev => ({
+                                                ...prev,
+                                                riderCreditLimit: 10
+                                            }));
+                                        }}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                {riderCreditAnalysis && riderCreditAnalysis.length > 0 ? (
+                                    renderTableWithControls(
+                                        'riderCredit',
+                                        riderCreditAnalysis,
+                                        [
+                                            { header: 'Rider Name', field: 'rider_name' },
+                                            {
+                                                header: 'Credit Limit (₦)', field: 'credit_limit', align: 'right',
+                                                render: (row) => formatCurrency(row.credit_limit || 0)
+                                            },
+                                            {
+                                                header: 'Current Balance (₦)', field: 'current_balance', align: 'right',
+                                                render: (row) => {
+                                                    const balance = parseFloat(row.current_balance || 0);
+                                                    return (
+                                                        <span className={balance > 0 ? 'text-danger' : 'text-success'}>
+                                                            {formatCurrency(balance)}
+                                                        </span>
+                                                    );
+                                                }
+                                            },
+                                            {
+                                                header: 'Available Credit (₦)', field: 'available_credit', align: 'right',
+                                                render: (row) => {
+                                                    const limit = parseFloat(row.credit_limit || 0);
+                                                    const balance = parseFloat(row.current_balance || 0);
+                                                    return formatCurrency(Math.max(0, limit - balance));
+                                                }
+                                            },
+                                            {
+                                                header: 'Total Sales (₦)', field: 'total_sales', align: 'right',
+                                                render: (row) => formatCurrency(row.total_sales || 0)
+                                            },
+                                            {
+                                                header: 'Outstanding (₦)', field: 'total_outstanding', align: 'right',
+                                                render: (row) => {
+                                                    const outstanding = parseFloat(row.total_outstanding || 0);
+                                                    return outstanding > 0 ?
+                                                        <span className="text-danger">{formatCurrency(outstanding)}</span> :
+                                                        formatCurrency(0);
+                                                }
+                                            },
+                                            {
+                                                header: 'Credit Status', field: 'credit_status',
+                                                render: (row) => {
+                                                    const status = row.credit_status || 'Normal';
+                                                    const balance = parseFloat(row.current_balance || 0);
+                                                    const limit = parseFloat(row.credit_limit || 0);
+
+                                                    let statusClass = 'analysis-status--approved';
+                                                    let displayStatus = status;
+
+                                                    if (balance > limit) {
+                                                        statusClass = 'analysis-status--rejected';
+                                                        displayStatus = 'Exceeded';
+                                                    } else if (balance > limit * 0.8) {
+                                                        statusClass = 'analysis-status--pending';
+                                                        displayStatus = 'High Usage';
+                                                    }
+
+                                                    return (
+                                                        <span className={`analysis-status ${statusClass}`}>
+                                                            {displayStatus}
+                                                        </span>
+                                                    );
+                                                }
+                                            },
+                                            {
+                                                header: 'Utilization %', field: 'credit_utilization', align: 'right',
+                                                render: (row) => {
+                                                    const balance = parseFloat(row.current_balance || 0);
+                                                    const limit = parseFloat(row.credit_limit || 0);
+                                                    const utilization = limit > 0 ? (balance / limit) * 100 : 0;
+                                                    return `${utilization.toFixed(1)}%`;
+                                                }
+                                            },
+                                        ],
+                                        ['rider_name']
+                                    )
+                                ) : (
+                                    <div className="analysis-empty-state">
+                                        <FaCreditCard className="analysis-empty-icon" />
+                                        <p>No rider credit data available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Rider Product Performance - COMPLETELY FIXED */}
+                        <div className="analysis-card">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaBox className="analysis-card__icon" />
+                                    Rider Product Performance
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderProductRiderId"
+                                            value={analysisFilters.riderProductRiderId}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="">All Riders</option>
+                                            {Array.isArray(allRiders) && allRiders.map(rider => (
+                                                <option key={rider.id} value={rider.id}>{rider.fullname}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderProductLimit"
+                                            value={analysisFilters.riderProductLimit}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="5">Top 5</option>
+                                            <option value="10">Top 10</option>
+                                            <option value="20">Top 20</option>
+                                        </select>
+                                    </div>
+                                    <button
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => {
+                                            setAnalysisFilters(prev => ({
+                                                ...prev,
+                                                riderProductRiderId: '',
+                                                riderProductLimit: 10
+                                            }));
+                                        }}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                {riderProductPerformance && riderProductPerformance.length > 0 ? (
+                                    <div className="analysis-table-container">
+                                        <table className="analysis-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Product Name</th>
+                                                    <th>Category</th>
+                                                    <th className="analysis-table__cell--right">Total Quantity</th>
+                                                    <th className="analysis-table__cell--right">Total Sales (₦)</th>
+                                                    <th className="analysis-table__cell--right">Total Profit (₦)</th>
+                                                    <th className="analysis-table__cell--right">Profit Margin %</th>
+                                                    <th className="analysis-table__cell--right">Avg Price (₦)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {riderProductPerformance.map((item, index) => (
+                                                    <tr key={index}>
+                                                        <td>{item.product_name || 'N/A'}</td>
+                                                        <td>{item.category || 'N/A'}</td>
+                                                        <td className="analysis-table__cell--right">
+                                                            {item.total_quantity_sold?.toLocaleString() || '0'}
+                                                        </td>
+                                                        <td className="analysis-table__cell--right">
+                                                            {formatCurrency(item.total_sales_amount || 0)}
+                                                        </td>
+                                                        <td className="analysis-table__cell--right">
+                                                            <span className="text-success">
+                                                                {formatCurrency(item.total_profit || 0)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="analysis-table__cell--right">
+                                                            {item.profit_margin_percentage ?
+                                                                `${parseFloat(item.profit_margin_percentage).toFixed(1)}%` : '0.0%'}
+                                                        </td>
+                                                        <td className="analysis-table__cell--right">
+                                                            {formatCurrency(item.avg_selling_price || 0)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="analysis-empty-state">
+                                        <FaBox className="analysis-empty-icon" />
+                                        <p>No rider product performance data available</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Rider Collection Efficiency - COMPLETELY FIXED */}
+                        <div className="analysis-card analysis-card--chart">
+                            <div className="analysis-card__header">
+                                <div className="analysis-card__title">
+                                    <FaMoneyBillWave className="analysis-card__icon" />
+                                    Rider Collection Efficiency
+                                </div>
+                                <div className="analysis-card__actions">
+                                    <div className="analysis-field analysis-field--inline">
+                                        <select
+                                            name="riderCollectionLimit"
+                                            value={analysisFilters.riderCollectionLimit}
+                                            onChange={handleFilterChange}
+                                            className="analysis-input__field analysis-input__field--small"
+                                        >
+                                            <option value="5">Top 5</option>
+                                            <option value="10">Top 10</option>
+                                            <option value="20">Top 20</option>
+                                        </select>
+                                    </div>
+                                    <button
+                                        className="analysis-btn analysis-btn--ghost analysis-btn--small"
+                                        onClick={() => {
+                                            setAnalysisFilters(prev => ({
+                                                ...prev,
+                                                riderCollectionLimit: 10
+                                            }));
+                                        }}
+                                    >
+                                        <FaTrashAlt className="analysis-btn__icon" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="analysis-card__body">
+                                {riderCollectionEfficiency && riderCollectionEfficiency.length > 0 ? (
+                                    <>
+                                        {/* Chart Section */}
+                                        <div className="analysis-chart-container" style={{ height: '300px', marginBottom: '20px' }}>
+                                            <Bar
+                                                data={{
+                                                    labels: riderCollectionEfficiency.map(item => item.rider_name || 'Unknown'),
+                                                    datasets: [
+                                                        {
+                                                            label: 'Collection Efficiency (%)',
+                                                            data: riderCollectionEfficiency.map(item =>
+                                                                parseFloat(item.collection_efficiency_percentage || 0)
+                                                            ),
+                                                            backgroundColor: riderCollectionEfficiency.map(item => {
+                                                                const eff = parseFloat(item.collection_efficiency_percentage || 0);
+                                                                return eff >= 80 ? 'rgba(75, 192, 192, 0.7)' :
+                                                                    eff >= 50 ? 'rgba(255, 205, 86, 0.7)' :
+                                                                        'rgba(255, 99, 132, 0.7)';
+                                                            }),
+                                                            borderColor: 'rgb(75, 192, 192)',
+                                                            borderWidth: 1,
+                                                        },
+                                                    ],
+                                                }}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: { display: false },
+                                                        tooltip: {
+                                                            callbacks: {
+                                                                label: function (context) {
+                                                                    return `Efficiency: ${context.raw.toFixed(1)}%`;
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    scales: {
+                                                        y: {
+                                                            beginAtZero: true,
+                                                            max: 100,
+                                                            title: {
+                                                                display: true,
+                                                                text: 'Efficiency (%)'
+                                                            },
+                                                            ticks: {
+                                                                callback: function (value) {
+                                                                    return value + '%';
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Table Section */}
+                                        <div className="analysis-table-container">
+                                            <table className="analysis-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Rider Name</th>
+                                                        <th className="analysis-table__cell--right">Total Sales (₦)</th>
+                                                        <th className="analysis-table__cell--right">Collected (₦)</th>
+                                                        <th className="analysis-table__cell--right">Outstanding (₦)</th>
+                                                        <th className="analysis-table__cell--right">Collection Efficiency</th>
+                                                        <th className="analysis-table__cell--right">Overdue (₦)</th>
+                                                        <th className="analysis-table__cell--right">Overdue %</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {riderCollectionEfficiency.map((item, index) => (
+                                                        <tr key={index}>
+                                                            <td>{item.rider_name || 'N/A'}</td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {formatCurrency(item.total_sales_value || 0)}
+                                                            </td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {formatCurrency(item.total_collected || 0)}
+                                                            </td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {parseFloat(item.total_outstanding || 0) > 0 ? (
+                                                                    <span className="text-danger">
+                                                                        {formatCurrency(item.total_outstanding)}
+                                                                    </span>
+                                                                ) : (
+                                                                    formatCurrency(0)
+                                                                )}
+                                                            </td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {renderEfficiencyBadge(item.collection_efficiency_percentage)}
+                                                            </td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {parseFloat(item.overdue_amount || 0) > 0 ? (
+                                                                    <span className="text-danger">
+                                                                        {formatCurrency(item.overdue_amount)}
+                                                                    </span>
+                                                                ) : (
+                                                                    formatCurrency(0)
+                                                                )}
+                                                            </td>
+                                                            <td className="analysis-table__cell--right">
+                                                                {item.overdue_amount_percentage ?
+                                                                    `${parseFloat(item.overdue_amount_percentage).toFixed(1)}%` : '0.0%'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="analysis-empty-state">
+                                        <FaMoneyBillWave className="analysis-empty-icon" />
+                                        <p>No rider collection efficiency data available</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
