@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
 import { Monitor } from 'lucide-react';
+import { FaMotorcycle } from 'react-icons/fa';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
@@ -896,7 +897,7 @@ const fetchRiders = async () => {
                             {/* NEW: Rider Sale Filter */}
                             <div className="sh-field">
                                 <label className="sh-label">
-                                    <FiMonitor />
+                                    <FaMotorcycle />
                                     Rider Sale
                                 </label>
                                 <div className="sh-input">
@@ -1064,7 +1065,7 @@ const fetchRiders = async () => {
                                             <td className="sh-table__cell sh-table__cell--customer">
                                                 {sale.is_rider_sale ? (
                                                     <div className="sh-rider-info">
-                                                        <Monitor className="sh-rider-icon" />
+                                                        <FaMotorcycle className="sh-rider-icon" />
                                                         <div>
                                                             <div className="sh-rider-name">{sale.rider_name || 'Rider'}</div>
                                                             {sale.rider_balance > 0 && (
@@ -1084,7 +1085,7 @@ const fetchRiders = async () => {
                                             <td className="sh-table__cell sh-table__cell--type">
                                                 {sale.is_rider_sale ? (
                                                     <span className="sh-badge sh-badge--warning">
-                                                        <FiMonitor /> Rider Sale
+                                                        <FaMotorcycle /> Rider Sale
                                                     </span>
                                                 ) : sale.is_advantage_sale ? (
                                                     <span className="sh-badge sh-badge--info">
@@ -1159,7 +1160,7 @@ const fetchRiders = async () => {
                                                         onClick={() => navigate(`/riders/sales/${sale.rider_id}`)}
                                                         title="View Rider Sales"
                                                     >
-                                                        <FiMonitor />
+                                                        <FaMotorcycle />
                                                     </button>
                                                 )}
                                             </td>
