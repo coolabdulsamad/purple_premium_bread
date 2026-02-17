@@ -90,9 +90,30 @@ const CustomerCreditManagement = () => {
         }
     }, [selectedCustomerId]);
 
+    // useEffect(() => {
+    //     fetchCustomers();
+    // }, []);
+
+    // src/pages/CustomerCreditManagement.jsx - Add event listener
+
     useEffect(() => {
         fetchCustomers();
-    }, []);
+
+        // Listen for rider payment events to refresh customer data
+        const handleRiderPayment = (event) => {
+            console.log('Rider payment recorded, refreshing customer data:', event.detail);
+            // If the currently selected customer is linked to this rider, refresh their details
+            if (selectedCustomerId) {
+                fetchCustomerDetails();
+            }
+        };
+
+        window.addEventListener('rider-payment-recorded', handleRiderPayment);
+
+        return () => {
+            window.removeEventListener('rider-payment-recorded', handleRiderPayment);
+        };
+    }, [selectedCustomerId]); // Add selectedCustomerId as dependency
 
     useEffect(() => {
         fetchCustomerDetails();

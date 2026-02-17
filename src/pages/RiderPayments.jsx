@@ -217,6 +217,8 @@ const RiderPayments = () => {
         }
     };
 
+    // src/pages/RiderPayments.jsx - Updated handleRecordPayment function
+
     // Handle payment submission
     const handleRecordPayment = async (e) => {
         e.preventDefault();
@@ -289,7 +291,30 @@ const RiderPayments = () => {
             toast(<CustomToast id={`success-payment-${Date.now()}`} type="success" message={successMsg} />);
 
             // Refresh rider details
-            fetchRiderDetails(selectedRiderId);
+            await fetchRiderDetails(selectedRiderId);
+
+            // ALSO refresh the customers list in the background to update the linked customer's balance
+            // This ensures that when you switch to CustomerCreditManagement, you'll see the updated balance
+            try {
+                // You might want to trigger a refresh of the customers list
+                // This could be done via a custom event or by calling a refresh function
+                // For now, we'll just log that the customer balance should be updated
+                console.log('Customer balance for linked customer should be updated');
+
+                // Option 1: Dispatch a custom event that CustomerCreditManagement can listen to
+                window.dispatchEvent(new CustomEvent('rider-payment-recorded', {
+                    detail: {
+                        riderId: selectedRiderId,
+                        amount: paymentFormData.amount,
+                        transactionId: paymentFormData.transaction_id
+                    }
+                }));
+
+            } catch (refreshError) {
+                console.error('Error refreshing customers:', refreshError);
+                // Don't show error to user as the payment was successful
+            }
+
             resetPaymentForm();
             clearImage();
 
