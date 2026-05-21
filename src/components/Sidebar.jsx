@@ -69,40 +69,40 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Dashboard', path: '/dashboard', icon: <FaHome />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'POS', path: '/pos', icon: <FaShoppingCart />, roles: ['admin', 'sales', 'manager'] },
       { name: 'Sales Management', path: '/sales_management', icon: <FaClipboardList />, roles: ['admin', 'manager'] },
-      { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, roles: ['admin', 'sales', 'manager'] },
-      { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, roles: ['admin', 'sales', 'manager'] },
+      { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
     ],
 
     // 2️⃣ Production & Products
     [
       { name: 'Production', path: '/production', icon: <FaUtensils />, roles: ['admin', 'baker', 'manager'] },
-      { name: 'Products', path: '/products', icon: <FaBoxOpen />, roles: ['admin', 'manager'] },
-      { name: 'Recipes', path: '/recipes', icon: <FaTools />, roles: ['admin', 'manager'] },
+      { name: 'Products', path: '/products', icon: <FaBoxOpen />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Recipes', path: '/recipes', icon: <FaTools />, roles: ['admin', 'manager', 'accountant'] },
     ],
 
     // 3️⃣ Inventory & Stock Management
     [
-      { name: 'Raw Materials', path: '/raw_materials_inventory', icon: <MdInventory />, roles: ['admin', 'manager'] },
-      { name: 'Waste Stock', path: '/wastestock', icon: <FaTrashAlt />, roles: ['admin', 'sales', 'manager'] },
+      { name: 'Raw Materials', path: '/raw_materials_inventory', icon: <MdInventory />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Waste Stock', path: '/wastestock', icon: <FaTrashAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
       { name: 'Branches', path: '/branches', icon: <FaBuilding />, roles: ['admin', 'manager'] },
     ],
 
     // 4️⃣ Finance & Reports
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales'] },
+      { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
     ],
 
     // 5️⃣ People & System
     [
-      { name: 'Customers', path: '/customers', icon: <FaUsers />, roles: ['admin', 'sales', 'manager'] },
-      { name: 'Riders', path: '/riders', icon: <FaMotorcycle />, roles: ['admin', 'manager'] },
+      { name: 'Customers', path: '/customers', icon: <FaUsers />, roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Riders', path: '/riders', icon: <FaMotorcycle />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin', 'accountant', 'manager'] },
       { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
-      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales'] },
-      { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager'] },
+      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales', 'accountant'] },
+      { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager', 'accountant'] },
     ],
   ];
 
