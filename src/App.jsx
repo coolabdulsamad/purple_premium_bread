@@ -19,6 +19,7 @@ import ReportDashboard from './pages/ReportDashboard';
 import WasteStock from './pages/WasteStock'
 import PermissionsPage from './pages/PermissionsPage';
 import ApprovalsPage from './pages/ApprovalsPage';
+import MoneyPage from './pages/MoneyPage';
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -72,6 +73,7 @@ function App() {
         <Route path="/analysis" element={<Layout><AnalysisPage /></Layout>} />
         <Route path="/permissions" element={<Layout><PermissionsPage /></Layout>} />
         <Route path="/approvals" element={<Layout><ApprovalsPage /></Layout>} />
+        <Route path="/money" element={<Layout><MoneyPage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 

@@ -22,6 +22,7 @@ import {
   FaMotorcycle,
   FaCheckDouble,
   FaUserShield,
+  FaWallet,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -92,6 +93,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
     // 4️⃣ Finance & Reports
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Money', path: '/money', icon: <FaWallet />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
