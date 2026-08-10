@@ -23,6 +23,7 @@ import {
   FaCheckDouble,
   FaUserShield,
   FaWallet,
+  FaHandHoldingUsd,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -97,6 +98,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
+      { name: 'Staff Loans', path: '/loans', icon: <FaHandHoldingUsd />, roles: ['admin', 'accountant', 'manager'] },
     ],
 
     // 5️⃣ People & System
