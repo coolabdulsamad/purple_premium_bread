@@ -1,0 +1,468 @@
+/* src/assets/styles/permissions.css */
+.perm-page {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.perm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.perm-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d1b4e;
+    margin: 0;
+}
+
+.perm-subtitle {
+    color: #6b7280;
+    margin: 6px 0 0;
+    font-size: 0.92rem;
+}
+
+.perm-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ede9fe;
+    padding-bottom: 0;
+}
+
+.perm-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.perm-tab--active {
+    color: #6d28d9;
+    border-bottom-color: #6d28d9;
+}
+
+.perm-role-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.perm-role-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1.5px solid #ddd6fe;
+    background: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.perm-role-tab--active {
+    background: #6d28d9;
+    border-color: #6d28d9;
+    color: #fff;
+}
+
+.perm-role-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.perm-role-tab:not(.perm-role-tab--active) .perm-role-badge {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.perm-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
+    color: #5b21b6;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    margin-bottom: 18px;
+}
+
+.perm-unsaved {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.perm-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+}
+
+.perm-feature-card {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(45, 27, 78, 0.06);
+}
+
+.perm-feature-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.perm-feature-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2d1b4e;
+    margin: 0;
+    text-transform: capitalize;
+}
+
+.perm-feature-count {
+    font-size: 0.78rem;
+    color: #8b5cf6;
+    font-weight: 600;
+}
+
+.perm-feature-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.perm-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.perm-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+    border: 1px solid transparent;
+}
+
+.perm-item:hover {
+    background: #faf5ff;
+}
+
+.perm-item--on {
+    border-color: #ddd6fe;
+    background: #f5f3ff;
+}
+
+.perm-item--locked {
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+.perm-item input {
+    display: none;
+}
+
+.perm-item-box {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid #c4b5fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    margin-top: 1px;
+    transition: all 0.12s;
+}
+
+.perm-item--on .perm-item-box {
+    background: #6d28d9;
+    border-color: #6d28d9;
+}
+
+.perm-item-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.perm-item-action {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.perm-item-desc {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.perm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.perm-btn--primary {
+    background: #6d28d9;
+    color: #fff;
+}
+
+.perm-btn--primary:hover {
+    background: #5b21b6;
+}
+
+.perm-btn--primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.perm-btn--ghost {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.perm-btn--mini {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+}
+
+.perm-savebar {
+    position: sticky;
+    bottom: 16px;
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #2d1b4e;
+    color: #fff;
+    padding: 12px 18px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(45, 27, 78, 0.35);
+    font-size: 0.9rem;
+}
+
+/* Workflow cards */
+.perm-workflows {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 16px;
+}
+
+.perm-wf-card {
+    background: #fff;
+    border: 1px solid #ede9fe;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 3px rgba(45, 27, 78, 0.06);
+}
+
+.perm-wf-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.perm-wf-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2d1b4e;
+    margin: 0;
+}
+
+.perm-wf-desc {
+    font-size: 0.82rem;
+    color: #6b7280;
+    margin: 4px 0 0;
+}
+
+.perm-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.perm-switch input {
+    display: none;
+}
+
+.perm-switch-slider {
+    width: 42px;
+    height: 24px;
+    background: #d1d5db;
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.15s;
+}
+
+.perm-switch-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.15s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.perm-switch input:checked + .perm-switch-slider {
+    background: #6d28d9;
+}
+
+.perm-switch input:checked + .perm-switch-slider::after {
+    transform: translateX(18px);
+}
+
+.perm-switch-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4b5563;
+    min-width: 86px;
+}
+
+.perm-wf-body {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed #ede9fe;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.perm-wf-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4b5563;
+    margin-bottom: 6px;
+}
+
+.perm-wf-field input[type='number'] {
+    width: 100%;
+    max-width: 220px;
+    padding: 8px 12px;
+    border: 1.5px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.perm-wf-field small {
+    display: block;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.perm-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.perm-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid #ddd6fe;
+    background: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.perm-chip--on {
+    background: #6d28d9;
+    border-color: #6d28d9;
+    color: #fff;
+}
+
+.perm-wf-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    min-height: 28px;
+}
+
+.perm-wf-meta {
+    font-size: 0.76rem;
+    color: #9ca3af;
+}
+
+.perm-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 0;
+    color: #6b7280;
+}
+
+.perm-spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #ede9fe;
+    border-top-color: #6d28d9;
+    border-radius: 50%;
+    animation: perm-spin 0.8s linear infinite;
+}
+
+@keyframes perm-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+    .perm-page { padding: 14px; }
+    .perm-features, .perm-workflows { grid-template-columns: 1fr; }
+    .perm-savebar { flex-direction: column; align-items: stretch; text-align: center; }
+}

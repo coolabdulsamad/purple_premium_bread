@@ -20,6 +20,8 @@ import {
   FaFileInvoiceDollar,
   FaClipboardList,
   FaMotorcycle,
+  FaCheckDouble,
+  FaUserShield,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -104,6 +106,12 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager', 'accountant'] },
     ],
+
+    // 6️⃣ Governance
+    [
+      { name: 'Approvals', path: '/approvals', icon: <FaCheckDouble />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Permissions', path: '/permissions', icon: <FaUserShield />, roles: ['admin'] },
+    ],
   ];
 
   return (
@@ -126,31 +134,33 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
 
       {/* NAVIGATION */}
       <nav className="sidebar-nav">
-        {navGroups.map((group, index) => (
-          <React.Fragment key={index}>
-            <ul>
-              {group.map(
-                (link) =>
-                  userRole &&
-                  link.roles.includes(userRole) && (
-                    <li key={link.name} title={!sidebarExpanded ? link.name : ''}>
-                      <NavLink
-                        to={link.path}
-                        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                        onClick={() => {
-                          if (isMobile) setSidebarExpanded(false);
-                        }}
-                      >
-                        <span className="nav-icon">{link.icon}</span>
-                        <span className="nav-name">{link.name}</span>
-                      </NavLink>
-                    </li>
-                  )
-              )}
-            </ul>
-            {index < navGroups.length - 1 && <hr className="nav-divider" />}
-          </React.Fragment>
-        ))}
+        {navGroups.map((group, index) => {
+          const visibleLinks = group.filter(
+            (link) => userRole && link.roles.includes(userRole)
+          );
+          if (visibleLinks.length === 0) return null;
+          return (
+            <React.Fragment key={index}>
+              <ul>
+                {visibleLinks.map((link) => (
+                  <li key={link.name} title={!sidebarExpanded ? link.name : ''}>
+                    <NavLink
+                      to={link.path}
+                      className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                      onClick={() => {
+                        if (isMobile) setSidebarExpanded(false);
+                      }}
+                    >
+                      <span className="nav-icon">{link.icon}</span>
+                      <span className="nav-name">{link.name}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+              {index < navGroups.length - 1 && <hr className="nav-divider" />}
+            </React.Fragment>
+          );
+        })}
       </nav>
 
       {/* FOOTER */}

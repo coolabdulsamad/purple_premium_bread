@@ -17,6 +17,8 @@ import RawInventoryDashboard from './pages/RawInventoryDashboard';
 import CreditDashboard from './pages/CreditDashboard';
 import ReportDashboard from './pages/ReportDashboard';
 import WasteStock from './pages/WasteStock'
+import PermissionsPage from './pages/PermissionsPage';
+import ApprovalsPage from './pages/ApprovalsPage';
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -60,7 +62,6 @@ function App() {
         <Route path="/raw_materials_inventory" element={<Layout><RawInventoryDashboard /></Layout>} />
         <Route path='/wastestock' element={<Layout><WasteStock /></Layout>} />
         <Route path='/sales_management' element={<Layout><SalesManagementDashboard /></Layout>} />
-        <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
         <Route path="/riders" element={<Layout><RidersPage /></Layout>} />
         <Route path="/riders/register" element={<Layout><RegisterRider /></Layout>} />
         <Route path="/exchanges-history" element={<Layout><ExchangeHistoryPage /></Layout>} />
@@ -69,6 +70,8 @@ function App() {
         <Route path="/riders/edit/:id" element={<Layout><EditRider /></Layout>} />
         <Route path="/riders/sales/:riderId" element={<Layout><RiderSalesPage /></Layout>} />
         <Route path="/analysis" element={<Layout><AnalysisPage /></Layout>} />
+        <Route path="/permissions" element={<Layout><PermissionsPage /></Layout>} />
+        <Route path="/approvals" element={<Layout><ApprovalsPage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 
