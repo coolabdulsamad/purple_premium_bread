@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, Modal } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaRedo, FaFilter, FaBoxOpen, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import "../assets/styles/raw-inventory.css";
@@ -75,6 +75,8 @@ const RawMaterialManagement = () => {
         materialId: null,
         materialName: ""
     });
+
+    const [showFormModal, setShowFormModal] = useState(false);
 
     const units = ['kg', 'g', 'pcs', 'liter', 'ml', 'bags', 'rolls', 'boxes'];
 
@@ -183,6 +185,7 @@ const RawMaterialManagement = () => {
         setIsEditing(true);
         setError('');
         setSuccessMessage('');
+        setShowFormModal(true);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="success" message={`Editing ${material.name}`} />, {
             toastId: 'edit-info'
         });
@@ -227,9 +230,27 @@ const RawMaterialManagement = () => {
         setIsEditing(false);
         setError('');
         setSuccessMessage('');
+        setShowFormModal(false);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Edit cancelled" />, {
             toastId: 'edit-info'
         });
+    };
+
+    const openAddModal = () => {
+        setFormData({
+            id: null,
+            name: '',
+            unit: 'kg',
+            current_stock: 0,
+            min_stock_level: 0,
+            supplier_info: '',
+            restock_price_per_unit: 0.00,
+            last_restock_date: '',
+        });
+        setIsEditing(false);
+        setError('');
+        setSuccessMessage('');
+        setShowFormModal(true);
     };
 
     const clearFilters = () => {
@@ -281,12 +302,19 @@ const RawMaterialManagement = () => {
             {error && <Alert variant="danger" className="alert-message">{error}</Alert>}
             {successMessage && <Alert variant="success" className="alert-message">{successMessage}</Alert>}
 
-            {/* Add/Edit Form */}
-            <Card className="form-card">
-                <Card.Header className="form-card-header">
-                    <h3>{isEditing ? 'Edit Raw Material' : 'Add New Raw Material'}</h3>
-                </Card.Header>
-                <Card.Body>
+            {/* Add New Material Button */}
+            <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                <Button variant="outline-primary" onClick={openAddModal}>
+                    <FaPlus className="me-1" /> Add New Raw Material
+                </Button>
+            </div>
+
+            {/* Add/Edit Material Modal */}
+            <Modal show={showFormModal} onHide={handleCancelEdit} centered size="lg">
+                <Modal.Header closeButton className="form-card-header">
+                    <Modal.Title>{isEditing ? 'Edit Raw Material' : 'Add New Raw Material'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
                     <Form onSubmit={handleSubmit}>
                         <Row className="g-3">
                             <Col md={12} lg={6}>
@@ -437,18 +465,16 @@ const RawMaterialManagement = () => {
                             )}
                         </Row>
                         <div className="form-actions">
-                            {isEditing && (
-                                <Button variant="outline-secondary" onClick={handleCancelEdit}>
-                                    <FaTimes className="me-1" /> Cancel Edit
-                                </Button>
-                            )}
+                            <Button variant="outline-secondary" className="me-2" onClick={handleCancelEdit}>
+                                <FaTimes className="me-1" /> Cancel
+                            </Button>
                             <Button variant="outline-primary" className='' type="submit">
                                 <FaPlus className="me-1" /> {isEditing ? 'Update Material' : 'Add Material'}
                             </Button>
                         </div>
                     </Form>
-                </Card.Body>
-            </Card>
+                </Modal.Body>
+            </Modal>
 
             {/* Filters */}
             <Card className="filter-card">
@@ -554,7 +580,7 @@ const RawMaterialManagement = () => {
                         <div className="empty-state">
                             <FaBoxOpen size={48} />
                             <h4>No raw materials found</h4>
-                            <p>Try adjusting your filters or add new materials above</p>
+                            <p>Try adjusting your filters or click "Add New Raw Material"</p>
                         </div>
                     ) : (
                         <div className="table-responsive" style={{ overflowX: 'auto' }}>
@@ -608,9 +634,9 @@ const RawMaterialManagement = () => {
                                                 <td className="fw-bold serial-number">{index + 1}</td>
                                                 <td className="fw-semibold material-name">{material.name}</td>
                                                 <td><Badge bg="light" text="dark" className="unit-badge">{material.unit}</Badge></td>
-                                                <td className="stock-amount">{Number(material.current_stock).toFixed(6)}</td> {/* Updated to 6 decimal places */}
-                                                <td className="min-stock">{Number(material.min_stock_level).toFixed(6)}</td> {/* Updated to 6 decimal places */}
-                                                <td className="price fw-bold">₦{Number(material.restock_price_per_unit).toFixed(6)}</td> {/* Updated to 6 decimal places */}
+                                                <td className="stock-amount">{Number(material.current_stock).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</td> {/* Updated to 6 decimal places */}
+                                                <td className="min-stock">{Number(material.min_stock_level).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 6 })}</td> {/* Updated to 6 decimal places */}
+                                                <td className="price fw-bold">₦{Number(material.restock_price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</td> {/* Updated to 6 decimal places */}
                                                 <td>
                                                     <Badge bg={status === 'out-of-stock' ? 'danger' :
                                                         status === 'low-stock' ? 'warning' : 'success'}
