@@ -237,7 +237,7 @@ const RiderPayments = () => {
         // Validate payment amount doesn't exceed balance due
         const selectedTransaction = outstandingSales.find(s => s.id === parseInt(paymentFormData.transaction_id));
         if (selectedTransaction && paymentFormData.amount > selectedTransaction.balance_due) {
-            const errorMsg = `Payment amount cannot exceed the balance due (₦${Number(selectedTransaction.balance_due).toFixed(2)})`;
+            const errorMsg = `Payment amount cannot exceed the balance due (₦${Number(selectedTransaction.balance_due || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
             setError(errorMsg);
             toast(<CustomToast id={`error-amount-${Date.now()}`} type="error" message={errorMsg} />);
             return;
@@ -286,7 +286,7 @@ const RiderPayments = () => {
 
             const response = await api.post(`/payments/rider`, payload);
 
-            const successMsg = `Payment of ₦${Number(response.data.payment.amount).toFixed(2)} recorded successfully!`;
+            const successMsg = `Payment of ₦${Number(response.data.payment.amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} recorded successfully!`;
             setSuccessMessage(successMsg);
             toast(<CustomToast id={`success-payment-${Date.now()}`} type="success" message={successMsg} />);
 
@@ -344,7 +344,7 @@ const RiderPayments = () => {
 
     // Format currency
     const formatCurrency = (amount) => {
-        return `₦${Number(amount || 0).toFixed(2)}`;
+        return `₦${Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // Format date
