@@ -1,0 +1,109 @@
+
+/* ========= Phase 5: Advance Wallet + Split Payments ========= */
+.ppb-wallet {
+  padding: 14px 16px;
+  background: var(--ppb-purple-50);
+  border: 1px solid var(--ppb-purple-100);
+  border-radius: var(--ppb-radius-sm);
+}
+
+.ppb-wallet__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ppb-purple);
+  margin-bottom: 8px;
+}
+
+.ppb-wallet__balance {
+  margin-left: auto;
+  color: var(--ppb-ok);
+  font-size: 14px;
+}
+
+.ppb-wallet .input-group {
+  margin-bottom: 6px;
+}
+
+.ppb-split {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--ppb-border);
+  border-radius: var(--ppb-radius-sm);
+}
+
+.ppb-split__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ppb-split__body {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ppb-split__row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.ppb-split__remove {
+  border: none;
+  background: var(--ppb-oos-light);
+  color: var(--ppb-oos);
+  border-radius: var(--ppb-radius-sm);
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: var(--ppb-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ppb-split__remove:hover:not(:disabled) {
+  background: var(--ppb-oos);
+  color: #fff;
+}
+
+.ppb-split__remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ppb-split__add {
+  align-self: flex-start;
+}
+
+.ppb-split__summary {
+  margin-top: 4px;
+  border-top: 1px dashed var(--ppb-border);
+  padding-top: 8px;
+}
+
+.ppb-split__line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.ppb-split__remaining--ok b { color: var(--ppb-ok); }
+.ppb-split__remaining--bad b { color: var(--ppb-oos); }
+
+@media (max-width: 480px) {
+  .ppb-split__row {
+    grid-template-columns: 1fr;
+  }
+  .ppb-split__remove {
+    justify-self: end;
+  }
+}

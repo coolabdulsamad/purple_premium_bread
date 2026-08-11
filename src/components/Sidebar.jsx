@@ -24,6 +24,8 @@ import {
   FaUserShield,
   FaWallet,
   FaHandHoldingUsd,
+  FaUndo,
+  FaPiggyBank,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -75,6 +77,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Sales Management', path: '/sales_management', icon: <FaClipboardList />, roles: ['admin', 'manager'] },
       { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, roles: ['admin', 'sales', 'manager', 'accountant'] },
       { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Sales Returns', path: '/returns', icon: <FaUndo />, roles: ['admin', 'sales', 'manager', 'accountant'] },
     ],
 
     // 2️⃣ Production & Products
@@ -95,6 +98,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Money', path: '/money', icon: <FaWallet />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Advance Wallets', path: '/wallets', icon: <FaPiggyBank />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },

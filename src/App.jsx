@@ -21,6 +21,8 @@ import PermissionsPage from './pages/PermissionsPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import MoneyPage from './pages/MoneyPage';
 import LoanManagementPage from './pages/LoanManagementPage';
+import ReturnsPage from './pages/ReturnsPage';
+import WalletsPage from './pages/WalletsPage';
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -76,6 +78,8 @@ function App() {
         <Route path="/approvals" element={<Layout><ApprovalsPage /></Layout>} />
         <Route path="/money" element={<Layout><MoneyPage /></Layout>} />
         <Route path="/loans" element={<Layout><LoanManagementPage /></Layout>} />
+        <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
+        <Route path="/wallets" element={<Layout><WalletsPage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 
