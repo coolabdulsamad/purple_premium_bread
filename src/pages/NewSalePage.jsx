@@ -20,6 +20,8 @@ import {
   FaGift,
   FaCrown,
   FaMotorcycle,
+  FaWallet,
+  FaLayerGroup,
 } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -59,6 +61,21 @@ const formatNaira = (n) =>
     maximumFractionDigits: 2,
   })}`;
 
+const SPLIT_METHODS = ["Cash", "Card", "Bank Transfer"];
+
+const emptyPayment = () => ({
+  paymentMethod: "Cash",
+  paymentReference: "",
+  paymentImage: null,
+  customer: null,
+  amountPaid: 0,
+  dueDate: "",
+  // Phase 5: split payments + advance wallet
+  useSplit: false,
+  splits: [{ method: "Cash", amount: "" }],
+  walletAmount: "",
+});
+
 /* ========= Main Component ========= */
 const NewSalePage = () => {
   const [products, setProducts] = useState([]);
@@ -72,14 +89,7 @@ const NewSalePage = () => {
       id: 1,
       name: "Group 1",
       items: [],
-      payment: {
-        paymentMethod: "Cash",
-        paymentReference: "",
-        paymentImage: null,
-        customer: null,
-        amountPaid: 0,
-        dueDate: "",
-      },
+      payment: emptyPayment(),
       total: 0,
       discount: 0,
       note: "",
@@ -104,10 +114,28 @@ const NewSalePage = () => {
   const [freeStockQuantities, setFreeStockQuantities] = useState({});
   const [freeStockReason, setFreeStockReason] = useState("");
 
+  // Phase 5: advance wallet balances keyed by "CUSTOMER:ID" / "RIDER:ID" (fail-open)
+  const [walletBalances, setWalletBalances] = useState({});
+
   const { user, userRole } = useAuth();
   const userId = user?.id;
 
   const activeCart = carts.find((c) => c.id === activeCartId);
+
+  /* ========= Wallet Balance Fetch (fail-open) ========= */
+  const fetchWalletBalance = async (ownerType, ownerId) => {
+    if (!ownerId) return;
+    const key = `${ownerType}:${ownerId}`;
+    try {
+      const res = await api.get(`/wallets/balance`, {
+        params: { owner_type: ownerType, owner_id: ownerId },
+      });
+      setWalletBalances((prev) => ({ ...prev, [key]: Number(res.data?.advance_balance || 0) }));
+    } catch {
+      // 503 (migration not applied) or any failure: wallet simply unavailable
+      setWalletBalances((prev) => ({ ...prev, [key]: null }));
+    }
+  };
 
   /* ========= Data Fetch ========= */
   useEffect(() => {
@@ -393,6 +421,7 @@ const NewSalePage = () => {
     );
 
     if (rider) {
+      fetchWalletBalance("RIDER", rider.id);
       toast(<CustomToast type="info" message={`Rider ${rider.fullname} selected`} />);
     }
   };
@@ -430,14 +459,7 @@ const NewSalePage = () => {
         id: nextId,
         name: groupName,
         items: [],
-        payment: {
-          paymentMethod: "Cash",
-          paymentReference: "",
-          paymentImage: null,
-          customer: null,
-          amountPaid: 0,
-          dueDate: "",
-        },
+        payment: emptyPayment(),
         total: 0,
         discount: 0,
         note: "",
@@ -473,7 +495,44 @@ const NewSalePage = () => {
     });
   };
 
-  /* ========= Checkout (UPDATED with Rider Sale Data) ========= */
+  /* ========= Split Payment Helpers ========= */
+  const updateSplit = (cartId, index, field, value) => {
+    setCarts((prev) =>
+      prev.map((c) => {
+        if (c.id !== cartId) return c;
+        const splits = c.payment.splits.map((s, i) =>
+          i === index ? { ...s, [field]: value } : s
+        );
+        return { ...c, payment: { ...c.payment, splits } };
+      })
+    );
+  };
+
+  const addSplitRow = (cartId) => {
+    setCarts((prev) =>
+      prev.map((c) => {
+        if (c.id !== cartId) return c;
+        const usedMethods = c.payment.splits.map((s) => s.method);
+        const nextMethod = SPLIT_METHODS.find((m) => !usedMethods.includes(m)) || "Cash";
+        return {
+          ...c,
+          payment: { ...c.payment, splits: [...c.payment.splits, { method: nextMethod, amount: "" }] },
+        };
+      })
+    );
+  };
+
+  const removeSplitRow = (cartId, index) => {
+    setCarts((prev) =>
+      prev.map((c) => {
+        if (c.id !== cartId) return c;
+        const splits = c.payment.splits.filter((_, i) => i !== index);
+        return { ...c, payment: { ...c.payment, splits } };
+      })
+    );
+  };
+
+  /* ========= Checkout (Rider + Advantage + Split Payments + Wallet) ========= */
   const handleCheckout = async (cartToProcess) => {
     if (!cartToProcess || cartToProcess.items.length === 0) {
       toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
@@ -617,6 +676,53 @@ const NewSalePage = () => {
       status = "Paid";
     }
 
+    // --- Phase 5: wallet usage ---
+    const walletAmount = Math.max(0, Number(cartToProcess.payment.walletAmount) || 0);
+    const walletOwnerType = cartToProcess.isRiderSale && cartToProcess.selectedRider ? "RIDER" : "CUSTOMER";
+    const walletOwnerId = cartToProcess.isRiderSale && cartToProcess.selectedRider
+      ? cartToProcess.selectedRider.id
+      : cartToProcess.payment.customer?.id;
+
+    if (walletAmount > 0) {
+      if (!walletOwnerId) {
+        toast(<CustomToast type="error" message="Select a customer or rider to use their advance wallet." />, { toastId: 'wallet-error' });
+        return;
+      }
+      const key = `${walletOwnerType}:${walletOwnerId}`;
+      const available = walletBalances[key];
+      if (available === null || available === undefined) {
+        toast(<CustomToast type="error" message="Advance wallet is unavailable (migration pending)." />, { toastId: 'wallet-error' });
+        return;
+      }
+      if (walletAmount > available + 0.004) {
+        toast(<CustomToast type="error" message={`Wallet balance (${formatNaira(available)}) is less than ${formatNaira(walletAmount)}.`} />, { toastId: 'wallet-error' });
+        return;
+      }
+      if (walletAmount > amountPaid + 0.004) {
+        toast(<CustomToast type="error" message="Wallet amount cannot exceed the amount being paid." />, { toastId: 'wallet-error' });
+        return;
+      }
+    }
+
+    // --- Phase 5: split payment validation (splits cover the real-money part) ---
+    const realMoneyPaid = Math.round((amountPaid - walletAmount) * 100) / 100;
+    let paymentSplits = null;
+    if (cartToProcess.payment.useSplit) {
+      const splits = (cartToProcess.payment.splits || [])
+        .map((s) => ({ payment_method: s.method, amount: Number(s.amount) || 0 }))
+        .filter((s) => s.amount > 0);
+      const splitTotal = Math.round(splits.reduce((sum, s) => sum + s.amount, 0) * 100) / 100;
+      if (splits.length === 0) {
+        toast(<CustomToast type="error" message="Add at least one split payment amount." />, { toastId: 'split-error' });
+        return;
+      }
+      if (Math.abs(splitTotal - realMoneyPaid) > 0.01) {
+        toast(<CustomToast type="error" message={`Split amounts (${formatNaira(splitTotal)}) must equal the cash/bank part of the payment (${formatNaira(realMoneyPaid)}).`} />, { toastId: 'split-error' });
+        return;
+      }
+      paymentSplits = splits;
+    }
+
     // Prepare items with advantage amounts
     const cartItemsWithAdvantage = cartToProcess.items.map(item => {
       const basePrice = Number(item.price);
@@ -639,7 +745,7 @@ const NewSalePage = () => {
       total,
       discountAmount,
       cashierId,
-      paymentMethod: cartToProcess.payment.paymentMethod,
+      paymentMethod: cartToProcess.payment.useSplit ? "Split" : cartToProcess.payment.paymentMethod,
       customerId,
       note: cartToProcess.note,
       paymentReference: cartToProcess.payment.paymentReference,
@@ -658,6 +764,9 @@ const NewSalePage = () => {
       // Rider sale data
       isRiderSale: cartToProcess.isRiderSale,
       riderId: cartToProcess.selectedRider?.id || null,
+      // Phase 5: split payments + wallet
+      paymentSplits,
+      walletAmountUsed: walletAmount,
     };
 
     try {
@@ -672,14 +781,7 @@ const NewSalePage = () => {
                 id: cart.id,
                 name: cart.name,
                 items: [],
-                payment: {
-                  paymentMethod: "Cash",
-                  paymentReference: "",
-                  paymentImage: null,
-                  customer: null,
-                  amountPaid: 0,
-                  dueDate: "",
-                },
+                payment: emptyPayment(),
                 total: 0,
                 discount: 0,
                 note: "",
@@ -698,6 +800,11 @@ const NewSalePage = () => {
       setIsFreeStockChecked(false);
       setFreeStockQuantities({});
       setFreeStockReason("");
+
+      // Refresh the wallet balance if wallet funds were used
+      if (walletAmount > 0 && walletOwnerId) {
+        fetchWalletBalance(walletOwnerType, walletOwnerId);
+      }
 
       // Refresh stock data
       const fetchAllData = async () => {
@@ -740,7 +847,7 @@ const NewSalePage = () => {
       fetchAllData();
     } catch (error) {
       console.error("Sale Processing Error:", error.response?.data || error.message);
-      toast(<CustomToast type="error" message="Failed to process sale." />, { toastId: 'sales-error' });
+      toast(<CustomToast type="error" message={error.response?.data?.error || "Failed to process sale."} />, { toastId: 'sales-error' });
     }
   };
 
@@ -749,6 +856,20 @@ const NewSalePage = () => {
     () => services.filter((s) => s.name?.toLowerCase() !== "tax"),
     [services]
   );
+
+  /* ========= Phase 5: active cart wallet context ========= */
+  const activeWalletOwnerType =
+    activeCart?.isRiderSale && activeCart?.selectedRider ? "RIDER" : "CUSTOMER";
+  const activeWalletOwnerId =
+    activeCart?.isRiderSale && activeCart?.selectedRider
+      ? activeCart.selectedRider.id
+      : activeCart?.payment?.customer?.id;
+  const activeWalletKey = activeWalletOwnerId
+    ? `${activeWalletOwnerType}:${activeWalletOwnerId}`
+    : null;
+  const activeWalletBalance = activeWalletKey
+    ? walletBalances[activeWalletKey]
+    : undefined;
 
   if (loading)
     return (
@@ -1178,15 +1299,7 @@ const NewSalePage = () => {
                               c.id === activeCart.id
                                 ? {
                                     ...c,
-                                    payment: {
-                                      ...c.payment,
-                                      paymentMethod: opt.key,
-                                      paymentReference: "",
-                                      paymentImage: null,
-                                      customer: null,
-                                      amountPaid: 0,
-                                      dueDate: "",
-                                    },
+                                    payment: { ...emptyPayment(), paymentMethod: opt.key },
                                   }
                                 : c
                             )
@@ -1277,11 +1390,13 @@ const NewSalePage = () => {
                                         ...c.payment,
                                         customer: selected || null,
                                         amountPaid: 0,
+                                        walletAmount: "",
                                       },
                                     }
                                   : c
                               )
                             );
+                            if (selected) fetchWalletBalance("CUSTOMER", selected.id);
                           }}
                           disabled={activeCart.isRiderSale} // Disable customer selection for rider sales
                         >
@@ -1360,6 +1475,7 @@ const NewSalePage = () => {
                                 activeCart.total -
                                 (Number(activeCart.payment.amountPaid) || 0)
                               )}
+                              {" "}— Amount Paid includes any wallet balance used below.
                             </small>
                           </div>
 
@@ -1389,6 +1505,180 @@ const NewSalePage = () => {
                           </div>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {/* Phase 5: advance wallet usage (customer or rider) */}
+                  {activeWalletKey && (
+                    <div className="ppb-wallet">
+                      <div className="ppb-wallet__head">
+                        <FaWallet className="ppb-opt-icon" />
+                        <span>
+                          Advance Wallet{activeWalletOwnerType === "RIDER" && activeCart.selectedRider
+                            ? ` — ${activeCart.selectedRider.fullname}`
+                            : activeCart.payment?.customer
+                              ? ` — ${activeCart.payment.customer.fullname}`
+                              : ""}
+                        </span>
+                        {activeWalletBalance != null && (
+                          <b className="ppb-wallet__balance">{formatNaira(activeWalletBalance)}</b>
+                        )}
+                      </div>
+                      {activeWalletBalance == null ? (
+                        <small className="ppb-muted">
+                          Advance wallet unavailable (setup pending).
+                        </small>
+                      ) : activeWalletBalance > 0 ? (
+                        <>
+                          <InputGroup size="sm">
+                            <InputGroup.Text>₦</InputGroup.Text>
+                            <FormControl
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              max={activeWalletBalance}
+                              placeholder="Amount to use from wallet"
+                              value={activeCart.payment.walletAmount}
+                              onChange={(e) =>
+                                setCarts((prev) =>
+                                  prev.map((c) =>
+                                    c.id === activeCart.id
+                                      ? { ...c, payment: { ...c.payment, walletAmount: e.target.value } }
+                                      : c
+                                  )
+                                )
+                              }
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline-secondary"
+                              onClick={() =>
+                                setCarts((prev) =>
+                                  prev.map((c) =>
+                                    c.id === activeCart.id
+                                      ? {
+                                          ...c,
+                                          payment: {
+                                            ...c.payment,
+                                            walletAmount: Math.min(
+                                              activeWalletBalance,
+                                              c.payment.paymentMethod === "Credit"
+                                                ? Number(c.payment.amountPaid) || 0
+                                                : c.total || 0
+                                            ),
+                                          },
+                                        }
+                                      : c
+                                  )
+                                )
+                              }
+                            >
+                              Max
+                            </Button>
+                          </InputGroup>
+                          <small className="ppb-muted">
+                            {activeCart.payment.paymentMethod === "Credit"
+                              ? "Wallet use counts toward Amount Paid; the unpaid rest becomes balance."
+                              : "Wallet covers part of the total — only the remainder is collected in cash/bank."}
+                          </small>
+                        </>
+                      ) : (
+                        <small className="ppb-muted">No advance balance available.</small>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Phase 5: split payment across methods (non-credit) */}
+                  {activeCart.payment.paymentMethod !== "Credit" && (
+                    <div className="ppb-split">
+                      <FormCheck
+                        type="checkbox"
+                        id={`split-pay-${activeCart.id}`}
+                        label={
+                          <span className="ppb-split__label">
+                            <FaLayerGroup className="ppb-opt-icon" />
+                            Split payment across methods
+                          </span>
+                        }
+                        checked={activeCart.payment.useSplit}
+                        onChange={(e) =>
+                          setCarts((prev) =>
+                            prev.map((c) =>
+                              c.id === activeCart.id
+                                ? { ...c, payment: { ...c.payment, useSplit: e.target.checked } }
+                                : c
+                            )
+                          )
+                        }
+                      />
+
+                      {activeCart.payment.useSplit && (() => {
+                        const walletAmt = Math.max(0, Number(activeCart.payment.walletAmount) || 0);
+                        const realMoney = Math.max(0, (activeCart.total || 0) - walletAmt);
+                        const splitTotal = (activeCart.payment.splits || [])
+                          .reduce((s, x) => s + (Number(x.amount) || 0), 0);
+                        const remaining = Math.round((realMoney - splitTotal) * 100) / 100;
+                        return (
+                          <div className="ppb-split__body">
+                            {activeCart.payment.splits.map((split, idx) => (
+                              <div className="ppb-split__row" key={idx}>
+                                <Form.Select
+                                  size="sm"
+                                  value={split.method}
+                                  onChange={(e) => updateSplit(activeCart.id, idx, "method", e.target.value)}
+                                >
+                                  {SPLIT_METHODS.map((m) => (
+                                    <option key={m} value={m}>{m}</option>
+                                  ))}
+                                </Form.Select>
+                                <InputGroup size="sm">
+                                  <InputGroup.Text>₦</InputGroup.Text>
+                                  <FormControl
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="Amount"
+                                    value={split.amount}
+                                    onChange={(e) => updateSplit(activeCart.id, idx, "amount", e.target.value)}
+                                  />
+                                </InputGroup>
+                                <button
+                                  type="button"
+                                  className="ppb-split__remove"
+                                  title="Remove method"
+                                  onClick={() => removeSplitRow(activeCart.id, idx)}
+                                  disabled={activeCart.payment.splits.length <= 1}
+                                >
+                                  <FaTrashAlt />
+                                </button>
+                              </div>
+                            ))}
+                            <Button
+                              size="sm"
+                              variant="outline-secondary"
+                              className="ppb-split__add"
+                              onClick={() => addSplitRow(activeCart.id)}
+                              disabled={activeCart.payment.splits.length >= SPLIT_METHODS.length}
+                            >
+                              + Add method
+                            </Button>
+                            <div className="ppb-split__summary">
+                              <div className="ppb-split__line">
+                                <span>To collect (cash/bank)</span>
+                                <b>{formatNaira(realMoney)}</b>
+                              </div>
+                              <div className="ppb-split__line">
+                                <span>Allocated</span>
+                                <b>{formatNaira(splitTotal)}</b>
+                              </div>
+                              <div className={`ppb-split__line ${Math.abs(remaining) <= 0.01 ? "ppb-split__remaining--ok" : "ppb-split__remaining--bad"}`}>
+                                <span>Remaining</span>
+                                <b>{formatNaira(remaining)}</b>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
