@@ -6,7 +6,7 @@ import { Spinner, Modal, Button, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import {
     FaComments, FaPaperPlane, FaPlus, FaUsers, FaBoxOpen, FaShoppingCart,
-    FaCreditCard, FaUser, FaMotorcycle, FaTimes, FaLink, FaSignOutAlt, FaUserPlus
+    FaCreditCard, FaUser, FaMotorcycle, FaTimes, FaLink, FaSignOutAlt, FaUserPlus, FaWhatsapp
 } from 'react-icons/fa';
 import api from '../api/axiosInstance';
 import CustomToast from '../components/CustomToast';
@@ -61,6 +61,10 @@ const ChatPage = () => {
     const [showNewGroup, setShowNewGroup] = useState(false);
     const [showRefPicker, setShowRefPicker] = useState(false);
     const [showAddMember, setShowAddMember] = useState(false);
+    const [showWhatsApp, setShowWhatsApp] = useState(false);
+    const [waStatus, setWaStatus] = useState({ linked: false });
+    const [waCode, setWaCode] = useState(null);
+    const [waBusy, setWaBusy] = useState(false);
 
     const [users, setUsers] = useState([]);
     const [groupName, setGroupName] = useState('');
@@ -188,6 +192,44 @@ const ChatPage = () => {
         }
     };
 
+    // ---------- WhatsApp linking ----------
+    const openWhatsAppModal = async () => {
+        setShowWhatsApp(true);
+        setWaCode(null);
+        try {
+            const res = await api.get('/whatsapp/link-status');
+            setWaStatus(res.data);
+        } catch {
+            setWaStatus({ linked: false });
+        }
+    };
+
+    const generateWaCode = async () => {
+        setWaBusy(true);
+        try {
+            const res = await api.post('/whatsapp/link-code');
+            setWaCode(res.data);
+        } catch (err) {
+            notify('error', err.response?.data?.error || 'Could not generate a code');
+        } finally {
+            setWaBusy(false);
+        }
+    };
+
+    const unlinkWhatsApp = async () => {
+        setWaBusy(true);
+        try {
+            await api.post('/whatsapp/unlink');
+            setWaStatus({ linked: false });
+            setWaCode(null);
+            notify('info', 'WhatsApp unlinked');
+        } catch (err) {
+            notify('error', err.response?.data?.error || 'Could not unlink');
+        } finally {
+            setWaBusy(false);
+        }
+    };
+
     const searchRefs = useCallback(async (type, q) => {
         setRefSearching(true);
         try {
@@ -247,6 +289,9 @@ const ChatPage = () => {
                         </button>
                         <button className="ppb-chat__new-btn ppb-chat__new-btn--group" onClick={() => setShowNewGroup(true)}>
                             <FaUsers /> New Group
+                        </button>
+                        <button className="ppb-chat__new-btn ppb-chat__new-btn--wa" title="Link your WhatsApp" onClick={openWhatsAppModal}>
+                            <FaWhatsapp />
                         </button>
                     </div>
 
@@ -506,6 +551,48 @@ const ChatPage = () => {
                         ))}
                     </div>
                 </Modal.Body>
+            </Modal>
+
+            {/* ===== WhatsApp linking modal ===== */}
+            <Modal show={showWhatsApp} onHide={() => setShowWhatsApp(false)} centered>
+                <Modal.Header closeButton><Modal.Title><FaWhatsapp className="me-2" />Link your WhatsApp</Modal.Title></Modal.Header>
+                <Modal.Body>
+                    {waStatus.linked ? (
+                        <>
+                            <p>Your WhatsApp is linked to number <strong>{waStatus.phone_number}</strong>.</p>
+                            <p className="text-muted" style={{ fontSize: 13 }}>
+                                Send <strong>hi</strong> to the company WhatsApp number to use the system from WhatsApp —
+                                check sales, record payments, expenses and more, step by step.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <p>Link this account to your WhatsApp number:</p>
+                            <ol style={{ fontSize: 14 }}>
+                                <li>Tap <strong>Generate code</strong> below</li>
+                                <li>Open WhatsApp and message the company number</li>
+                                <li>Send the 6-digit code within 10 minutes</li>
+                            </ol>
+                            {waCode && (
+                                <div className="ppb-chat__wa-code">
+                                    {waCode.code}
+                                    <small>expires in {waCode.ttl_minutes} minutes</small>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    {waStatus.linked ? (
+                        <Button variant="danger" onClick={unlinkWhatsApp} disabled={waBusy}>
+                            {waBusy ? 'Working…' : 'Unlink WhatsApp'}
+                        </Button>
+                    ) : (
+                        <Button variant="success" onClick={generateWaCode} disabled={waBusy}>
+                            {waBusy ? 'Generating…' : waCode ? 'Generate new code' : 'Generate code'}
+                        </Button>
+                    )}
+                </Modal.Footer>
             </Modal>
         </div>
     );
