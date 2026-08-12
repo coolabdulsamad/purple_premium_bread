@@ -32,7 +32,6 @@ const SalaryManagementPage = () => {
     const [showSalaryModal, setShowSalaryModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showPaymentDetails, setShowPaymentDetails] = useState(false);
-    const [showLoanModal, setShowLoanModal] = useState(false);
     const [showStaffModal, setShowStaffModal] = useState(false);
     const [showDebtModal, setShowDebtModal] = useState(false);
     const [showDebtHistoryModal, setShowDebtHistoryModal] = useState(false);
@@ -51,15 +50,12 @@ const SalaryManagementPage = () => {
         totalPages: 0
     });
 
-    const [loanData, setLoanData] = useState({
-        user_id: null,
-        loan_date: format(new Date(), 'yyyy-MM-dd'),
-        amount: '',
-        reason: ''
-    });
-
     const [outstandingLoans, setOutstandingLoans] = useState([]);
     const [otherDeductions, setOtherDeductions] = useState(0);
+    const [loanDeductionInput, setLoanDeductionInput] = useState('0');
+    const [creditSales, setCreditSales] = useState([]);
+    const [selectedSaleIds, setSelectedSaleIds] = useState([]);
+    const [creditDeduction, setCreditDeduction] = useState('0');
 
     // Confirmation Modal States
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -486,87 +482,51 @@ const handleEditDebt = (debt) => {
         setLoanFilters(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleLoanChange = (e) => {
-        const { name, value } = e.target;
-        setLoanData(prev => ({ ...prev, [name]: value }));
-    };
-
-    // Add new loan - UPDATED VERSION
-    const handleAddLoan = async () => {
-        if (!loanData.user_id || !loanData.amount || !loanData.loan_date) {
-            toast.error('Please fill in all required loan fields.');
-            return;
-        }
-
-        try {
-            // Create loan payload with staff_type included
-            const loanPayload = {
-                ...loanData,
-                staff_type: selectedStaff?.staff_type || 'user' // Add staff_type from selected staff
-            };
-
-            console.log('Sending loan data:', loanPayload); // Debug log
-
-            await api.post('/salaries/loans', loanPayload);
-            toast.success('Loan recorded successfully!');
-
-            // Refresh data
-            fetchAllStaff(); // Changed from fetchStaff() to fetchAllStaff()
-            if (activeTab === 'loans') {
-                fetchLoans();
-            }
-
-            // Close modal and reset state
-            setShowLoanModal(false);
-            setLoanData({
-                user_id: null,
-                loan_date: format(new Date(), 'yyyy-MM-dd'),
-                amount: '',
-                reason: ''
-            });
-
-        } catch (error) {
-            console.error('Error recording loan:', error);
-            const errorMessage = error.response?.data?.details || error.response?.data?.error || 'Failed to record loan.';
-            toast.error(errorMessage);
-        }
-    };
-
-
-    // Open loan modal - UPDATED VERSION
-    const handleOpenLoanModal = (staff) => {
-        setSelectedStaff(staff);
-        setLoanData(prev => ({
-            ...prev,
-            user_id: staff.id,
-            staff_type: staff.staff_type // ADD THIS LINE - include staff_type
-        }));
-        setShowLoanModal(true);
-    };
-
     // Open payment modal
+    // Open payment modal — new loan system: monthly installment suggestion + staff credit-sales linking
     const handleOpenPaymentModal = async (staff) => {
         setSelectedStaff(staff);
-        await fetchOutstandingLoans(staff.id);
+        setCreditSales([]);
+        setSelectedSaleIds([]);
+        setCreditDeduction('0');
 
         const baseSalary = parseFloat(staff.base_salary || 0);
         const allowances = parseFloat(staff.allowances || 0);
-        const otherDeductions = parseFloat(staff.deductions || 0);
-        const loanDeduction = parseFloat(staff.outstanding_loan_amount) || 0;
+        const otherDeductionsVal = parseFloat(staff.deductions || 0);
 
         // Calculate tax and pension based on rates from salary structure
-        const taxRate = parseFloat(staff.tax_rate || 0);
-        const pensionRate = parseFloat(staff.pension_rate || 0);
+        const taxRateVal = parseFloat(staff.tax_rate || 0);
+        const pensionRateVal = parseFloat(staff.pension_rate || 0);
         const gross = baseSalary + allowances;
+        const taxAmount = (gross * taxRateVal / 100);
+        const pensionAmount = (gross * pensionRateVal / 100);
 
-        // Calculate tax and pension amounts (DEDUCTIONS)
-        const taxAmount = (gross * taxRate / 100);
-        const pensionAmount = (gross * pensionRate / 100);
+        // New loan system: suggested monthly installment from the repayment schedules
+        let suggestedLoan = 0;
+        try {
+            const preview = await api.get('/salaries/preview-deductions', {
+                params: { user_id: staff.id, staff_type: staff.staff_type || 'user' }
+            });
+            setOutstandingLoans(preview.data.loans || []);
+            suggestedLoan = parseFloat(preview.data.suggested_loan_deduction || 0);
+        } catch (error) {
+            console.error('Error fetching deduction preview:', error);
+            setOutstandingLoans([]);
+        }
+        setLoanDeductionInput(suggestedLoan.toFixed(2));
 
-        // TOTAL DEDUCTIONS = Tax + Pension + Other Deductions + Loan Deductions
-        const totalDeductions = taxAmount + pensionAmount + otherDeductions + loanDeduction;
+        // Staff are customers too: fetch their unpaid bread purchases on credit
+        try {
+            const cs = await api.get('/salaries/credit-sales', {
+                params: { user_id: staff.id, staff_type: staff.staff_type || 'user' }
+            });
+            setCreditSales(cs.data.credit_sales || []);
+        } catch (error) {
+            console.error('Error fetching staff credit sales:', error);
+            setCreditSales([]);
+        }
 
-        // NET AMOUNT = Gross Salary - ALL Deductions
+        const totalDeductions = taxAmount + pensionAmount + otherDeductionsVal + suggestedLoan;
         const net = gross - totalDeductions;
 
         setPaymentForm({
@@ -575,21 +535,31 @@ const handleEditDebt = (debt) => {
             payment_date: format(new Date(), 'yyyy-MM-dd'),
             base_salary: baseSalary.toFixed(2),
             allowances: allowances.toFixed(2),
-            deductions: otherDeductions.toFixed(2),
+            deductions: otherDeductionsVal.toFixed(2),
             tax_amount: taxAmount.toFixed(2),
             pension_amount: pensionAmount.toFixed(2),
             net_amount: net.toFixed(2),
             payment_method: 'Bank Transfer',
             reference_number: '',
             notes: '',
-            loan_deduction: loanDeduction.toFixed(2),
-            loan_ids: outstandingLoans.map(loan => loan.id)
+            loan_deduction: suggestedLoan.toFixed(2),
+            loan_ids: []
         });
 
-        setTaxRate(taxRate);
-        setPensionRate(pensionRate);
-        setOtherDeductions(otherDeductions);
+        setTaxRate(taxRateVal);
+        setPensionRate(pensionRateVal);
+        setOtherDeductions(otherDeductionsVal);
         setShowPaymentModal(true);
+    };
+
+    // Toggle a credit sale for salary deduction; prefill the deduction with the selected total
+    const handleToggleSale = (sale) => {
+        setSelectedSaleIds(prev => {
+            const next = prev.includes(sale.id) ? prev.filter(id => id !== sale.id) : [...prev, sale.id];
+            const total = creditSales.filter(x => next.includes(x.id)).reduce((sum, x) => sum + parseFloat(x.balance_due), 0);
+            setCreditDeduction(total.toFixed(2));
+            return next;
+        });
     };
 
 
@@ -631,12 +601,11 @@ const handleEditDebt = (debt) => {
         // Calculate tax and pension amounts (these are DEDUCTIONS)
         const taxAmount = (gross * taxRate / 100);
         const pensionAmount = (gross * pensionRate / 100);
-        const loanDeduction = parseFloat(selectedStaff.outstanding_loan_amount) || 0;
+        const loanDeduction = Math.max(0, parseFloat(loanDeductionInput) || 0);
+        const creditDed = Math.max(0, parseFloat(creditDeduction) || 0);
 
-        // TOTAL DEDUCTIONS = Tax + Pension + Other Deductions + Loan Deductions
-        const totalDeductions = taxAmount + pensionAmount + otherDeductions + loanDeduction;
-
-        // NET AMOUNT = Gross Salary - ALL Deductions
+        // TOTAL DEDUCTIONS = Tax + Pension + Other + Loan Installment + Credit Sales
+        const totalDeductions = taxAmount + pensionAmount + otherDeductions + loanDeduction + creditDed;
         const net = gross - totalDeductions;
 
         setPaymentForm(prev => ({
@@ -644,8 +613,7 @@ const handleEditDebt = (debt) => {
             tax_amount: taxAmount.toFixed(2),
             pension_amount: pensionAmount.toFixed(2),
             loan_deduction: loanDeduction.toFixed(2),
-            net_amount: net.toFixed(2),
-            loan_ids: outstandingLoans.map(loan => loan.id)
+            net_amount: net.toFixed(2)
         }));
     };
 
@@ -654,7 +622,7 @@ const handleEditDebt = (debt) => {
         if (selectedStaff && showPaymentModal) {
             recalculatePayment();
         }
-    }, [selectedStaff, taxRate, pensionRate, otherDeductions, outstandingLoans, showPaymentModal]);
+    }, [selectedStaff, taxRate, pensionRate, otherDeductions, loanDeductionInput, creditDeduction, showPaymentModal]);
 
     // Process payment
     const handleProcessPayment = async () => {
@@ -672,8 +640,10 @@ const handleEditDebt = (debt) => {
                 pension_amount: parseFloat(paymentForm.pension_amount || 0),
                 net_amount: parseFloat(paymentForm.net_amount),
                 gross_amount: gross_amount, // Send calculated gross amount
-                loan_deduction: parseFloat(paymentForm.loan_deduction),
-                loan_ids: outstandingLoans.map(loan => loan.id),
+                loan_deduction: parseFloat(loanDeductionInput) || 0,
+                loan_ids: [],
+                credit_sales_deduction: parseFloat(creditDeduction) || 0,
+                sale_ids: selectedSaleIds,
                 user_id: selectedStaff.id,
                 staff_type: selectedStaff.staff_type || 'user', // <--- IMPORTANT: Pass the type!
                 // ... all other payment fields
@@ -685,31 +655,13 @@ const handleEditDebt = (debt) => {
             toast.success('Salary payment processed successfully!');
             setShowPaymentModal(false);
             fetchPayments();
-            fetchStaff(); // Refresh staff to update outstanding loans
+            fetchAllStaff(); // Refresh staff to update outstanding loans/credit
         } catch (error) {
             console.error('Error processing payment:', error);
             const errorMessage = error.response?.data?.details || error.response?.data?.error || 'Failed to process payment.';
             toast.error(errorMessage);
         }
     };
-
-    // Recalculate net amount when dependencies change
-    useEffect(() => {
-        if (selectedStaff && showPaymentModal) {
-            const loanDeduction = parseFloat(selectedStaff.outstanding_loan_amount) || 0;
-            const totalDeductions = otherDeductions + loanDeduction;
-            const gross = parseFloat(selectedStaff.base_salary || 0) + parseFloat(selectedStaff.allowances || 0);
-            const net = gross - totalDeductions;
-
-            setPaymentForm(prev => ({
-                ...prev,
-                gross_amount: gross.toFixed(2),
-                net_amount: net.toFixed(2),
-                loan_deduction: loanDeduction.toFixed(2),
-                loan_ids: outstandingLoans.map(loan => loan.id)
-            }));
-        }
-    }, [selectedStaff, otherDeductions, outstandingLoans, showPaymentModal]);
 
     // Update the handleSaveSalary function with better error handling
     const handleSaveSalary = async () => {
@@ -876,7 +828,6 @@ const handleEditSalary = (staffMember) => {
     const handleModalClose = () => {
         setShowSalaryModal(false);
         setShowPaymentModal(false);
-        setShowLoanModal(false);
         setShowPaymentDetails(false);
         setSelectedStaff(null);
         setSelectedPayment(null);
@@ -1424,13 +1375,6 @@ const handleEditSalary = (staffMember) => {
                                                                     title="Process Payment"
                                                                 >
                                                                     <FiDollarSign />
-                                                                </button>
-                                                                <button
-                                                                    className="sm-action-btn sm-action-btn--warning"
-                                                                    onClick={() => handleOpenLoanModal(staff)}
-                                                                    title="Record Loan"
-                                                                >
-                                                                    <FiArrowUp />
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -2545,22 +2489,83 @@ const handleEditSalary = (staffMember) => {
                         <div className="sm-input-help">Company debt, advances, etc.</div>
                     </div>
 
-                    {outstandingLoans.length > 0 && (
-                        <div className="sm-field sm-field--full">
-                            <label className="sm-label">Loan Deductions</label>
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Loan Deduction (Monthly Installments)</label>
+                        {outstandingLoans.length > 0 ? (
                             <div className="sm-loan-deductions">
                                 {outstandingLoans.map(loan => (
                                     <div key={loan.id} className="sm-loan-item">
-                                        <span>{format(new Date(loan.loan_date), 'MMM dd, yyyy')} - {loan.reason || 'No reason provided'}</span>
-                                        <span className="sm-loan-amount">{formatCurrency(loan.amount)}</span>
+                                        <span>
+                                            {format(new Date(loan.loan_date), 'MMM dd, yyyy')} - {loan.reason || 'No reason provided'}
+                                            {loan.repayment_months ? ` (${loan.repayment_months} month plan)` : ''}
+                                        </span>
+                                        <span className="sm-loan-amount">
+                                            {formatCurrency(loan.monthly_deduction)}/month &middot; outstanding {formatCurrency(loan.outstanding != null ? loan.outstanding : loan.amount)}
+                                        </span>
                                     </div>
                                 ))}
+                            </div>
+                        ) : (
+                            <div className="sm-input-help">No outstanding loans for this staff member. Record loans on the Loans page.</div>
+                        )}
+                        <div className="sm-input" style={{ marginTop: '8px' }}>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={loanDeductionInput}
+                                onChange={(e) => setLoanDeductionInput(e.target.value)}
+                                className="sm-input__field"
+                            />
+                        </div>
+                        <div className="sm-input-help">
+                            Prefilled with this month's installment from the loan repayment schedule — you can adjust it before processing.
+                        </div>
+                    </div>
+
+                    <div className="sm-field sm-field--full">
+                        <label className="sm-label">Bread Purchases on Credit (Deduct from Salary)</label>
+                        {creditSales.length > 0 ? (
+                            <div className="sm-loan-deductions">
+                                {creditSales.map(sale => (
+                                    <label key={sale.id} className="sm-loan-item" style={{ cursor: 'pointer' }}>
+                                        <span>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedSaleIds.includes(sale.id)}
+                                                onChange={() => handleToggleSale(sale)}
+                                                style={{ marginRight: '8px' }}
+                                            />
+                                            {format(new Date(sale.sale_date), 'MMM dd, yyyy')} — Sale #{sale.id} ({sale.status})
+                                        </span>
+                                        <span className="sm-loan-amount">{formatCurrency(sale.balance_due)}</span>
+                                    </label>
+                                ))}
                                 <div className="sm-loan-total">
-                                    Total Loan Deduction: {formatCurrency(selectedStaff?.outstanding_loan_amount || 0)}
+                                    Selected: {formatCurrency(creditSales.filter(x => selectedSaleIds.includes(x.id)).reduce((sum, x) => sum + parseFloat(x.balance_due), 0))}
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="sm-input-help">This staff member has no unpaid bread purchases on credit.</div>
+                        )}
+                        {selectedSaleIds.length > 0 && (
+                            <>
+                                <div className="sm-input" style={{ marginTop: '8px' }}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={creditDeduction}
+                                        onChange={(e) => setCreditDeduction(e.target.value)}
+                                        className="sm-input__field"
+                                    />
+                                </div>
+                                <div className="sm-input-help">
+                                    Amount to deduct for the selected sales — recorded as payment against them and reduces their outstanding balance.
+                                </div>
+                            </>
+                        )}
+                    </div>
 
                     {/* DEDUCTION BREAKDOWN */}
                     <div className="sm-field sm-field--full">
@@ -2582,6 +2587,10 @@ const handleEditSalary = (staffMember) => {
                                 <span>Loan Deductions:</span>
                                 <span className="sm-deduction-amount">-{formatCurrency(paymentForm.loan_deduction)}</span>
                             </div>
+                            <div className="sm-deduction-item">
+                                <span>Credit Sales Deduction:</span>
+                                <span className="sm-deduction-amount">-{formatCurrency(creditDeduction)}</span>
+                            </div>
                             <div className="sm-deduction-total">
                                 <span>Total Deductions:</span>
                                 <span className="sm-deduction-amount">
@@ -2589,7 +2598,8 @@ const handleEditSalary = (staffMember) => {
                                         parseFloat(paymentForm.tax_amount || 0) +
                                         parseFloat(paymentForm.pension_amount || 0) +
                                         parseFloat(otherDeductions || 0) +
-                                        parseFloat(paymentForm.loan_deduction || 0)
+                                        parseFloat(paymentForm.loan_deduction || 0) +
+                                        parseFloat(creditDeduction || 0)
                                     )}
                                 </span>
                             </div>
@@ -2711,6 +2721,10 @@ const handleEditSalary = (staffMember) => {
                                         <span className="sm-summary-label">Loan Deductions:</span>
                                         <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(paymentForm.loan_deduction)}</span>
                                     </div>
+                                    <div className="sm-summary-item">
+                                        <span className="sm-summary-label">Credit Sales Deduction:</span>
+                                        <span className="sm-summary-value sm-summary-value--negative">-{formatCurrency(creditDeduction)}</span>
+                                    </div>
 
                                     <div className="sm-summary-item sm-summary-item--total">
                                         <span className="sm-summary-label">Net Amount (Paid to Staff):</span>
@@ -2737,84 +2751,6 @@ const handleEditSalary = (staffMember) => {
         </div>
     </div>
 )}
-
-            {/* Add Loan Modal */}
-            {showLoanModal && (
-                <div className="sm-modal">
-                    <div className="sm-modal__content">
-                        <div className="sm-modal__header">
-                            <h3 className="sm-modal__title">
-                                <FiArrowUp className="sm-modal__icon" />
-                                Record Staff Loan - {selectedStaff?.fullname || selectedStaff?.username}
-                            </h3>
-                            <button className="sm-modal__close" onClick={() => setShowLoanModal(false)}>
-                                <FiX />
-                            </button>
-                        </div>
-                        <div className="sm-modal__body">
-                            <div className="sm-form-grid">
-                                <div className="sm-field">
-                                    <label className="sm-label">Loan Date *</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="date"
-                                            name="loan_date"
-                                            value={loanData.loan_date}
-                                            onChange={handleLoanChange}
-                                            className="sm-input__field"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="sm-field">
-                                    <label className="sm-label">Amount (₦) *</label>
-                                    <div className="sm-input">
-                                        <input
-                                            type="number"
-                                            name="amount"
-                                            value={loanData.amount}
-                                            onChange={handleLoanChange}
-                                            placeholder="0.00"
-                                            min="1"
-                                            step="0.01"
-                                            className="sm-input__field"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="sm-field sm-field--full">
-                                    <label className="sm-label">Reason (Optional)</label>
-                                    <div className="sm-input">
-                                        <textarea
-                                            rows={3}
-                                            name="reason"
-                                            value={loanData.reason}
-                                            onChange={handleLoanChange}
-                                            placeholder="Reason for the loan/advance"
-                                            className="sm-input__field"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="sm-modal__footer">
-                            <button className="sm-btn sm-btn--ghost" onClick={() => setShowLoanModal(false)}>
-                                Cancel
-                            </button>
-                            <button
-                                className="sm-btn sm-btn--primary"
-                                onClick={handleAddLoan}
-                                disabled={!loanData.amount || loanData.amount <= 0}
-                            >
-                                <FiSave />
-                                Record Loan
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
 {/* Payment Details Modal */}
 {showPaymentDetails && paymentDetails && (
@@ -3469,12 +3405,3 @@ const handleEditSalary = (staffMember) => {
 };
 
 export default SalaryManagementPage;
-
-
-
-
-
-
-
-
-
