@@ -1,0 +1,256 @@
+/* Global modal + dialog styles
+   The app uses react-bootstrap <Modal> and custom ppb-dialog components, but
+   Bootstrap's CSS was never imported — this file provides the modal
+   positioning/backdrop styles (centered popups) plus the ppb-dialog design,
+   in the purple theme. Loaded once from main.jsx. */
+
+/* ---------- react-bootstrap Modal infrastructure ---------- */
+.modal-open {
+    overflow: hidden;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1055;
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+}
+
+.modal.show {
+    display: block;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(30, 10, 50, 0.5);
+}
+
+.modal-backdrop.fade { opacity: 0; }
+.modal-backdrop.show { opacity: 1; }
+
+.modal.fade .modal-dialog {
+    transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+    transform: translate(0, -30px);
+    opacity: 0;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+    opacity: 1;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    max-width: 500px;
+    margin: 1.75rem auto;
+    pointer-events: none;
+}
+
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+.modal-dialog-centered .modal-dialog {
+    /* react-bootstrap puts this class on the same node as .modal-dialog */
+}
+
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(90, 45, 130, 0.15);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(30, 10, 50, 0.25);
+    outline: 0;
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+}
+
+.modal-lg { max-width: 800px; }
+.modal-xl { max-width: 1140px; }
+.modal-sm { max-width: 320px; }
+
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    .modal-lg, .modal-xl { max-width: calc(100% - 1rem); }
+}
+
+.modal-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e8dff2;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1.25rem;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e8dff2;
+    border-bottom-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+}
+
+/* Close button (react-bootstrap renders <button class="btn-close">) */
+.btn-close {
+    box-sizing: content-box;
+    width: 1em;
+    height: 1em;
+    padding: 0.25em;
+    color: #5a2d82;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    opacity: 0.6;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    position: relative;
+}
+
+.btn-close::before {
+    content: "\00D7"; /* × */
+    font-size: 1.5rem;
+    font-weight: 700;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+}
+
+.btn-close:hover { opacity: 1; background: rgba(90, 45, 130, 0.08); }
+
+/* ---------- Custom ppb-dialog (confirmations etc.) ---------- */
+.ppb-dialog__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1060;
+    background: rgba(30, 10, 50, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: ppb-dialog-fade 0.2s ease-out;
+}
+
+@keyframes ppb-dialog-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.ppb-dialog {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(30, 10, 50, 0.25);
+    width: 100%;
+    max-width: 440px;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    animation: ppb-dialog-pop 0.2s ease-out;
+}
+
+@keyframes ppb-dialog-pop {
+    from { opacity: 0; transform: translateY(-14px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
+
+.ppb-dialog__header {
+    padding: 1.1rem 1.25rem 0.5rem;
+}
+
+.ppb-dialog__title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #4a148c;
+}
+
+.ppb-dialog__body {
+    padding: 0.5rem 1.25rem 1rem;
+    color: #444;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.ppb-dialog__warning {
+    color: #c5221f;
+    font-size: 0.85rem;
+}
+
+.ppb-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem 1.1rem;
+}
+
+.ppb-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.ppb-btn:hover { filter: brightness(1.08); }
+.ppb-btn:active { transform: translateY(1px); }
+
+.ppb-btn--ghost {
+    background: #eee;
+    color: #444;
+}
+
+.ppb-btn--danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.ppb-btn--primary {
+    background: #5a2d82;
+    color: #fff;
+}
