@@ -30,6 +30,7 @@ import {
   FaComments,
   FaHistory,
   FaCog,
+  FaUser,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -131,6 +132,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Permissions', path: '/permissions', icon: <FaUserShield />, roles: ['admin'] },
       { name: 'Audit Logs', path: '/audit-logs', icon: <FaHistory />, roles: ['admin', 'manager'] },
       { name: 'Settings', path: '/settings', icon: <FaCog />, roles: ['admin'] },
+      { name: 'My Profile', path: '/profile', icon: <FaUser />, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
     ],
   ];
 
