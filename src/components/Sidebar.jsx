@@ -27,6 +27,7 @@ import {
   FaUndo,
   FaPiggyBank,
   FaRobot,
+  FaComments,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -116,8 +117,9 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager', 'accountant'] },
     ],
 
-    // 6️⃣ AI Assistant
+    // 6️⃣ Communication
     [
+      { name: 'Team Chat', path: '/team-chat', icon: <FaComments />, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
       { name: 'AI Assistant', path: '/ai-assistant', icon: <FaRobot />, roles: ['admin', 'manager', 'accountant'] },
     ],
 
