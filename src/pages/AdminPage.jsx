@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, Modal } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaUser, FaEnvelope, FaPhone, FaVenusMars, FaUserTag, FaKey, FaFilter, FaSync, FaCalendarAlt } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/admin.css';
 import CustomToast from '../components/CustomToast';
-
-const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const roles = ['admin', 'manager', 'accountant', 'sales', 'baker'];
 
@@ -87,7 +85,7 @@ const AdminPage = () => {
             if (filterRole) params.role = filterRole;
             if (searchTerm) params.searchTerm = searchTerm;
 
-            const response = await axios.get(`${API_BASE_URL}/users`, { params });
+            const response = await api.get('/users', { params });
             setUsers(response.data);
         } catch (err) {
             console.error('Error fetching users:', err.response?.data || err.message);
@@ -123,7 +121,7 @@ const AdminPage = () => {
                 if (!payload.password) {
                     delete payload.password;
                 }
-                const response = await axios.put(`${API_BASE_URL}/users/${formData.id}`, payload);
+                const response = await api.put(`/users/${formData.id}`, payload);
                 setSuccessMessage(`User "${response.data.fullname}" updated successfully!`);
                 // toast.success(`User "${response.data.fullname}" updated successfully!`);
                 // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" updated successfully!`} />);
@@ -131,7 +129,7 @@ const AdminPage = () => {
                     toastId: 'update-success'
                 });
             } else {
-                const response = await axios.post(`${API_BASE_URL}/users`, formData);
+                const response = await api.post('/users', formData);
                 setSuccessMessage(`User "${response.data.fullname}" created successfully!`);
                 // toast.success(`User "${response.data.fullname}" created successfully!`);
                 // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" created successfully!`} />);
@@ -173,7 +171,7 @@ const AdminPage = () => {
 
     const handleDelete = async (id, name) => {
         try {
-            await axios.delete(`${API_BASE_URL}/users/${id}`);
+            await api.delete(`/users/${id}`);
             setSuccessMessage(`User "${name}" deleted successfully!`);
             toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message={`User "${name}" deleted successfully!`} />, {
                 toastId: 'delete-success'
