@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button, Form, FormControl, Table, Alert, Spinner, Card, Row, Col, InputGroup, Nav } from 'react-bootstrap';
+import { Button, Form, FormControl, Table, Alert, Spinner, Card, Row, Col, InputGroup, Nav, Modal } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaBox, FaTags, FaFilter, FaImage } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -138,6 +138,9 @@ const ProductManagementPage = () => {
         categoryId: null,
         categoryName: ""
     });
+
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     // --- Data Fetching ---
     const fetchProducts = async () => {
@@ -308,6 +311,7 @@ const ProductManagementPage = () => {
             }
             fetchProducts();
             setEditingProduct(null);
+            setShowProductModal(false);
             setProductFormData({
                 name: '',
                 description: '',
@@ -342,6 +346,7 @@ const ProductManagementPage = () => {
             is_active: product.is_active,
             units: product.units && product.units.length > 0 ? product.units : [{ type: 'pcs', display: '1 pcs' }],
         });
+        setShowProductModal(true);
         toast(<CustomToast id={`info-product-${Date.now()}`} type="info" message={`Editing product: ` + product.name} />, {
             toastId: 'product-infof'
         });
@@ -376,9 +381,19 @@ const ProductManagementPage = () => {
         setProductFormData({
             name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
         });
+        setShowProductModal(false);
         toast(<CustomToast id={`info-edit-${Date.now()}`} type="info" message="Cancelled product editing" />, {
             toastId: 'edit-infosf'
         });
+    };
+
+    const openAddProductModal = () => {
+        setEditingProduct(null);
+        setProductFormData({
+            name: '', description: '', price: '', min_stock_level: '', category: '', image_file: null, image_url: '', is_active: true, units: [{ type: 'pcs', display: '1 pcs' }],
+        });
+        setError('');
+        setShowProductModal(true);
     };
 
     // --- Category Handlers ---
@@ -407,6 +422,7 @@ const ProductManagementPage = () => {
             }
             fetchCategories();
             setEditingCategory(null);
+            setShowCategoryModal(false);
             setCategoryFormData({ name: '', description: '' });
         } catch (err) {
             const errorMsg = 'Failed to save category: ' + (err.response?.data?.details || err.message);
@@ -424,6 +440,7 @@ const ProductManagementPage = () => {
             name: category.name,
             description: category.description,
         });
+        setShowCategoryModal(true);
         toast(<CustomToast id={`success-edit-${Date.now()}`} type="success" message={`Editing category: ` + category.name} />, {
             toastId: 'edit-successseths'
         });
@@ -456,9 +473,17 @@ const ProductManagementPage = () => {
     const cancelCategoryEdit = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: '', description: '' });
+        setShowCategoryModal(false);
         toast(<CustomToast id={`info-cancelled-${Date.now()}`} type="info" message="Cancelled category editing" />, {
             toastId: 'cancelledrst-info'
         });
+    };
+
+    const openAddCategoryModal = () => {
+        setEditingCategory(null);
+        setCategoryFormData({ name: '', description: '' });
+        setError('');
+        setShowCategoryModal(true);
     };
 
     // Helper for filter submission
@@ -523,11 +548,19 @@ const ProductManagementPage = () => {
                     {/* Products Tab */}
                     {activeTab === 'products' && (
                         <div className="tab-pane active">
-                            {/* Product Add/Edit Form */}
-                            <Card className="product-management-card">
-                                <div className="card-titles">
-                                    <FaPlus /> {editingProduct ? 'Edit Product' : 'Add New Product'}
-                                </div>
+                            {/* Add Product Button */}
+                            <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                                <Button variant="outline-primary" onClick={openAddProductModal}>
+                                    <FaPlus className="me-1" /> Add New Product
+                                </Button>
+                            </div>
+
+                            {/* Product Add/Edit Modal */}
+                            <Modal show={showProductModal} onHide={cancelProductEdit} centered size="lg">
+                                <Modal.Header closeButton className="form-card-header">
+                                    <Modal.Title><FaPlus className="me-2" />{editingProduct ? 'Edit Product' : 'Add New Product'}</Modal.Title>
+                                </Modal.Header>
+                                <Modal.Body>
                                 <Form onSubmit={handleProductSubmit} className="product-form">
                                     <Row>
                                         <Col md={6} lg={4}>
@@ -633,17 +666,16 @@ const ProductManagementPage = () => {
                                     </Form.Group>
 
                                     <div className="form-actions">
-                                        {editingProduct && (
-                                            <Button variant="outline-secondary" onClick={cancelProductEdit}>
-                                                <FaTimes className="me-1" /> Cancel
-                                            </Button>
-                                        )}
+                                        <Button variant="outline-secondary" className="me-2" onClick={cancelProductEdit}>
+                                            <FaTimes className="me-1" /> Cancel
+                                        </Button>
                                         <Button variant="add-primary" className='add-primary' type="submit">
                                             {editingProduct ? <><FaEdit /> Update Product</> : <><FaPlus /> Add Product</>}
                                         </Button>
                                     </div>
                                 </Form>
-                            </Card>
+                                </Modal.Body>
+                            </Modal>
 
                             {/* Products Filter Section */}
                             <Card className="product-management-card">
@@ -744,7 +776,7 @@ const ProductManagementPage = () => {
                                                         <td className="product-names">{product.name}</td>
                                                         <td className="product-categorys">{product.category}</td>
                                                         <td>{product.description}</td>
-                                                        <td className="product-pricess">₦{Number(product.price).toFixed(2)}</td>
+                                                        <td className="product-pricess">₦{Number(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                                         <td className="product-unitss">
                                                             {product.units && product.units.length > 0 ? (
                                                                 product.units.map((unit, idx) => (
@@ -794,11 +826,19 @@ const ProductManagementPage = () => {
                     {/* Categories Tab */}
                     {activeTab === 'categories' && (
                         <div className="tab-pane active">
-                            {/* Category Add/Edit Form */}
-                            <Card className="product-management-card">
-                                <div className="card-titles">
-                                    <FaPlus /> {editingCategory ? 'Edit Category' : 'Add New Category'}
-                                </div>
+                            {/* Add Category Button */}
+                            <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                                <Button variant="outline-primary" onClick={openAddCategoryModal}>
+                                    <FaPlus className="me-1" /> Add New Category
+                                </Button>
+                            </div>
+
+                            {/* Category Add/Edit Modal */}
+                            <Modal show={showCategoryModal} onHide={cancelCategoryEdit} centered>
+                                <Modal.Header closeButton className="form-card-header">
+                                    <Modal.Title><FaPlus className="me-2" />{editingCategory ? 'Edit Category' : 'Add New Category'}</Modal.Title>
+                                </Modal.Header>
+                                <Modal.Body>
                                 <Form onSubmit={handleCategorySubmit} className="category-form">
                                     <Row>
                                         <Col md={8}>
@@ -810,11 +850,9 @@ const ProductManagementPage = () => {
                                         <Col md={4}>
                                             <Form.Group className="d-flex align-items-end h-100">
                                                 <div className="form-actions w-100">
-                                                    {editingCategory && (
-                                                        <Button variant="outline-secondary" onClick={cancelCategoryEdit} className="me-2">
-                                                            <FaTimes className="me-1" /> Cancel
-                                                        </Button>
-                                                    )}
+                                                    <Button variant="outline-secondary" onClick={cancelCategoryEdit} className="me-2">
+                                                        <FaTimes className="me-1" /> Cancel
+                                                    </Button>
                                                     <Button variant="add-primary" type="submit" className="add-primary">
                                                         {editingCategory ? <><FaEdit /> Update</> : <><FaPlus /> Add</>}
                                                     </Button>
@@ -827,7 +865,8 @@ const ProductManagementPage = () => {
                                         <FormControl as="textarea" name="description" placeholder="Category Description" value={categoryFormData.description} onChange={handleCategoryChange} rows="2"></FormControl>
                                     </Form.Group>
                                 </Form>
-                            </Card>
+                                </Modal.Body>
+                            </Modal>
 
                             {/* Category Search/Filter */}
                             <Card className="product-management-card">
@@ -861,7 +900,7 @@ const ProductManagementPage = () => {
                                     </div>
                                 ) : categories.length === 0 ? (
                                     <Alert variant="info" className="m-3">
-                                        No categories found. Add some above!
+                                        No categories found. Click "Add New Category" to create one.
                                     </Alert>
                                 ) : (
                                     <div className="table-container">

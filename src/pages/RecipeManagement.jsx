@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, Badge } from 'react-bootstrap';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, Badge, Modal } from 'react-bootstrap';
 import { FaTrash, FaPlus, FaTimes, FaBox, FaTag, FaMoneyBill, FaChartLine, FaInfoCircle } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -66,6 +66,8 @@ const RecipeManagement = () => {
         materialId: null,
         materialName: ""
     });
+
+    const [showRecipeModal, setShowRecipeModal] = useState(false);
 
     const fetchProducts = async () => {
         try {
@@ -265,6 +267,7 @@ const handleBatchRecipeSubmit = async (e) => {
         });
         setTempIngredients([]);
         setBatchSize(1);
+        setShowRecipeModal(false);
         fetchRecipes();
     } catch (err) {
         console.error('Error saving recipe:', err);
@@ -374,7 +377,7 @@ const handleBatchRecipeSubmit = async (e) => {
 
                                     <div className="product-price">
                                         <FaMoneyBill className="info-icon" />
-                                        Price: ₦{Number(selectedProduct.price).toFixed(2)}
+                                        Price: ₦{Number(selectedProduct.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </div>
 
                                     {selectedProduct.units && selectedProduct.units.length > 0 && (
@@ -401,18 +404,18 @@ const handleBatchRecipeSubmit = async (e) => {
 
                                 <div className="cogs-item">
                                     <span className="cogs-label">Selling Price:</span>
-                                    <span className="cogs-value">₦{Number(selectedProduct.price).toFixed(2)}</span>
+                                    <span className="cogs-value">₦{Number(selectedProduct.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
 
                                 <div className="cogs-item">
                                     <span className="cogs-label">Total COGS:</span>
-                                    <span className="cogs-value">₦{totalCogs.toFixed(2)}</span>
+                                    <span className="cogs-value">₦{totalCogs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
 
                                 <div className="cogs-item">
                                     <span className="cogs-label">Gross Profit:</span>
                                     <span className={`cogs-value ${(Number(selectedProduct.price) - totalCogs) >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-                                        ₦{(Number(selectedProduct.price) - totalCogs).toFixed(2)}
+                                        ₦{(Number(selectedProduct.price) - totalCogs).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
 
@@ -428,11 +431,21 @@ const handleBatchRecipeSubmit = async (e) => {
                 </div>
             </Card>
 
-            {/* Add Recipe Form */}
+            {/* Add Recipe Button */}
             {selectedProductId && (
-                <Card className="form-card mb-4">
-                    <div className="card-title">Add Recipe Ingredients</div>
-                    <div className="card-body">
+                <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                    <Button variant="outline-primary" onClick={() => setShowRecipeModal(true)}>
+                        <FaPlus className="me-1" /> Add Ingredients
+                    </Button>
+                </div>
+            )}
+
+            {/* Add Recipe Modal */}
+            <Modal show={showRecipeModal} onHide={() => setShowRecipeModal(false)} centered size="lg">
+                <Modal.Header closeButton className="form-card-header">
+                    <Modal.Title><FaPlus className="me-2" />Add Recipe Ingredients{selectedProduct ? ` — ${selectedProduct.name}` : ''}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
                         <Form onSubmit={handleBatchRecipeSubmit}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Batch Size (Number of Products)</Form.Label>
@@ -511,6 +524,13 @@ const handleBatchRecipeSubmit = async (e) => {
 
                             <div className="d-flex justify-content-end">
                                 <Button
+                                    variant="outline-secondary"
+                                    className="me-2"
+                                    onClick={() => setShowRecipeModal(false)}
+                                >
+                                    <FaTimes className="me-1" /> Cancel
+                                </Button>
+                                <Button
                                     variant="outline-primary"
                                     type="submit"
                                     disabled={tempIngredients.length === 0}
@@ -520,9 +540,8 @@ const handleBatchRecipeSubmit = async (e) => {
                                 </Button>
                             </div>
                         </Form>
-                    </div>
-                </Card>
-            )}
+                </Modal.Body>
+            </Modal>
 
             {/* Recipes Table */}
             {selectedProductId && (
@@ -536,7 +555,7 @@ const handleBatchRecipeSubmit = async (e) => {
                             </div>
                         ) : recipes.length === 0 ? (
                             <Alert variant="info" className="text-center">
-                                No recipe ingredients found. Add ingredients above.
+                                No recipe ingredients found. Click "Add Ingredients" to get started.
                             </Alert>
                         ) : (
                             <div className="table-responsive">
@@ -558,7 +577,7 @@ const handleBatchRecipeSubmit = async (e) => {
                                                 <td>{item.raw_material_name}</td>
                                                 <td>{Number(item.quantity_required).toFixed(4)}</td>
                                                 <td>{item.raw_material_unit}</td>
-                                                <td>₦{(Number(item.quantity_required) * Number(item.raw_material_cost_per_unit || 0)).toFixed(2)}</td>
+                                                <td>₦{(Number(item.quantity_required) * Number(item.raw_material_cost_per_unit || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                                 <td>
                                                     <Button
                                                         variant="outline-primary"

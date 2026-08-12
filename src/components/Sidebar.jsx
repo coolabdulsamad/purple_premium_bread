@@ -20,6 +20,16 @@ import {
   FaFileInvoiceDollar,
   FaClipboardList,
   FaMotorcycle,
+  FaCheckDouble,
+  FaUserShield,
+  FaWallet,
+  FaHandHoldingUsd,
+  FaUndo,
+  FaPiggyBank,
+  FaRobot,
+  FaComments,
+  FaHistory,
+  FaCog,
 } from 'react-icons/fa';
 import { MdInventory } from 'react-icons/md';
 import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
@@ -71,6 +81,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'Sales Management', path: '/sales_management', icon: <FaClipboardList />, roles: ['admin', 'manager'] },
       { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, roles: ['admin', 'sales', 'manager', 'accountant'] },
       { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Sales Returns', path: '/returns', icon: <FaUndo />, roles: ['admin', 'sales', 'manager', 'accountant'] },
     ],
 
     // 2️⃣ Production & Products
@@ -90,9 +101,12 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
     // 4️⃣ Finance & Reports
     [
       { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Money', path: '/money', icon: <FaWallet />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Advance Wallets', path: '/wallets', icon: <FaPiggyBank />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
       { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
+      { name: 'Staff Loans', path: '/loans', icon: <FaHandHoldingUsd />, roles: ['admin', 'accountant', 'manager'] },
     ],
 
     // 5️⃣ People & System
@@ -103,6 +117,20 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
       { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales', 'accountant'] },
       { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager', 'accountant'] },
+    ],
+
+    // 6️⃣ Communication
+    [
+      { name: 'Team Chat', path: '/team-chat', icon: <FaComments />, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
+      { name: 'AI Assistant', path: '/ai-assistant', icon: <FaRobot />, roles: ['admin', 'manager', 'accountant'] },
+    ],
+
+    // 7️⃣ Governance
+    [
+      { name: 'Approvals', path: '/approvals', icon: <FaCheckDouble />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Permissions', path: '/permissions', icon: <FaUserShield />, roles: ['admin'] },
+      { name: 'Audit Logs', path: '/audit-logs', icon: <FaHistory />, roles: ['admin', 'manager'] },
+      { name: 'Settings', path: '/settings', icon: <FaCog />, roles: ['admin'] },
     ],
   ];
 
@@ -126,31 +154,33 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
 
       {/* NAVIGATION */}
       <nav className="sidebar-nav">
-        {navGroups.map((group, index) => (
-          <React.Fragment key={index}>
-            <ul>
-              {group.map(
-                (link) =>
-                  userRole &&
-                  link.roles.includes(userRole) && (
-                    <li key={link.name} title={!sidebarExpanded ? link.name : ''}>
-                      <NavLink
-                        to={link.path}
-                        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                        onClick={() => {
-                          if (isMobile) setSidebarExpanded(false);
-                        }}
-                      >
-                        <span className="nav-icon">{link.icon}</span>
-                        <span className="nav-name">{link.name}</span>
-                      </NavLink>
-                    </li>
-                  )
-              )}
-            </ul>
-            {index < navGroups.length - 1 && <hr className="nav-divider" />}
-          </React.Fragment>
-        ))}
+        {navGroups.map((group, index) => {
+          const visibleLinks = group.filter(
+            (link) => userRole && link.roles.includes(userRole)
+          );
+          if (visibleLinks.length === 0) return null;
+          return (
+            <React.Fragment key={index}>
+              <ul>
+                {visibleLinks.map((link) => (
+                  <li key={link.name} title={!sidebarExpanded ? link.name : ''}>
+                    <NavLink
+                      to={link.path}
+                      className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+                      onClick={() => {
+                        if (isMobile) setSidebarExpanded(false);
+                      }}
+                    >
+                      <span className="nav-icon">{link.icon}</span>
+                      <span className="nav-name">{link.name}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+              {index < navGroups.length - 1 && <hr className="nav-divider" />}
+            </React.Fragment>
+          );
+        })}
       </nav>
 
       {/* FOOTER */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
-import { FaMoneyBillWave, FaCreditCard, FaUser, FaCalendarAlt, FaUpload, FaTimesCircle, FaSearch, FaTimes, FaFileInvoiceDollar, FaHistory } from 'react-icons/fa';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, ButtonGroup } from 'react-bootstrap';
+import { FaMoneyBillWave, FaUser, FaUpload, FaTimesCircle, FaFileInvoiceDollar, FaHistory, FaWallet, FaMagic, FaListOl } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../assets/styles/credit-dashboard.css';
 import CustomToast from '../components/CustomToast';
@@ -14,9 +14,14 @@ const CustomerCreditManagement = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [outstandingSales, setOutstandingSales] = useState([]);
     const [paymentHistory, setPaymentHistory] = useState([]);
+    const [advanceBalance, setAdvanceBalance] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    // 'auto' = pay by amount, system clears oldest sales first (default)
+    // 'specific' = pay against one selected sale (legacy behavior)
+    const [paymentMode, setPaymentMode] = useState('auto');
 
     const [paymentFormData, setPaymentFormData] = useState({
         transaction_id: '',
@@ -32,20 +37,20 @@ const CustomerCreditManagement = () => {
 
     const paymentMethods = ['Cash', 'Bank Transfer', 'POS', 'Cheque'];
 
+    const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+
+    const formatNaira = (value) => `₦${Number(value || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
     const fetchCustomers = async () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/customers`);
             setCustomers(response.data);
-            // toast.success('Customers loaded successfully');
-            // toast(<CustomToast id="123" type="success" message="Customers loaded successfully" />);
             toast(<CustomToast id={`success-customer-${Date.now()}`} type="success" message="Customers loaded successfully" />, {
                 toastId: 'customer-success'
             });
         } catch (err) {
             const errorMsg = 'Failed to load customers.';
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -57,6 +62,7 @@ const CustomerCreditManagement = () => {
             setSelectedCustomer(null);
             setOutstandingSales([]);
             setPaymentHistory([]);
+            setAdvanceBalance(0);
             setLoading(false);
             return;
         }
@@ -72,16 +78,22 @@ const CustomerCreditManagement = () => {
             const paymentHistoryRes = await axios.get(`${API_BASE_URL}/payments/customer/${selectedCustomerId}`);
             setPaymentHistory(paymentHistoryRes.data);
 
-            // toast.success('Customer details loaded successfully');
-            // toast(<CustomToast id="123" type="success" message="Customer details loaded successfully" />);
+            // Advance wallet balance (fail-open: older backends simply report 0)
+            try {
+                const outstandingRes = await axios.get(`${API_BASE_URL}/payments/outstanding?customer_id=${selectedCustomerId}`, {
+                    headers: authHeaders()
+                });
+                setAdvanceBalance(Number(outstandingRes.data?.owner?.advance_balance || 0));
+            } catch (walletErr) {
+                setAdvanceBalance(0);
+            }
+
             toast(<CustomToast id={`success-customer-${Date.now()}`} type="success" message="Customer details loaded successfully" />, {
                 toastId: 'customer-success'
             });
         } catch (err) {
             const errorMsg = 'Failed to load customer details. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
             toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                 toastId: 'e-error'
             });
@@ -90,19 +102,10 @@ const CustomerCreditManagement = () => {
         }
     }, [selectedCustomerId]);
 
-    // useEffect(() => {
-    //     fetchCustomers();
-    // }, []);
-
-    // src/pages/CustomerCreditManagement.jsx - Add event listener
-
     useEffect(() => {
         fetchCustomers();
 
-        // Listen for rider payment events to refresh customer data
         const handleRiderPayment = (event) => {
-            console.log('Rider payment recorded, refreshing customer data:', event.detail);
-            // If the currently selected customer is linked to this rider, refresh their details
             if (selectedCustomerId) {
                 fetchCustomerDetails();
             }
@@ -113,7 +116,7 @@ const CustomerCreditManagement = () => {
         return () => {
             window.removeEventListener('rider-payment-recorded', handleRiderPayment);
         };
-    }, [selectedCustomerId]); // Add selectedCustomerId as dependency
+    }, [selectedCustomerId, fetchCustomerDetails]);
 
     useEffect(() => {
         fetchCustomerDetails();
@@ -158,33 +161,14 @@ const CustomerCreditManagement = () => {
         if (document.getElementById('receiptImageUpload')) {
             document.getElementById('receiptImageUpload').value = '';
         }
-        // toast.info('Receipt image cleared');
-        // toast(<CustomToast id="123" type="info" message="Receipt image cleared" />);
         toast(<CustomToast id={`info-receipt-${Date.now()}`} type="info" message="Receipt image cleared" />, {
             toastId: 'receipt-info'
         });
     };
 
-    const handleRecordPayment = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccessMessage('');
-        setUploadingImage(false);
-
-        if (!selectedCustomerId || !paymentFormData.transaction_id || paymentFormData.amount <= 0) {
-            const errorMsg = 'Please select a customer, an outstanding transaction, and enter a positive payment amount.';
-            setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
-            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
-            });
-            return;
-        }
-
+    const uploadProofIfNeeded = async () => {
         let finalProof = paymentFormData.paymentReference;
 
-        // Only require proof for non-cash payments
         if (paymentFormData.payment_method !== 'Cash') {
             if (selectedFile) {
                 setUploadingImage(true);
@@ -192,70 +176,106 @@ const CustomerCreditManagement = () => {
                 formData.append('receiptImage', selectedFile);
                 try {
                     const uploadResponse = await axios.post(`${API_BASE_URL}/sales/upload-receipt`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
+                        headers: { 'Content-Type': 'multipart/form-data' },
                     });
                     finalProof = uploadResponse.data.url;
-                    // toast.success('Receipt image uploaded successfully');
-                    // toast(<CustomToast id="123" type="success" message="Receipt image uploaded successfully" />);
                     toast(<CustomToast id={`success-receipt-${Date.now()}`} type="success" message="Receipt image uploaded successfully" />, {
                         toastId: 'receipt-success'
                     });
                 } catch (uploadError) {
                     const errorMsg = 'Failed to upload receipt image. ' + (uploadError.response?.data?.details || '');
                     setError(errorMsg);
-                    // toast.error(errorMsg);
-                    // toast(<CustomToast id="123" type="error" message={errorMsg} />);
                     toast(<CustomToast id={`error-dropdown-${Date.now()}`} type="error" message={errorMsg} />, {
                         toastId: 'e-error'
                     });
-                    setUploadingImage(false);
-                    return;
+                    return null;
                 } finally {
                     setUploadingImage(false);
                 }
             } else if (!paymentFormData.paymentReference) {
                 const errorMsg = 'Please provide either a payment reference or upload a receipt image for non-cash payments.';
                 setError(errorMsg);
-                // toast.error(errorMsg);
-                // toast(<CustomToast id="123" type="error" message={errorMsg} />);
                 toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
                     toastId: 'e-error'
                 });
-                return;
+                return null;
             }
         }
+        return finalProof;
+    };
+
+    const handleRecordPayment = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccessMessage('');
+
+        if (!selectedCustomerId || !(paymentFormData.amount > 0)) {
+            const errorMsg = 'Please select a customer and enter a positive payment amount.';
+            setError(errorMsg);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, { toastId: 'e-error' });
+            return;
+        }
+
+        if (paymentMode === 'specific' && !paymentFormData.transaction_id) {
+            const errorMsg = 'Please select an outstanding transaction, or switch to auto-allocation mode.';
+            setError(errorMsg);
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, { toastId: 'e-error' });
+            return;
+        }
+
+        const finalProof = await uploadProofIfNeeded();
+        if (finalProof === null) return;
 
         try {
-            const payload = {
-                transaction_id: parseInt(paymentFormData.transaction_id),
-                customer_id: parseInt(selectedCustomerId),
-                amount: paymentFormData.amount,
-                payment_method: paymentFormData.payment_method,
-                proof: finalProof,
-            };
-            const response = await axios.post(`${API_BASE_URL}/payments`, payload, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            const successMsg = `Payment of ₦${Number(response.data.payment.amount).toFixed(2)} recorded successfully!`;
-            setSuccessMessage(successMsg);
-            // toast.success(successMsg);
-            // toast(<CustomToast id="123" type="success" message={successMsg} />);
-            toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, {
-                toastId: 's-success'
-            });
+            if (paymentMode === 'auto') {
+                // Pay by amount: the system clears the oldest outstanding sales first.
+                // Any excess beyond total debt is credited to the customer's advance wallet.
+                const response = await axios.post(`${API_BASE_URL}/payments/allocate`, {
+                    customer_id: parseInt(selectedCustomerId),
+                    amount: paymentFormData.amount,
+                    payment_method: paymentFormData.payment_method,
+                    proof: finalProof,
+                }, { headers: authHeaders() });
+
+                if (response.status === 202 || response.data?.pending_approval) {
+                    const infoMsg = 'Payment submitted for approval. It will be allocated once approved.';
+                    setSuccessMessage(infoMsg);
+                    toast(<CustomToast id={`info-${Date.now()}`} type="info" message={infoMsg} />, { toastId: 'approval-info' });
+                } else {
+                    const data = response.data;
+                    let successMsg = data.message || `Payment of ${formatNaira(paymentFormData.amount)} allocated successfully.`;
+                    if (data.wallet_credit > 0) {
+                        successMsg += ` ${formatNaira(data.wallet_credit)} added to advance wallet.`;
+                    }
+                    setSuccessMessage(successMsg);
+                    toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, { toastId: 's-success' });
+                }
+            } else {
+                const response = await axios.post(`${API_BASE_URL}/payments`, {
+                    transaction_id: parseInt(paymentFormData.transaction_id),
+                    customer_id: parseInt(selectedCustomerId),
+                    amount: paymentFormData.amount,
+                    payment_method: paymentFormData.payment_method,
+                    proof: finalProof,
+                }, { headers: authHeaders() });
+
+                if (response.status === 202 || response.data?.pending_approval) {
+                    const infoMsg = 'Payment submitted for approval. It will be recorded once approved.';
+                    setSuccessMessage(infoMsg);
+                    toast(<CustomToast id={`info-${Date.now()}`} type="info" message={infoMsg} />, { toastId: 'approval-info' });
+                } else {
+                    const successMsg = `Payment of ${formatNaira(paymentFormData.amount)} recorded successfully!`;
+                    setSuccessMessage(successMsg);
+                    toast(<CustomToast id={`success-s-${Date.now()}`} type="success" message={successMsg} />, { toastId: 's-success' });
+                }
+            }
+
             fetchCustomerDetails();
             resetPaymentForm();
-            clearImage();
         } catch (err) {
-            const errorMsg = 'Failed to record payment. ' + (err.response?.data?.details || err.message);
+            const errorMsg = 'Failed to record payment. ' + (err.response?.data?.error || err.response?.data?.details || err.message);
             setError(errorMsg);
-            // toast.error(errorMsg);
-            // toast(<CustomToast id="123" type="error" message={errorMsg} />);
-            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, {
-                toastId: 'e-error'
-            });
+            toast(<CustomToast id={`error-e-${Date.now()}`} type="error" message={errorMsg} />, { toastId: 'e-error' });
         }
     };
 
@@ -270,6 +290,7 @@ const CustomerCreditManagement = () => {
         clearImage();
     };
 
+    const totalOutstanding = outstandingSales.reduce((sum, sale) => sum + Number(sale.balance_due || 0), 0);
     const isOverdue = selectedCustomer && Number(selectedCustomer.balance) > 0 && selectedCustomer.due_date && new Date(selectedCustomer.due_date) < new Date();
 
     return (
@@ -302,7 +323,7 @@ const CustomerCreditManagement = () => {
                             <option value="">-- Select a Customer --</option>
                             {customers.map(c => (
                                 <option key={c.id} value={c.id}>
-                                    {c.fullname} (Balance: ₦{Number(c.balance).toFixed(2)})
+                                    {c.fullname} (Balance: {formatNaira(c.balance)})
                                 </option>
                             ))}
                         </Form.Control>
@@ -319,7 +340,7 @@ const CustomerCreditManagement = () => {
                                     </Col>
                                     <Col md={6} className="customer-info-col">
                                         <p className="mb-2"><strong>Address:</strong> {selectedCustomer.address || 'N/A'}</p>
-                                        <p className="mb-2"><strong>Credit Limit:</strong> ₦{Number(selectedCustomer.credit_limit).toFixed(2)}</p>
+                                        <p className="mb-2"><strong>Credit Limit:</strong> {formatNaira(selectedCustomer.credit_limit)}</p>
                                     </Col>
                                 </Row>
                                 <hr className="my-3" />
@@ -327,9 +348,15 @@ const CustomerCreditManagement = () => {
                                     <h4 className="mb-2">
                                         Current Balance:
                                         <span className={Number(selectedCustomer.balance) > 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                                            ₦{Number(selectedCustomer.balance).toFixed(2)}
+                                            {formatNaira(selectedCustomer.balance)}
                                         </span>
                                     </h4>
+                                    {advanceBalance > 0 && (
+                                        <h5 className="mb-2 text-success">
+                                            <FaWallet className="me-2" />
+                                            Advance Wallet: {formatNaira(advanceBalance)}
+                                        </h5>
+                                    )}
                                     {isOverdue && (
                                         <Badge bg="warning" text="dark" className="overdue-badge mt-2">
                                             Overdue since {new Date(selectedCustomer.due_date).toLocaleDateString()}!
@@ -352,32 +379,58 @@ const CustomerCreditManagement = () => {
                         </h3>
                     </Card.Header>
                     <Card.Body>
+                        <ButtonGroup className="mb-4 w-100">
+                            <Button
+                                variant={paymentMode === 'auto' ? 'primary' : 'outline-primary'}
+                                onClick={() => setPaymentMode('auto')}
+                            >
+                                <FaMagic className="me-2" /> Pay by Amount (Auto-allocate)
+                            </Button>
+                            <Button
+                                variant={paymentMode === 'specific' ? 'primary' : 'outline-primary'}
+                                onClick={() => setPaymentMode('specific')}
+                            >
+                                <FaListOl className="me-2" /> Pay Specific Sale
+                            </Button>
+                        </ButtonGroup>
+
+                        {paymentMode === 'auto' && (
+                            <Alert variant="info" className="alert-message">
+                                Enter any amount — the system clears the <strong>oldest outstanding sales first</strong>.
+                                {totalOutstanding > 0 && (
+                                    <> Total outstanding: <strong>{formatNaira(totalOutstanding)}</strong>. Any excess is credited to the customer's advance wallet.</>
+                                )}
+                            </Alert>
+                        )}
+
                         <Form onSubmit={handleRecordPayment}>
                             <Row className="g-4">
-                                <Col md={12} lg={6}>
-                                    <Form.Group className="form-group-spaced">
-                                        <Form.Label>Select Transaction to Pay</Form.Label>
-                                        <Form.Control
-                                            as="select"
-                                            name="transaction_id"
-                                            value={paymentFormData.transaction_id}
-                                            onChange={handleTransactionSelectForPayment}
-                                            required
-                                            className="full-width-input"
-                                        >
-                                            <option value="">-- Select Outstanding Transaction --</option>
-                                            {outstandingSales.length === 0 ? (
-                                                <option value="" disabled>No outstanding credit sales</option>
-                                            ) : (
-                                                outstandingSales.map(sale => (
-                                                    <option key={sale.id} value={sale.id}>
-                                                        Sale #{sale.id} (Date: {new Date(sale.sale_date).toLocaleDateString()}, Due: ₦{Number(sale.balance_due).toFixed(2)})
-                                                    </option>
-                                                ))
-                                            )}
-                                        </Form.Control>
-                                    </Form.Group>
-                                </Col>
+                                {paymentMode === 'specific' && (
+                                    <Col md={12} lg={6}>
+                                        <Form.Group className="form-group-spaced">
+                                            <Form.Label>Select Transaction to Pay</Form.Label>
+                                            <Form.Control
+                                                as="select"
+                                                name="transaction_id"
+                                                value={paymentFormData.transaction_id}
+                                                onChange={handleTransactionSelectForPayment}
+                                                required
+                                                className="full-width-input"
+                                            >
+                                                <option value="">-- Select Outstanding Transaction --</option>
+                                                {outstandingSales.length === 0 ? (
+                                                    <option value="" disabled>No outstanding credit sales</option>
+                                                ) : (
+                                                    outstandingSales.map(sale => (
+                                                        <option key={sale.id} value={sale.id}>
+                                                            Sale #{sale.id} (Date: {new Date(sale.sale_date).toLocaleDateString()}, Due: {formatNaira(sale.balance_due)})
+                                                        </option>
+                                                    ))
+                                                )}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                )}
                                 <Col md={12} lg={6}>
                                     <Form.Group className="form-group-spaced">
                                         <Form.Label>Payment Amount (₦)</Form.Label>
@@ -391,6 +444,18 @@ const CustomerCreditManagement = () => {
                                             required
                                             className="full-width-input"
                                         />
+                                        {paymentMode === 'auto' && totalOutstanding > 0 && (
+                                            <Form.Text className="text-muted">
+                                                <Button
+                                                    variant="link"
+                                                    size="sm"
+                                                    className="p-0"
+                                                    onClick={() => setPaymentFormData(prev => ({ ...prev, amount: Number(totalOutstanding.toFixed(2)) }))}
+                                                >
+                                                    Fill full outstanding amount ({formatNaira(totalOutstanding)})
+                                                </Button>
+                                            </Form.Text>
+                                        )}
                                     </Form.Group>
                                 </Col>
                                 <Col md={12} lg={6}>
@@ -411,7 +476,6 @@ const CustomerCreditManagement = () => {
                                     </Form.Group>
                                 </Col>
 
-                                {/* Only show proof/reference for non-cash payments */}
                                 {paymentFormData.payment_method !== 'Cash' && (
                                     <Col md={12} lg={6}>
                                         <Form.Group className="form-group-spaced">
@@ -467,14 +531,15 @@ const CustomerCreditManagement = () => {
                                     type="submit"
                                     disabled={
                                         !selectedCustomer ||
-                                        paymentFormData.amount <= 0 ||
-                                        outstandingSales.length === 0 ||
+                                        !(paymentFormData.amount > 0) ||
+                                        (paymentMode === 'specific' && (!paymentFormData.transaction_id || outstandingSales.length === 0)) ||
                                         uploadingImage ||
                                         (paymentFormData.payment_method !== 'Cash' && !selectedFile && !paymentFormData.paymentReference)
                                     }
                                     className="w-100 payment-submit-btn"
                                 >
-                                    <FaMoneyBillWave className="me-2" /> Record Payment
+                                    <FaMoneyBillWave className="me-2" />
+                                    {paymentMode === 'auto' ? 'Record Payment (Auto-allocate)' : 'Record Payment'}
                                 </Button>
                             </div>
                         </Form>
@@ -534,7 +599,7 @@ const CustomerCreditManagement = () => {
                                                 </td>
                                                 <td className="transaction-id">#{payment.transaction_id}</td>
                                                 <td className="payment-amount fw-bold">
-                                                    ₦{Number(payment.amount).toFixed(2)}
+                                                    {formatNaira(payment.amount)}
                                                 </td>
                                                 <td>
                                                     <Badge bg="info" className="payment-method-badge">

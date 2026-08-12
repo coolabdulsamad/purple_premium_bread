@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import api from '../api/axiosInstance';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, Modal } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaTimes, FaUser, FaEnvelope, FaPhone, FaVenusMars, FaUserTag, FaKey, FaFilter, FaSync, FaCalendarAlt } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/admin.css';
 import CustomToast from '../components/CustomToast';
-
-const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const roles = ['admin', 'manager', 'accountant', 'sales', 'baker'];
 
@@ -76,6 +74,8 @@ const AdminPage = () => {
         userName: ""
     });
 
+    const [showUserModal, setShowUserModal] = useState(false);
+
     // --- Data Fetching ---
     const fetchUsers = async () => {
         setLoading(true);
@@ -85,7 +85,7 @@ const AdminPage = () => {
             if (filterRole) params.role = filterRole;
             if (searchTerm) params.searchTerm = searchTerm;
 
-            const response = await axios.get(`${API_BASE_URL}/users`, { params });
+            const response = await api.get('/users', { params });
             setUsers(response.data);
         } catch (err) {
             console.error('Error fetching users:', err.response?.data || err.message);
@@ -121,7 +121,7 @@ const AdminPage = () => {
                 if (!payload.password) {
                     delete payload.password;
                 }
-                const response = await axios.put(`${API_BASE_URL}/users/${formData.id}`, payload);
+                const response = await api.put(`/users/${formData.id}`, payload);
                 setSuccessMessage(`User "${response.data.fullname}" updated successfully!`);
                 // toast.success(`User "${response.data.fullname}" updated successfully!`);
                 // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" updated successfully!`} />);
@@ -129,7 +129,7 @@ const AdminPage = () => {
                     toastId: 'update-success'
                 });
             } else {
-                const response = await axios.post(`${API_BASE_URL}/users`, formData);
+                const response = await api.post('/users', formData);
                 setSuccessMessage(`User "${response.data.fullname}" created successfully!`);
                 // toast.success(`User "${response.data.fullname}" created successfully!`);
                 // toast(<CustomToast id="123" type="success" message={`User "${response.data.fullname}" created successfully!`} />);
@@ -166,11 +166,12 @@ const AdminPage = () => {
         setIsEditing(true);
         setError('');
         setSuccessMessage('');
+        setShowUserModal(true);
     };
 
     const handleDelete = async (id, name) => {
         try {
-            await axios.delete(`${API_BASE_URL}/users/${id}`);
+            await api.delete(`/users/${id}`);
             setSuccessMessage(`User "${name}" deleted successfully!`);
             toast(<CustomToast id={`success-delete-${Date.now()}`} type="success" message={`User "${name}" deleted successfully!`} />, {
                 toastId: 'delete-success'
@@ -206,6 +207,24 @@ const AdminPage = () => {
         setIsEditing(false);
         setError('');
         setSuccessMessage('');
+        setShowUserModal(false);
+    };
+
+    const openAddUserModal = () => {
+        setFormData({
+            id: null,
+            fullname: '',
+            username: '',
+            email: '',
+            password: '',
+            phone_number: '',
+            gender: '',
+            role: 'sales',
+        });
+        setIsEditing(false);
+        setError('');
+        setSuccessMessage('');
+        setShowUserModal(true);
     };
 
     const handleClearFilters = () => {
@@ -264,22 +283,19 @@ const AdminPage = () => {
             {error && <Alert variant="danger" className="alert-custom">{error}</Alert>}
             {successMessage && <Alert variant="success" className="alert-custom">{successMessage}</Alert>}
 
-            {/* User Creation/Edit Form */}
-            <Card className="form-card">
-                <Card.Header className="card-header-custom">
-                    {isEditing ? (
-                        <>
-                            <FaEdit className="me-2" />
-                            Edit User
-                        </>
-                    ) : (
-                        <>
-                            <FaPlus className="me-2" />
-                            Create New User
-                        </>
-                    )}
-                </Card.Header>
-                <Card.Body>
+            {/* Create User Button */}
+            <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                <Button variant="outline-primary" onClick={openAddUserModal}>
+                    <FaPlus className="me-1" /> Create New User
+                </Button>
+            </div>
+
+            {/* User Creation/Edit Modal */}
+            <Modal show={showUserModal} onHide={handleCancelEdit} centered size="lg">
+                <Modal.Header closeButton className="form-card-header">
+                    <Modal.Title>{isEditing ? <><FaEdit className="me-2" />Edit User</> : <><FaPlus className="me-2" />Create New User</>}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
                     <Form onSubmit={handleSubmit}>
                         <Row className="g-3">
                             <Col md={6}>
@@ -403,16 +419,14 @@ const AdminPage = () => {
                             </Col>
                         </Row>
                         <div className="d-flex justify-content-end mt-4">
-                            {isEditing && (
-                                <Button
-                                    variant="outline-secondary"
-                                    onClick={handleCancelEdit}
-                                    className="me-2"
-                                    disabled={submitting}
-                                >
-                                    <FaTimes className="me-1" /> Cancel Edit
-                                </Button>
-                            )}
+                            <Button
+                                variant="outline-secondary"
+                                onClick={handleCancelEdit}
+                                className="me-2"
+                                disabled={submitting}
+                            >
+                                <FaTimes className="me-1" /> Cancel
+                            </Button>
                             <Button
                                 variant="outline-primary"
                                 type="submit"
@@ -432,8 +446,8 @@ const AdminPage = () => {
                             </Button>
                         </div>
                     </Form>
-                </Card.Body>
-            </Card>
+                </Modal.Body>
+            </Modal>
 
             {/* User Search and Filter - Fixed Layout */}
             <Card className="filter-card">
@@ -527,7 +541,7 @@ const AdminPage = () => {
                         <div className="empty-state">
                             <FaUser className="empty-icon" />
                             <h4>No Users Found</h4>
-                            <p>No users found matching the filters. Create a new user above!</p>
+                            <p>No users found matching the filters. Click "Create New User" to add one.</p>
                         </div>
                     ) : (
                         <div className="table-container-wide">

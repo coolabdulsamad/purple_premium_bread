@@ -13,10 +13,12 @@ import toast, { Toaster } from 'react-hot-toast';
 import '../assets/styles/SalesHistoryPage.css';
 import { Monitor } from 'lucide-react';
 import { FaMotorcycle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
 const SalesHistoryPage = () => {
+    const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -47,6 +49,10 @@ const SalesHistoryPage = () => {
     const [isRiderSale, setIsRiderSale] = useState(''); // 'true', 'false'
     const [riderId, setRiderId] = useState(''); // For filtering by specific rider
     const [riders, setRiders] = useState([]); // For rider dropdown
+    // Customer + staff (cashier) dropdown filters
+    const [customerId, setCustomerId] = useState(''); // For filtering by specific customer
+    const [cashierId, setCashierId] = useState(''); // For filtering by staff who recorded the sale
+    const [customers, setCustomers] = useState([]); // For customer dropdown
 
     // Add this helper function at the top of the component
     const getAuthHeaders = () => {
@@ -79,7 +85,9 @@ const fetchSales = async () => {
             hasReference: hasReference || undefined,
             advantageRange: advantageRange || undefined,
             isRiderSale: isRiderSale || undefined,
-            riderId: riderId || undefined
+            riderId: riderId || undefined,
+            customerId: customerId || undefined,
+            cashierId: cashierId || undefined
         };
 
         // Remove undefined parameters
@@ -157,6 +165,21 @@ const fetchRiders = async () => {
         setRiders(response.data.riders || []);
     } catch (err) {
         console.error('Error fetching riders:', err);
+        if (err.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+    }
+};
+
+// Fetch customers for the customer dropdown filter
+const fetchCustomers = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/customers`, getAuthHeaders());
+        const list = Array.isArray(response.data) ? response.data : (response.data.customers || []);
+        setCustomers(list);
+    } catch (err) {
+        console.error('Error fetching customers:', err);
         if (err.response?.status === 401) {
             localStorage.removeItem('token');
             window.location.href = '/login';
@@ -248,8 +271,9 @@ const fetchRiders = async () => {
         fetchCompanyDetails();
         fetchUsers();
         fetchRiders(); // Add this line
+        fetchCustomers();
         fetchSales();
-    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange, saleType, hasReceipt, hasReference, advantageRange, isRiderSale, riderId]);
+    }, [search, startDate, endDate, transactionType, paymentMethod, status, stockSource, hasFreeStock, discountRange, saleType, hasReceipt, hasReference, advantageRange, isRiderSale, riderId, customerId, cashierId]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -452,13 +476,13 @@ const fetchRiders = async () => {
                         <h3>🔄 Advantage Sale Details</h3>
                         <div class="detail-grid">
                             <div class="detail-item">
-                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}
+                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Advantage Amount Added:</span> ₦${parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                                <span class="detail-label">Advantage Amount Added:</span> ₦${parseFloat(saleDetails.advantage_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Final Subtotal:</span> ₦${parseFloat(saleDetails.subtotal).toFixed(2)}
+                                <span class="detail-label">Final Subtotal:</span> ₦${parseFloat(saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     </div>
@@ -482,10 +506,10 @@ const fetchRiders = async () => {
                                     <tr>
                                         <td>${item.product_name}</td>
                                         <td>${item.quantity}</td>
-                                        <td>₦${parseFloat(item.price_at_sale).toFixed(2)}</td>
-                                        ${saleDetails.is_advantage_sale ? `<td>${item.advantage_amount ? `₦${parseFloat(item.advantage_amount).toFixed(2)}` : '-'}</td>` : ''}
+                                        <td>₦${parseFloat(item.price_at_sale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        ${saleDetails.is_advantage_sale ? `<td>${item.advantage_amount ? `₦${parseFloat(item.advantage_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</td>` : ''}
                                         <td>${item.discount_applied > 0 ? `${item.discount_applied}%` : '-'}</td>
-                                        <td class="text-right">₦${(parseFloat(item.price_at_sale) * item.quantity * (1 - (item.discount_applied || 0) / 100)).toFixed(2)}</td>
+                                        <td class="text-right">₦${(parseFloat(item.price_at_sale) * item.quantity * (1 - (item.discount_applied || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -523,34 +547,34 @@ const fetchRiders = async () => {
                         <div class="totals">
                             ${saleDetails.is_advantage_sale ? `
                             <div class="detail-item">
-                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}
+                                <span class="detail-label">Base Subtotal:</span> ₦${parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Advantage Amount:</span> +₦${parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                                <span class="detail-label">Advantage Amount:</span> +₦${parseFloat(saleDetails.advantage_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             ` : ''}
                             <div class="detail-item">
-                                <span class="detail-label">Subtotal:</span> ₦${parseFloat(saleDetails.subtotal || 0).toFixed(2)}
+                                <span class="detail-label">Subtotal:</span> ₦${parseFloat(saleDetails.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             ${saleDetails.discount_amount > 0 ? `
                             <div class="detail-item">
-                                <span class="detail-label">Discount:</span> -₦${parseFloat(saleDetails.discount_amount).toFixed(2)}
+                                <span class="detail-label">Discount:</span> -₦${parseFloat(saleDetails.discount_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             ` : ''}
                             <div class="detail-item">
-                                <span class="detail-label">Tax:</span> ₦${parseFloat(saleDetails.tax_amount || 0).toFixed(2)}
+                                <span class="detail-label">Tax:</span> ₦${parseFloat(saleDetails.tax_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div class="detail-item grand-total">
-                                <span class="detail-label">GRAND TOTAL:</span> ₦${parseFloat(saleDetails.total_amount).toFixed(2)}
+                                <span class="detail-label">GRAND TOTAL:</span> ₦${parseFloat(saleDetails.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             
                             ${saleDetails.payment_method === 'Credit' ? `
                             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                                 <div class="detail-item">
-                                    <span class="detail-label">Amount Paid:</span> ₦${parseFloat(saleDetails.amount_paid || 0).toFixed(2)}
+                                    <span class="detail-label">Amount Paid:</span> ₦${parseFloat(saleDetails.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">Balance Due:</span> ₦${parseFloat(saleDetails.balance_due || 0).toFixed(2)}
+                                    <span class="detail-label">Balance Due:</span> ₦${parseFloat(saleDetails.balance_due || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Due Date:</span> ${saleDetails.due_date ? format(new Date(saleDetails.due_date), 'MMM dd, yyyy') : 'N/A'}
@@ -622,6 +646,9 @@ const fetchRiders = async () => {
         // NEW: Clear rider filters
         setIsRiderSale('');
         setRiderId('');
+        // Clear customer + staff filters
+        setCustomerId('');
+        setCashierId('');
     };
 
     // NEW: Get active filter count
@@ -629,7 +656,8 @@ const fetchRiders = async () => {
         const filters = [
             search, startDate, endDate, transactionType, paymentMethod,
             status, stockSource, hasFreeStock, discountRange, saleType,
-            hasReceipt, hasReference, advantageRange, isRiderSale, riderId
+            hasReceipt, hasReference, advantageRange, isRiderSale, riderId,
+            customerId, cashierId
         ];
         return filters.filter(filter => filter !== '').length;
     };
@@ -751,6 +779,7 @@ const fetchRiders = async () => {
                                         <option value="Card">Card</option>
                                         <option value="Credit">Credit</option>
                                         <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Split">Split (Multiple Methods)</option>
                                         <option value="Internal">Internal (B2B)</option>
                                     </select>
                                 </div>
@@ -929,13 +958,57 @@ const fetchRiders = async () => {
                                             <option value="">All Riders</option>
                                             {riders.map(rider => (
                                                 <option key={rider.id} value={rider.id}>
-                                                    {rider.fullname} - Bal: ₦{Number(rider.current_balance || 0).toFixed(2)}
+                                                    {rider.fullname} - Bal: ₦{Number(rider.current_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
                             )}
+
+                            {/* NEW: Customer Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiUser />
+                                    Customer
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={customerId}
+                                        onChange={(e) => setCustomerId(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Customers</option>
+                                        {customers.map(customer => (
+                                            <option key={customer.id} value={customer.id}>
+                                                {customer.fullname}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* NEW: Staff (Cashier) Filter */}
+                            <div className="sh-field">
+                                <label className="sh-label">
+                                    <FiUser />
+                                    Staff (Cashier)
+                                </label>
+                                <div className="sh-input">
+                                    <select
+                                        value={cashierId}
+                                        onChange={(e) => setCashierId(e.target.value)}
+                                        className="sh-input__field"
+                                    >
+                                        <option value="">All Staff</option>
+                                        {users.map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.fullname || user.username}{user.role ? ` (${user.role})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
 
                             {/* Date Filters */}
                             <div className="sh-field">
@@ -1070,7 +1143,7 @@ const fetchRiders = async () => {
                                                             <div className="sh-rider-name">{sale.rider_name || 'Rider'}</div>
                                                             {sale.rider_balance > 0 && (
                                                                 <div className="sh-rider-balance">
-                                                                    Bal: ₦{parseFloat(sale.rider_balance).toFixed(2)}
+                                                                    Bal: ₦{parseFloat(sale.rider_balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1112,16 +1185,16 @@ const fetchRiders = async () => {
                                                 )}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--amount">
-                                                ₦{parseFloat(sale.total_amount).toFixed(2)}
+                                                ₦{parseFloat(sale.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--amount">
-                                                {sale.discount_amount > 0 ? `-₦${parseFloat(sale.discount_amount).toFixed(2)}` : '-'}
+                                                {sale.discount_amount > 0 ? `-₦${parseFloat(sale.discount_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--amount">
                                                 {hasAdvantageAmount(sale) ? (
-                                                    <span className="sh-advantage-badge" title={`Advantage Amount: ₦${parseFloat(sale.advantage_total).toFixed(2)}`}>
+                                                    <span className="sh-advantage-badge" title={`Advantage Amount: ₦${parseFloat(sale.advantage_total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}>
                                                         <FiTrendingUp className="sh-advantage-icon" />
-                                                        ₦{parseFloat(sale.advantage_total).toFixed(2)}
+                                                        ₦{parseFloat(sale.advantage_total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                 ) : '-'}
                                             </td>
@@ -1280,17 +1353,17 @@ const fetchRiders = async () => {
                                                 <div className="sh-details-grid--compact">
                                                     <div className="sh-detail-item">
                                                         <span className="sh-detail-label">Base Subtotal:</span>
-                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}</span>
+                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                     <div className="sh-detail-item">
                                                         <span className="sh-detail-label">Advantage Amount Added:</span>
                                                         <span className="sh-detail-value sh-detail-value--highlight">
-                                                            +₦{parseFloat(saleDetails.advantage_total || 0).toFixed(2)}
+                                                            +₦{parseFloat(saleDetails.advantage_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                     <div className="sh-detail-item">
                                                         <span className="sh-detail-label">Final Subtotal:</span>
-                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.subtotal).toFixed(2)}</span>
+                                                        <span className="sh-detail-value">₦{parseFloat(saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1330,18 +1403,18 @@ const fetchRiders = async () => {
                                                                     </div>
                                                                 </td>
                                                                 <td className="sh-table__cell sh-table__cell--number">{item.quantity}</td>
-                                                                <td className="sh-table__cell sh-table__cell--amount">₦{parseFloat(item.price_at_sale).toFixed(2)}</td>
+                                                                <td className="sh-table__cell sh-table__cell--amount">₦{parseFloat(item.price_at_sale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                                                 {/* NEW: Advantage Amount in Items */}
                                                                 {saleDetails.is_advantage_sale && (
                                                                     <td className="sh-table__cell sh-table__cell--amount">
-                                                                        {item.advantage_amount > 0 ? `+₦${parseFloat(item.advantage_amount).toFixed(2)}` : '-'}
+                                                                        {item.advantage_amount > 0 ? `+₦${parseFloat(item.advantage_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
                                                                     </td>
                                                                 )}
                                                                 <td className="sh-table__cell sh-table__cell--number">
                                                                     {item.discount_applied > 0 ? `${item.discount_applied}%` : '-'}
                                                                 </td>
                                                                 <td className="sh-table__cell sh-table__cell--amount">
-                                                                    ₦{(parseFloat(item.price_at_sale) * item.quantity * (1 - (item.discount_applied || 0) / 100)).toFixed(2)}
+                                                                    ₦{(parseFloat(item.price_at_sale) * item.quantity * (1 - (item.discount_applied || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -1401,31 +1474,31 @@ const fetchRiders = async () => {
                                                         <>
                                                             <div className="sh-payment-item">
                                                                 <span className="sh-payment-label">Base Subtotal:</span>
-                                                                <span className="sh-payment-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toFixed(2)}</span>
+                                                                <span className="sh-payment-value">₦{parseFloat(saleDetails.base_subtotal || saleDetails.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                             </div>
                                                             <div className="sh-payment-item sh-payment-item--advantage">
                                                                 <span className="sh-payment-label">Advantage Amount:</span>
-                                                                <span className="sh-payment-value">+₦{parseFloat(saleDetails.advantage_total || 0).toFixed(2)}</span>
+                                                                <span className="sh-payment-value">+₦{parseFloat(saleDetails.advantage_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                             </div>
                                                         </>
                                                     )}
                                                     <div className="sh-payment-item">
                                                         <span className="sh-payment-label">Subtotal:</span>
-                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.subtotal || 0).toFixed(2)}</span>
+                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                     {saleDetails.discount_amount > 0 && (
                                                         <div className="sh-payment-item sh-payment-item--discount">
                                                             <span className="sh-payment-label">Discount:</span>
-                                                            <span className="sh-payment-value">-₦{parseFloat(saleDetails.discount_amount).toFixed(2)}</span>
+                                                            <span className="sh-payment-value">-₦{parseFloat(saleDetails.discount_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                     )}
                                                     <div className="sh-payment-item">
                                                         <span className="sh-payment-label">Tax Amount:</span>
-                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.tax_amount || 0).toFixed(2)}</span>
+                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.tax_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                     <div className="sh-payment-item sh-payment-item--total">
                                                         <span className="sh-payment-label">GRAND TOTAL:</span>
-                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.total_amount).toFixed(2)}</span>
+                                                        <span className="sh-payment-value">₦{parseFloat(saleDetails.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                 </div>
 
@@ -1440,11 +1513,11 @@ const fetchRiders = async () => {
                                                         </div>
                                                         <div className="sh-payment-item">
                                                             <span className="sh-payment-label">Amount Paid:</span>
-                                                            <span className="sh-payment-value">₦{parseFloat(saleDetails.amount_paid || 0).toFixed(2)}</span>
+                                                            <span className="sh-payment-value">₦{parseFloat(saleDetails.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                         <div className="sh-payment-item">
                                                             <span className="sh-payment-label">Balance Due:</span>
-                                                            <span className="sh-payment-value">₦{parseFloat(saleDetails.balance_due || 0).toFixed(2)}</span>
+                                                            <span className="sh-payment-value">₦{parseFloat(saleDetails.balance_due || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                         </div>
                                                         {saleDetails.due_date && (
                                                             <div className="sh-detail-item">

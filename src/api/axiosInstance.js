@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 // Set your backend base URL
 const API_BASE_URL = 'https://purple-premium-bread-backend.onrender.com/api';
@@ -23,15 +24,31 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ✅ Automatically handle 401 errors globally
+// ✅ Global response handling:
+// - 202 pending_approval: the workflow engine staged the action for approval
+// - 401: session expired, back to login
+// - 403 with required_permission: role permission denied by the server
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.status === 202 && response.data?.pending_approval) {
+      toast.info(
+        response.data.message ||
+          'Submitted for approval. It will take effect once an approver confirms it.'
+      );
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       console.warn('Unauthorized — redirecting to login.');
       localStorage.removeItem('token');
-      // Optional: redirect to login page
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    } else if (error.response?.status === 403 && error.response?.data?.required_permission) {
+      toast.error(
+        error.response.data.error ||
+          'You do not have permission to perform this action.'
+      );
     }
     return Promise.reject(error);
   }

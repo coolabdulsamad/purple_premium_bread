@@ -59,7 +59,6 @@ const CustomersPage = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState("");
-    const [gender, setGender] = useState('');
 
     const [deleteDialog, setDeleteDialog] = useState({
         isOpen: false,
@@ -261,8 +260,8 @@ const CustomersPage = () => {
                                     <td>{c.phone || "—"}</td>
                                     <td>{c.gender || "—"}</td>
                                     <td className="td-hide-sm">{c.address || "—"}</td>
-                                    <td>&#8358;{Number(c.credit_limit || 0).toFixed(2)}</td>
-                                    <td className="td-hide-sm">&#8358;{Number(c.balance || 0).toFixed(2)}</td>
+                                    <td>&#8358;{Number(c.credit_limit || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="td-hide-sm">&#8358;{Number(c.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     <td>
                                         <span className={`custs-status ${c.is_active ? "active" : "inactive"}`}>
                                             {c.is_active ? "Active" : "Inactive"}
@@ -322,9 +321,9 @@ const CustomersPage = () => {
                                         </div>
                                     ) : null}
                                     <div className="custs-grid2">
-                                        <div className="custs-pill">Limit: &#8358;{Number(c.credit_limit || 0).toFixed(2)}</div>
+                                        <div className="custs-pill">Limit: &#8358;{Number(c.credit_limit || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                         <div className="custs-pill custs-pill--dark">
-                                            Bal: &#8358;{Number(c.balance || 0).toFixed(2)}
+                                            Bal: &#8358;{Number(c.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
                                     <div className={`custs-status-badge ${c.is_active ? "active" : "inactive"}`}>
@@ -396,8 +395,8 @@ const CustomersPage = () => {
                             <select
                                 className="ppb-input"
                                 name="gender"
-                                value={gender}
-                                onChange={(e) => setGender(e.target.value)}
+                                value={newCustomer.gender}
+                                onChange={handleAddInput}
                             >
                                 <option value="">Select Gender</option>
                                 <option value="Male">Male</option>

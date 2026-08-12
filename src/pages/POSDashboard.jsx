@@ -10,6 +10,7 @@ import { FaCashRegister, FaTruck, FaBoxes, FaUsers } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/pos.css';
+import CustomToast from '../components/CustomToast';
 import SalesUserStockManagement from './SalesUserStockManagement';
 import NewExchangePage from './NewExchangePage';
 

@@ -25,7 +25,8 @@ import {
     FaCheckCircle,
     FaTimesCircle,
     FaExclamationTriangle,
-    FaImage
+    FaImage,
+    FaInfoCircle
 } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -256,7 +257,7 @@ const RidersPage = () => {
 
     // Format currency
     const formatCurrency = (amount) => {
-        return `₦${Number(amount || 0).toFixed(2)}`;
+        return `₦${Number(amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // Format date

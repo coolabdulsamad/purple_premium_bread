@@ -497,7 +497,7 @@ const handleSubmit = async (e) => {
                 <option value="">Select a product</option>
                 {products.map(product => (
                   <option key={product.id} value={product.id}>
-                    {product.name} - ${product.price}
+                    {product.name} - &#8358;{Number(product.price || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </option>
                 ))}
               </select>
@@ -618,7 +618,7 @@ const handleSubmit = async (e) => {
             </div>
             <div className="summary-content">
               <h3>Total Waste Value</h3>
-              <p>${totalWasteValue.toFixed(2)}</p>
+              <p>&#8358;{totalWasteValue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             </div>
           </div>
         </div>
@@ -671,8 +671,8 @@ const handleSubmit = async (e) => {
                         <td data-label="Date">{new Date(record.date_recorded).toLocaleDateString()}</td>
                         <td data-label="Product">{record.product_name}</td>
                         <td data-label="Quantity">{record.quantity}</td>
-                        <td data-label="Unit Price">&#8358;{record.price}</td>
-                        <td data-label="Total Value">&#8358;{(record.quantity * record.price).toFixed(2)}</td>
+                        <td data-label="Unit Price">&#8358;{Number(record.price || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td data-label="Total Value">&#8358;{(record.quantity * (record.price || 0)).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td data-label="Reason">
                           <span className={`reason-badge reason-${record.reason || 'other'}`}>
                             {record.reason || 'Not specified'}

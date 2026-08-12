@@ -10,7 +10,7 @@ import {
     FaMoneyBillWave, FaDownload, FaSync, FaGift, FaReceipt,
     FaTrash, FaIndustry, FaUserTie, FaShieldAlt, FaPercentage,
     FaCalculator,
-    FaMotorcycle
+    FaMotorcycle, FaWallet, FaUndo
 } from 'react-icons/fa';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
@@ -76,6 +76,10 @@ const ReportsPage = () => {
         issueType: '',
         // Rider filters
         riderId: '',
+        // Phase 7: returns / wallets filters
+        refundMethod: '',
+        ownerType: '',
+        walletTxnType: '',
     });
 
     // Dropdown data states
@@ -90,6 +94,9 @@ const ReportsPage = () => {
     const [allRiders, setAllRiders] = useState([]);
 
     const reportContentRef = useRef(null);
+
+    // Format money with thousand separators (₦1,234,567.89)
+    const formatNaira = (value) => `₦${Number(value || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // Fetch dropdown data only when authenticated
     useEffect(() => {
@@ -191,6 +198,9 @@ const ReportsPage = () => {
             wasteReason: '',
             issueType: '',
             riderId: '',
+            refundMethod: '',
+            ownerType: '',
+            walletTxnType: '',
         });
         toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
             toastId: 'clear-filters'
@@ -227,6 +237,10 @@ const ReportsPage = () => {
                 'rider-payments': ['startDate', 'endDate', 'riderId', 'paymentMethod'],
                 'rider-collection': ['startDate', 'endDate', 'riderId'],
                 'rider-sales-summary': ['startDate', 'endDate', 'branchId'], // NEW
+                // Phase 7: returns / split payments / wallets
+                'returns': ['startDate', 'endDate', 'customerId', 'riderId', 'refundMethod'],
+                'split-payments': ['startDate', 'endDate', 'paymentMethod', 'branchId'],
+                'wallet-transactions': ['startDate', 'endDate', 'ownerType', 'walletTxnType'],
             };
 
             const relevantFilters = relevantFiltersMap[reportType] || [];
@@ -272,8 +286,8 @@ const ReportsPage = () => {
             case 'paymentMethod': return `Method: ${value}`;
             case 'customerId': return `Customer: ${allCustomers.find(c => c.id === parseInt(value))?.fullname || value}`;
             case 'status': return `Status: ${value}`;
-            case 'minTotal': return `Min Total: ₦${Number(value).toFixed(2)}`;
-            case 'maxTotal': return `Max Total: ₦${Number(value).toFixed(2)}`;
+            case 'minTotal': return `Min Total: ${formatNaira(value)}`;
+            case 'maxTotal': return `Max Total: ${formatNaira(value)}`;
             case 'staffId': return `Staff: ${allUsers.find(u => u.id === parseInt(value))?.fullname || value}`;
             case 'productId': return `Product: ${allProducts.find(p => p.id === parseInt(value))?.name || value}`;
             case 'category': return `Category: ${value}`;
@@ -288,6 +302,9 @@ const ReportsPage = () => {
             case 'wasteReason': return `Waste Reason: ${value}`;
             case 'issueType': return `Issue Type: ${value}`;
             case 'riderId': return `Rider: ${allRiders.find(r => r.id === parseInt(value))?.fullname || value}`;
+            case 'refundMethod': return `Refund Method: ${String(value).replace('_', ' ')}`;
+            case 'ownerType': return `Wallet Owner: ${value === 'RIDER' ? 'Riders' : 'Customers'}`;
+            case 'walletTxnType': return `Wallet Txn: ${String(value).replace('_', ' ')}`;
             default: return `${key}: ${value}`;
         }
     };
@@ -303,7 +320,7 @@ const ReportsPage = () => {
             'paymentMethod', 'status', 'minTotal', 'maxTotal', 'transactionType',
             'inventoryTransactionType', 'rawMaterialId', 'rawMaterialTransactionType', 'groupBy',
             'expenseType', 'expenseCategory', 'salaryStatus', 'wasteReason', 'issueType',
-            'riderId'
+            'riderId', 'refundMethod', 'ownerType', 'walletTxnType'
         ];
 
         orderedFilters.forEach(key => {
@@ -435,6 +452,8 @@ const ReportsPage = () => {
             if (reportType === 'profit-loss') {
                 csvContent += "Item,Amount (₦)\r\n";
                 csvContent += `Total Revenue (Sales),${data.totalRevenue?.toFixed(2) || '0.00'}\r\n`;
+                csvContent += `Sales Returns,${data.totalReturns?.toFixed(2) || '0.00'}\r\n`;
+                csvContent += `Revenue Net of Returns,${data.revenueNetOfReturns?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Total Cost of Goods Sold (COGS),${data.totalCostOfGoodsSold?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Gross Profit,${data.grossProfit?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Total Operating Expenses,${data.totalOperatingExpenses?.toFixed(2) || '0.00'}\r\n`;
@@ -496,67 +515,75 @@ const ReportsPage = () => {
                             {/* Revenue Breakdown */}
                             <tr className="table-row-revenue">
                                 <td><FaDollarSign className="me-2" /> Total Revenue (Sales)</td>
-                                <td className="text-end">₦{plData.totalRevenue?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.totalRevenue)}</td>
                             </tr>
                             <tr className="table-row-regular-sales">
                                 <td><FaShoppingBag className="me-2" /> &nbsp;&nbsp; Regular Sales</td>
-                                <td className="text-end">₦{plData.totalRegularSales?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.totalRegularSales)}</td>
                             </tr>
                             <tr className="table-row-advantage-sales">
                                 <td><FaChartLine className="me-2" /> &nbsp;&nbsp; Advantage Sales</td>
-                                <td className="text-end">₦{plData.totalAdvantageSales?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.totalAdvantageSales)}</td>
                             </tr>
                             <tr className="table-row-advantage-amount">
                                 <td><FaMoneyBillWave className="me-2" /> &nbsp;&nbsp; Total Advantage Amount (Premium)</td>
-                                <td className="text-end text-success">+₦{plData.totalAdvantageAmount?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end text-success">+{formatNaira(plData.totalAdvantageAmount)}</td>
+                            </tr>
+                            <tr className="table-row-returns">
+                                <td><FaUndo className="me-2" /> Sales Returns (in period)</td>
+                                <td className="text-end text-danger">-{formatNaira(plData.totalReturns)}</td>
+                            </tr>
+                            <tr className="table-row-revenue-net fw-bold">
+                                <td><FaDollarSign className="me-2" /> Revenue Net of Returns</td>
+                                <td className="text-end">{formatNaira(plData.revenueNetOfReturns)}</td>
                             </tr>
 
                             {/* COGS */}
                             <tr className="table-row-cogs">
                                 <td><FaShoppingBag className="me-2" /> Total Cost of Goods Sold (COGS)</td>
-                                <td className="text-end">-₦{plData.totalCostOfGoodsSold?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">-{formatNaira(plData.totalCostOfGoodsSold)}</td>
                             </tr>
 
                             {/* Gross Profit */}
                             <tr className="table-row-profit fw-bold">
                                 <td><FaChartLine className="me-2" /> Gross Profit</td>
-                                <td className="text-end">₦{plData.grossProfit?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.grossProfit)}</td>
                             </tr>
 
                             {/* Expenses */}
                             <tr className="table-row-expenses">
                                 <td><FaMoneyBillWave className="me-2" /> Total Operating Expenses</td>
-                                <td className="text-end">-₦{plData.totalOperatingExpenses?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">-{formatNaira(plData.totalOperatingExpenses)}</td>
                             </tr>
                             <tr className="table-row-salaries">
                                 <td><FaUserTie className="me-2" /> Total Salaries & Wages</td>
-                                <td className="text-end">-₦{plData.totalSalaries?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">-{formatNaira(plData.totalSalaries)}</td>
                             </tr>
                             <tr className="table-row-total-expenses fw-bold">
                                 <td><FaMoneyBillWave className="me-2" /> Total Expenses</td>
-                                <td className="text-end">-₦{plData.totalExpenses?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">-{formatNaira(plData.totalExpenses)}</td>
                             </tr>
 
                             {/* Net Profit Before Tax */}
                             <tr className="table-row-net-before-tax fw-bold table-warning">
                                 <td><FaChartLine className="me-2" /> Net Profit Before Tax</td>
-                                <td className="text-end">₦{plData.netProfitBeforeTax?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.netProfitBeforeTax)}</td>
                             </tr>
 
                             {/* Tax Calculation */}
                             <tr className="table-row-taxable-income">
                                 <td><FaCalculator className="me-2" /> Taxable Income</td>
-                                <td className="text-end">₦{plData.taxableIncome?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.taxableIncome)}</td>
                             </tr>
                             <tr className="table-row-tax">
                                 <td><FaPercentage className="me-2" /> Corporate Tax ({plData.taxRate?.toFixed(1) || '30.0'}%)</td>
-                                <td className="text-end text-danger">-₦{plData.taxAmount?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end text-danger">-{formatNaira(plData.taxAmount)}</td>
                             </tr>
 
                             {/* Final Net Profit */}
                             <tr className="table-row-net fw-bold table-primary">
                                 <td><FaChartLine className="me-2" /> Net Profit After Tax</td>
-                                <td className="text-end">₦{plData.netProfit?.toFixed(2) || '0.00'}</td>
+                                <td className="text-end">{formatNaira(plData.netProfit)}</td>
                             </tr>
                         </tbody>
                     </Table>
@@ -583,15 +610,15 @@ const ReportsPage = () => {
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Advantage Amount</h5>
-                                        <h3 className="text-success">₦{Number(advantageSummary.totalAdvantageAmount || 0).toFixed(2)}</h3>
+                                        <h3 className="text-success">{formatNaira(advantageSummary.totalAdvantageAmount || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Sales Amount</h5>
-                                        <h3 className="text-info">₦{Number(advantageSummary.totalSalesAmount || 0).toFixed(2)}</h3>
+                                        <h3 className="text-info">{formatNaira(advantageSummary.totalSalesAmount || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Avg Advantage/Sale</h5>
-                                        <h3 className="text-warning">₦{Number(advantageSummary.averageAdvantagePerSale || 0).toFixed(2)}</h3>
+                                        <h3 className="text-warning">{formatNaira(advantageSummary.averageAdvantagePerSale || 0)}</h3>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -630,31 +657,31 @@ const ReportsPage = () => {
                                         <td>{sale.branch_name || 'N/A'}</td>
                                         <td>{sale.payment_method}</td>
                                         <td>{sale.status}</td>
-                                        <td className="text-end">₦{Number(sale.base_subtotal || sale.base_sales_amount || 0).toFixed(2)}</td>
-                                        <td className="text-end text-success">+₦{Number(sale.advantage_total || 0).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.subtotal || 0).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
+                                        <td className="text-end">{formatNaira(sale.base_subtotal || sale.base_sales_amount || 0)}</td>
+                                        <td className="text-end text-success">+{formatNaira(sale.advantage_total || 0)}</td>
+                                        <td className="text-end">{formatNaira(sale.subtotal || 0)}</td>
+                                        <td className="text-end">{formatNaira(sale.total_amount)}</td>
+                                        <td className="text-end">{formatNaira(sale.total_cogs)}</td>
                                         <td className="text-end">
                                             <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                                ₦{Number(sale.total_profit).toFixed(2)}
+                                                {formatNaira(sale.total_profit)}
                                             </span>
                                         </td>
                                         <td className="text-end text-success">
-                                            +₦{Number(sale.advantage_profit || 0).toFixed(2)}
+                                            +{formatNaira(sale.advantage_profit || 0)}
                                         </td>
                                         <td>{sale.note || 'N/A'}</td>
                                     </tr>
                                 ))}
                                 <tr className="table-totals table-primary">
                                     <td colSpan="8" className="text-end fw-bold">Grand Totals:</td>
-                                    <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.base_subtotal || s.base_sales_amount || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-success">+₦{advantageData.reduce((sum, s) => sum + Number(s.advantage_total || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.subtotal || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_amount), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_cogs), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{advantageData.reduce((sum, s) => sum + Number(s.total_profit), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-success">+₦{advantageData.reduce((sum, s) => sum + Number(s.advantage_profit || 0), 0).toFixed(2)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.base_subtotal || s.base_sales_amount || 0), 0))}</td>
+                                    <td className="text-end fw-bold text-success">+{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.advantage_total || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.subtotal || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.total_amount), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.total_cogs), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.total_profit), 0))}</td>
+                                    <td className="text-end fw-bold text-success">+{formatNaira(advantageData.reduce((sum, s) => sum + Number(s.advantage_profit || 0), 0))}</td>
                                     <td></td>
                                 </tr>
                             </tbody>
@@ -706,14 +733,14 @@ const ReportsPage = () => {
                                     <td>{sale.payment_method}</td>
                                     <td>{sale.status}</td>
                                     <td>{sale.transaction_type || 'Retail'}</td>
-                                    <td className="text-end">₦{Number(sale.subtotal || sale.total_amount).toFixed(2)}</td>
-                                    <td className="text-end text-danger">-₦{Number(sale.discount_amount || 0).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.tax_amount || sale.tax || 0).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.total_amount).toFixed(2)}</td>
-                                    <td className="text-end">₦{Number(sale.total_cogs).toFixed(2)}</td>
+                                    <td className="text-end">{formatNaira(sale.subtotal || sale.total_amount)}</td>
+                                    <td className="text-end text-danger">-{formatNaira(sale.discount_amount || 0)}</td>
+                                    <td className="text-end">{formatNaira(sale.tax_amount || sale.tax || 0)}</td>
+                                    <td className="text-end">{formatNaira(sale.total_amount)}</td>
+                                    <td className="text-end">{formatNaira(sale.total_cogs)}</td>
                                     <td className="text-end">
                                         <span className={Number(sale.total_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                            ₦{Number(sale.total_profit).toFixed(2)}
+                                            {formatNaira(sale.total_profit)}
                                         </span>
                                     </td>
                                     <td className="text-center">
@@ -724,7 +751,7 @@ const ReportsPage = () => {
                                         )}
                                     </td>
                                     <td className="text-end text-success">
-                                        {sale.is_advantage_sale ? `+₦${Number(sale.advantage_total || 0).toFixed(2)}` : '-'}
+                                        {sale.is_advantage_sale ? `+${formatNaira(sale.advantage_total || 0)}` : '-'}
                                     </td>
                                     <td>{sale.stock_source || 'Main Inventory'}</td>
                                     <td>{sale.receipt_reference || 'N/A'}</td>
@@ -734,12 +761,12 @@ const ReportsPage = () => {
                             ))}
                             <tr className="table-totals table-primary">
                                 <td colSpan="9" className="text-end fw-bold">Grand Totals:</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.subtotal || s.total_amount), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold text-danger">-₦{data.reduce((sum, s) => sum + Number(s.discount_amount || 0), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.tax_amount || s.tax || 0), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_amount), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_cogs), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_profit), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.subtotal || s.total_amount), 0))}</td>
+                                <td className="text-end fw-bold text-danger">-{formatNaira(data.reduce((sum, s) => sum + Number(s.discount_amount || 0), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.tax_amount || s.tax || 0), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.total_amount), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.total_cogs), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.total_profit), 0))}</td>
                                 <td colSpan="3"></td>
                             </tr>
                         </tbody>
@@ -783,11 +810,11 @@ const ReportsPage = () => {
                                             />
                                         </td>
                                         <td className="text-end">{Number(prod.total_quantity_sold).toFixed(0)}</td>
-                                        <td className="text-end">₦{Number(prod.total_sales_amount).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(prod.total_product_cogs).toFixed(2)}</td>
+                                        <td className="text-end">{formatNaira(prod.total_sales_amount)}</td>
+                                        <td className="text-end">{formatNaira(prod.total_product_cogs)}</td>
                                         <td className="text-end">
                                             <span className={Number(prod.product_gross_profit) >= 0 ? 'text-success' : 'text-danger'}>
-                                                ₦{Number(prod.product_gross_profit).toFixed(2)}
+                                                {formatNaira(prod.product_gross_profit)}
                                             </span>
                                         </td>
                                         <td className="text-end">
@@ -801,9 +828,9 @@ const ReportsPage = () => {
                             <tr className="table-totals table-primary">
                                 <td colSpan="4" className="text-end fw-bold">Grand Totals:</td>
                                 <td className="text-end fw-bold">{data.reduce((sum, p) => sum + Number(p.total_quantity_sold), 0).toFixed(0)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.total_product_cogs), 0).toFixed(2)}</td>
-                                <td className="text-end fw-bold">₦{data.reduce((sum, p) => sum + Number(p.product_gross_profit), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, p) => sum + Number(p.total_product_cogs), 0))}</td>
+                                <td className="text-end fw-bold">{formatNaira(data.reduce((sum, p) => sum + Number(p.product_gross_profit), 0))}</td>
                                 <td className="text-end fw-bold">
                                     {data.reduce((sum, p) => sum + Number(p.total_sales_amount), 0) > 0 ?
                                         ((data.reduce((sum, p) => sum + Number(p.product_gross_profit), 0) /
@@ -885,10 +912,10 @@ const ReportsPage = () => {
                                     <td>{item.customer_name || 'Walk-in Customer'}</td>
                                     <td>{item.product_name}</td>
                                     <td className="text-end">{Number(item.quantity).toFixed(0)}</td>
-                                    <td className="text-end">₦{Number(item.original_price || 0).toFixed(2)}</td>
-                                    <td className="text-end text-danger">-₦{Number(item.discount_amount || 0).toFixed(2)}</td>
+                                    <td className="text-end">{formatNaira(item.original_price || 0)}</td>
+                                    <td className="text-end text-danger">-{formatNaira(item.discount_amount || 0)}</td>
                                     <td className="text-end text-danger">{Number(item.discount_percentage || 0).toFixed(1)}%</td>
-                                    <td className="text-end">₦{Number(item.final_price || 0).toFixed(2)}</td>
+                                    <td className="text-end">{formatNaira(item.final_price || 0)}</td>
                                     <td>{item.cashier_name || 'N/A'}</td>
                                     <td>{item.branch_name || 'N/A'}</td>
                                 </tr>
@@ -896,7 +923,7 @@ const ReportsPage = () => {
                             <tr className="table-totals table-primary">
                                 <td colSpan="6" className="text-end fw-bold">Total Discounts Given:</td>
                                 <td colSpan="2" className="text-end fw-bold text-danger">
-                                    -₦{data.reduce((sum, i) => sum + Number((i.discount_amount || 0) * i.quantity), 0).toFixed(2)}
+                                    -{formatNaira(data.reduce((sum, i) => sum + Number((i.discount_amount || 0) * i.quantity), 0))}
                                 </td>
                                 <td colSpan="4"></td>
                             </tr>
@@ -997,7 +1024,7 @@ const ReportsPage = () => {
                                     <td>{expense.expense_type}</td>
                                     <td>{expense.category}</td>
                                     <td>{expense.description || 'N/A'}</td>
-                                    <td className="text-end text-danger">-₦{Number(expense.amount).toFixed(2)}</td>
+                                    <td className="text-end text-danger">-{formatNaira(expense.amount)}</td>
                                     <td>{expense.payment_method}</td>
                                     <td>{expense.reference_number || 'N/A'}</td>
                                     <td>{expense.recorded_by_name || 'N/A'}</td>
@@ -1010,7 +1037,7 @@ const ReportsPage = () => {
                             ))}
                             <tr className="table-totals table-primary">
                                 <td colSpan="5" className="text-end fw-bold">Total Operating Expenses:</td>
-                                <td className="text-end fw-bold text-danger">-₦{data.reduce((sum, e) => sum + Number(e.amount), 0).toFixed(2)}</td>
+                                <td className="text-end fw-bold text-danger">-{formatNaira(data.reduce((sum, e) => sum + Number(e.amount), 0))}</td>
                                 <td colSpan="4"></td>
                             </tr>
                         </tbody>
@@ -1033,11 +1060,11 @@ const ReportsPage = () => {
                                 <Row>
                                     <Col md={3} className="text-center">
                                         <h5>Total Sales</h5>
-                                        <h3 className="text-primary">₦{Number(riderSummary.totalSales || 0).toFixed(2)}</h3>
+                                        <h3 className="text-primary">{formatNaira(riderSummary.totalSales || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Profit</h5>
-                                        <h3 className="text-success">₦{Number(riderSummary.totalProfit || 0).toFixed(2)}</h3>
+                                        <h3 className="text-success">{formatNaira(riderSummary.totalProfit || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Transactions</h5>
@@ -1045,7 +1072,7 @@ const ReportsPage = () => {
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Outstanding</h5>
-                                        <h3 className="text-danger">₦{Number(riderSummary.totalOutstandingBalance || 0).toFixed(2)}</h3>
+                                        <h3 className="text-danger">{formatNaira(riderSummary.totalOutstandingBalance || 0)}</h3>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -1093,22 +1120,22 @@ const ReportsPage = () => {
                                                 {sale.status}
                                             </span>
                                         </td>
-                                        <td className="text-end">₦{Number(sale.subtotal || 0).toFixed(2)}</td>
-                                        <td className="text-end text-danger">-₦{Number(sale.discount_amount || 0).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.tax_amount || sale.tax || 0).toFixed(2)}</td>
-                                        <td className="text-end">₦{Number(sale.total_amount || 0).toFixed(2)}</td>
+                                        <td className="text-end">{formatNaira(sale.subtotal || 0)}</td>
+                                        <td className="text-end text-danger">-{formatNaira(sale.discount_amount || 0)}</td>
+                                        <td className="text-end">{formatNaira(sale.tax_amount || sale.tax || 0)}</td>
+                                        <td className="text-end">{formatNaira(sale.total_amount || 0)}</td>
                                         <td className={`text-end ${Number(sale.total_profit || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
-                                            ₦{Number(sale.total_profit || 0).toFixed(2)}
+                                            {formatNaira(sale.total_profit || 0)}
                                         </td>
-                                        <td className="text-end">₦{Number(sale.amount_paid || 0).toFixed(2)}</td>
+                                        <td className="text-end">{formatNaira(sale.amount_paid || 0)}</td>
                                         <td className={`text-end ${Number(sale.balance_due || 0) > 0 ? 'text-danger' : 'text-success'}`}>
-                                            ₦{Number(sale.balance_due || 0).toFixed(2)}
+                                            {formatNaira(sale.balance_due || 0)}
                                         </td>
                                         <td>{sale.due_date ? new Date(sale.due_date).toLocaleDateString() : 'N/A'}</td>
                                         <td className="text-center">
                                             {sale.is_advantage_sale ? (
                                                 <span className="badge bg-warning text-dark">
-                                                    +₦{Number(sale.advantage_total || 0).toFixed(2)}
+                                                    +{formatNaira(sale.advantage_total || 0)}
                                                 </span>
                                             ) : 'No'}
                                         </td>
@@ -1117,13 +1144,13 @@ const ReportsPage = () => {
                                 ))}
                                 <tr className="table-totals table-primary">
                                     <td colSpan="9" className="text-end fw-bold">Grand Totals:</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.subtotal || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-danger">-₦{data.reduce((sum, s) => sum + Number(s.discount_amount || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.tax_amount || s.tax || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_amount || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.total_profit || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, s) => sum + Number(s.amount_paid || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-danger">₦{data.reduce((sum, s) => sum + Number(s.balance_due || 0), 0).toFixed(2)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.subtotal || 0), 0))}</td>
+                                    <td className="text-end fw-bold text-danger">-{formatNaira(data.reduce((sum, s) => sum + Number(s.discount_amount || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.tax_amount || s.tax || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.total_amount || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.total_profit || 0), 0))}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, s) => sum + Number(s.amount_paid || 0), 0))}</td>
+                                    <td className="text-end fw-bold text-danger">{formatNaira(data.reduce((sum, s) => sum + Number(s.balance_due || 0), 0))}</td>
                                     <td colSpan="3"></td>
                                 </tr>
                             </tbody>
@@ -1149,15 +1176,15 @@ const ReportsPage = () => {
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Sales</h5>
-                                        <h3 className="text-success">₦{Number(performanceOverall.totalSales || 0).toFixed(2)}</h3>
+                                        <h3 className="text-success">{formatNaira(performanceOverall.totalSales || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Outstanding</h5>
-                                        <h3 className="text-danger">₦{Number(performanceOverall.totalOutstanding || 0).toFixed(2)}</h3>
+                                        <h3 className="text-danger">{formatNaira(performanceOverall.totalOutstanding || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Avg per Rider</h5>
-                                        <h3 className="text-info">₦{Number(performanceOverall.avgPerRider || 0).toFixed(2)}</h3>
+                                        <h3 className="text-info">{formatNaira(performanceOverall.avgPerRider || 0)}</h3>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -1205,19 +1232,19 @@ const ReportsPage = () => {
                                             <td className="text-center">{index + 1}</td>
                                             <td><strong>{rider.rider_name || 'N/A'}</strong></td>
                                             <td>{rider.phone_number || 'N/A'}</td>
-                                            <td className="text-end">₦{creditLimit.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(creditLimit)}</td>
                                             <td className={`text-end ${currentBalance > 0 ? 'text-danger' : 'text-success'}`}>
-                                                ₦{currentBalance.toFixed(2)}
+                                                {formatNaira(currentBalance)}
                                             </td>
                                             <td className={`text-end ${availableCredit > 0 ? 'text-success' : 'text-danger'}`}>
-                                                ₦{availableCredit.toFixed(2)}
+                                                {formatNaira(availableCredit)}
                                             </td>
-                                            <td className="text-end">₦{totalSales.toFixed(2)}</td>
-                                            <td className="text-end text-success">₦{totalProfit.toFixed(2)}</td>
-                                            <td className="text-end text-danger">₦{outstandingBalance.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(totalSales)}</td>
+                                            <td className="text-end text-success">{formatNaira(totalProfit)}</td>
+                                            <td className="text-end text-danger">{formatNaira(outstandingBalance)}</td>
                                             <td className="text-end">{totalTransactions}</td>
                                             <td className="text-end">{uniqueCustomers}</td>
-                                            <td className="text-end">₦{avgTransactionValue.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(avgTransactionValue)}</td>
                                             <td className="text-center">
                                                 <span className={`badge ${collectionRate >= 80 ? 'bg-success' :
                                                     collectionRate >= 50 ? 'bg-warning' : 'bg-danger'}`}>
@@ -1252,11 +1279,11 @@ const ReportsPage = () => {
                                     </Col>
                                     <Col md={4} className="text-center">
                                         <h5>Total Amount</h5>
-                                        <h3 className="text-success">₦{Number(paymentSummary.totalAmount || 0).toFixed(2)}</h3>
+                                        <h3 className="text-success">{formatNaira(paymentSummary.totalAmount || 0)}</h3>
                                     </Col>
                                     <Col md={4} className="text-center">
                                         <h5>Average Payment</h5>
-                                        <h3 className="text-info">₦{Number(paymentSummary.avgPayment || 0).toFixed(2)}</h3>
+                                        <h3 className="text-info">{formatNaira(paymentSummary.avgPayment || 0)}</h3>
                                     </Col>
                                 </Row>
                             </Card.Body>
@@ -1283,7 +1310,7 @@ const ReportsPage = () => {
                                         <td>{payment.payment_id}</td>
                                         <td>{new Date(payment.payment_date).toLocaleString()}</td>
                                         <td><strong>{payment.rider_name || 'N/A'}</strong></td>
-                                        <td className="text-end text-success">₦{Number(payment.amount || 0).toFixed(2)}</td>
+                                        <td className="text-end text-success">{formatNaira(payment.amount || 0)}</td>
                                         <td>{payment.payment_method || 'N/A'}</td>
                                         <td className="text-center">{Number(payment.transactions_covered || 0)}</td>
                                         <td>{payment.notes || 'N/A'}</td>
@@ -1292,7 +1319,7 @@ const ReportsPage = () => {
                                 ))}
                                 <tr className="table-totals table-primary">
                                     <td colSpan="4" className="text-end fw-bold">Total:</td>
-                                    <td className="text-end fw-bold text-success">₦{data.reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(2)}</td>
+                                    <td className="text-end fw-bold text-success">{formatNaira(data.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</td>
                                     <td colSpan="4"></td>
                                 </tr>
                             </tbody>
@@ -1319,21 +1346,21 @@ const ReportsPage = () => {
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Sales</h5>
-                                        <h3 className="text-info">₦{Number(collectionSummary.totalSales || 0).toFixed(2)}</h3>
+                                        <h3 className="text-info">{formatNaira(collectionSummary.totalSales || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Total Collected</h5>
-                                        <h3 className="text-success">₦{Number(collectionSummary.totalCollected || 0).toFixed(2)}</h3>
+                                        <h3 className="text-success">{formatNaira(collectionSummary.totalCollected || 0)}</h3>
                                     </Col>
                                     <Col md={3} className="text-center">
                                         <h5>Outstanding</h5>
-                                        <h3 className="text-danger">₦{Number(collectionSummary.totalOutstanding || 0).toFixed(2)}</h3>
+                                        <h3 className="text-danger">{formatNaira(collectionSummary.totalOutstanding || 0)}</h3>
                                     </Col>
                                 </Row>
                                 <Row className="mt-3">
                                     <Col md={4} className="text-center">
                                         <h5>Overdue Amount</h5>
-                                        <h3 className="text-danger">₦{Number(collectionSummary.totalOverdue || 0).toFixed(2)}</h3>
+                                        <h3 className="text-danger">{formatNaira(collectionSummary.totalOverdue || 0)}</h3>
                                     </Col>
                                     <Col md={4} className="text-center">
                                         <h5>Avg Collection Rate</h5>
@@ -1397,23 +1424,23 @@ const ReportsPage = () => {
                                         <tr key={rider.rider_id || index}>
                                             <td className="text-center">{index + 1}</td>
                                             <td><strong>{rider.rider_name || 'N/A'}</strong></td>
-                                            <td className="text-end">₦{creditLimit.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(creditLimit)}</td>
                                             <td className={`text-end ${currentBalance > 0 ? 'text-danger' : 'text-success'}`}>
-                                                ₦{currentBalance.toFixed(2)}
+                                                {formatNaira(currentBalance)}
                                             </td>
                                             <td className={`text-end ${availableCredit > 0 ? 'text-success' : 'text-danger'}`}>
-                                                ₦{availableCredit.toFixed(2)}
+                                                {formatNaira(availableCredit)}
                                             </td>
-                                            <td className="text-end">₦{totalSales.toFixed(2)}</td>
-                                            <td className="text-end text-success">₦{totalCollected.toFixed(2)}</td>
-                                            <td className="text-end text-danger">₦{totalOutstanding.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(totalSales)}</td>
+                                            <td className="text-end text-success">{formatNaira(totalCollected)}</td>
+                                            <td className="text-end text-danger">{formatNaira(totalOutstanding)}</td>
                                             <td className="text-center">
                                                 <span className={`badge ${collectionRate >= 80 ? 'bg-success' :
                                                     collectionRate >= 50 ? 'bg-warning' : 'bg-danger'}`}>
                                                     {collectionRate.toFixed(1)}%
                                                 </span>
                                             </td>
-                                            <td className="text-end text-danger">₦{overdueAmount.toFixed(2)}</td>
+                                            <td className="text-end text-danger">{formatNaira(overdueAmount)}</td>
                                             <td className="text-center">
                                                 <span className={`badge ${overduePct <= 20 ? 'bg-success' :
                                                     overduePct <= 50 ? 'bg-warning' : 'bg-danger'}`}>
@@ -1428,7 +1455,7 @@ const ReportsPage = () => {
                                                     {creditUtil.toFixed(1)}%
                                                 </span>
                                             </td>
-                                            <td className="text-end">₦{avgTransactionValue.toFixed(2)}</td>
+                                            <td className="text-end">{formatNaira(avgTransactionValue)}</td>
                                             <td>{rider.last_sale_date ? new Date(rider.last_sale_date).toLocaleDateString() : 'N/A'}</td>
                                         </tr>
                                     );
@@ -1437,9 +1464,9 @@ const ReportsPage = () => {
                             <tfoot className="table-totals table-primary">
                                 <tr>
                                     <td colSpan="5" className="text-end fw-bold">Totals/Averages:</td>
-                                    <td className="text-end fw-bold">₦{data.reduce((sum, r) => sum + Number(r.total_sales || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-success">₦{data.reduce((sum, r) => sum + Number(r.total_collected || 0), 0).toFixed(2)}</td>
-                                    <td className="text-end fw-bold text-danger">₦{data.reduce((sum, r) => sum + Number(r.total_outstanding || 0), 0).toFixed(2)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(data.reduce((sum, r) => sum + Number(r.total_sales || 0), 0))}</td>
+                                    <td className="text-end fw-bold text-success">{formatNaira(data.reduce((sum, r) => sum + Number(r.total_collected || 0), 0))}</td>
+                                    <td className="text-end fw-bold text-danger">{formatNaira(data.reduce((sum, r) => sum + Number(r.total_outstanding || 0), 0))}</td>
                                     <td className="text-center fw-bold">
                                         {data.length > 0 ?
                                             (data.reduce((sum, r) => {
@@ -1448,7 +1475,7 @@ const ReportsPage = () => {
                                                 return sum + (sales > 0 ? (collected / sales) * 100 : 0);
                                             }, 0) / data.length).toFixed(1) : '0'}%
                                     </td>
-                                    <td className="text-end fw-bold text-danger">₦{data.reduce((sum, r) => sum + Number(r.overdue_amount || 0), 0).toFixed(2)}</td>
+                                    <td className="text-end fw-bold text-danger">{formatNaira(data.reduce((sum, r) => sum + Number(r.overdue_amount || 0), 0))}</td>
                                     <td className="text-center fw-bold">
                                         {data.length > 0 ?
                                             (data.reduce((sum, r) => {
@@ -1476,6 +1503,246 @@ const ReportsPage = () => {
             // Add other report types here (inventory-movement, raw-material-consumption, etc.)
             // ... existing code for other report types ...
 
+            case 'returns':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No sales returns found for the selected filters.</Alert>;
+                }
+
+                const returnsSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={2} className="text-center">
+                                        <h5>Returns</h5>
+                                        <h3 className="text-primary">{Number(returnsSummary.totalReturns || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Return Value</h5>
+                                        <h3 className="text-danger">{formatNaira(returnsSummary.totalReturnValue || 0)}</h3>
+                                    </Col>
+                                    <Col md={3} className="text-center">
+                                        <h5>Applied to Credit</h5>
+                                        <h3 className="text-info">{formatNaira(returnsSummary.totalCreditApplied || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>To Wallets</h5>
+                                        <h3 className="text-success">{formatNaira(returnsSummary.totalWalletCredited || 0)}</h3>
+                                    </Col>
+                                    <Col md={3} className="text-center">
+                                        <h5>Cash/Bank Refunded</h5>
+                                        <h3 className="text-warning">{formatNaira(returnsSummary.totalCashRefunded || 0)}</h3>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Return ID</th>
+                                    <th>Date</th>
+                                    <th>Sale #</th>
+                                    <th>Customer/Rider</th>
+                                    <th>Items Returned</th>
+                                    <th>Refund Method</th>
+                                    <th>Total Amount</th>
+                                    <th>Credit Applied</th>
+                                    <th>Wallet Credited</th>
+                                    <th>Cash Refunded</th>
+                                    <th>Reason</th>
+                                    <th>Processed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.return_id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{row.return_id}</td>
+                                        <td>{new Date(row.return_date).toLocaleString()}</td>
+                                        <td>#{row.sale_id}</td>
+                                        <td><strong>{row.owner_name || 'N/A'}</strong>{row.rider_name ? ' (Rider)' : ''}</td>
+                                        <td>{row.items_summary || 'N/A'}</td>
+                                        <td>{(row.refund_method || '').replace('_', ' ') || 'N/A'}</td>
+                                        <td className="text-end text-danger">{formatNaira(row.total_amount || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.credit_applied || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.wallet_credited || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.cash_refunded || 0)}</td>
+                                        <td>{row.reason || 'N/A'}</td>
+                                        <td>{row.processed_by_name || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                                <tr className="table-totals table-danger">
+                                    <td colSpan="7" className="text-end fw-bold">Totals:</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalReturnValue || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalCreditApplied || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalWalletCredited || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalCashRefunded || 0)}</td>
+                                    <td colSpan="2"></td>
+                                </tr>
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
+            case 'split-payments':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No split payments found for the selected filters.</Alert>;
+                }
+
+                const splitsSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={4} className="text-center">
+                                        <h5>Sales with Split Payments</h5>
+                                        <h3 className="text-primary">{Number(splitsSummary.salesWithSplits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Split Records</h5>
+                                        <h3 className="text-info">{Number(splitsSummary.totalSplits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Total Split Amount</h5>
+                                        <h3 className="text-success">{formatNaira(splitsSummary.totalSplitAmount || 0)}</h3>
+                                    </Col>
+                                </Row>
+                                {Array.isArray(splitsSummary.byMethod) && splitsSummary.byMethod.length > 0 && (
+                                    <Row className="mt-3">
+                                        {splitsSummary.byMethod.map(m => (
+                                            <Col key={m.method} md={3} className="text-center">
+                                                <h6 className="text-muted mb-1">{m.method}</h6>
+                                                <strong>{formatNaira(m.amount || 0)}</strong>
+                                                <span className="text-muted"> ({m.count})</span>
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                )}
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Date</th>
+                                    <th>Sale #</th>
+                                    <th>Customer</th>
+                                    <th>Rider</th>
+                                    <th>Cashier</th>
+                                    <th>Payment Method</th>
+                                    <th>Split Amount</th>
+                                    <th>Sale Total</th>
+                                    <th>Sale Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.split_id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{new Date(row.sale_date).toLocaleString()}</td>
+                                        <td>#{row.sale_id}</td>
+                                        <td>{row.customer_name || 'N/A'}</td>
+                                        <td>{row.rider_name || 'N/A'}</td>
+                                        <td>{row.cashier_name || 'N/A'}</td>
+                                        <td>{row.payment_method || 'N/A'}</td>
+                                        <td className="text-end text-success">{formatNaira(row.amount || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.sale_total || 0)}</td>
+                                        <td>{row.sale_status || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                                <tr className="table-totals table-primary">
+                                    <td colSpan="7" className="text-end fw-bold">Total:</td>
+                                    <td className="text-end fw-bold">{formatNaira(splitsSummary.totalSplitAmount || 0)}</td>
+                                    <td colSpan="2"></td>
+                                </tr>
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
+            case 'wallet-transactions':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No wallet transactions found for the selected filters.</Alert>;
+                }
+
+                const walletSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={2} className="text-center">
+                                        <h5>Deposits</h5>
+                                        <h3 className="text-success">{formatNaira(walletSummary.totalDeposits || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Refunds</h5>
+                                        <h3 className="text-warning">{formatNaira(walletSummary.totalRefunds || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Used on Sales</h5>
+                                        <h3 className="text-info">{formatNaira(walletSummary.totalUsage || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Return Credits</h5>
+                                        <h3 className="text-primary">{formatNaira(walletSummary.totalReturnCredits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Current Wallet Balance (Customers + Riders)</h5>
+                                        <h3 className="text-success">{formatNaira(walletSummary.totalWalletBalance || 0)}</h3>
+                                        <small className="text-muted">
+                                            Customers: {formatNaira(walletSummary.customerWalletBalance || 0)} · Riders: {formatNaira(walletSummary.riderWalletBalance || 0)}
+                                        </small>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Date</th>
+                                    <th>Owner Type</th>
+                                    <th>Owner</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Balance After</th>
+                                    <th>Reference</th>
+                                    <th>Notes</th>
+                                    <th>Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{new Date(row.created_at).toLocaleString()}</td>
+                                        <td>{row.owner_type === 'RIDER' ? 'Rider' : 'Customer'}</td>
+                                        <td><strong>{row.owner_name || 'N/A'}</strong></td>
+                                        <td>{(row.transaction_type || '').replace('_', ' ')}</td>
+                                        <td className={`text-end ${row.transaction_type === 'DEPOSIT' || row.transaction_type === 'RETURN_CREDIT' ? 'text-success' : 'text-danger'}`}>
+                                            {formatNaira(row.amount || 0)}
+                                        </td>
+                                        <td className="text-end">{formatNaira(row.balance_after || 0)}</td>
+                                        <td>{row.reference_type ? `${row.reference_type}${row.reference_id ? ` #${row.reference_id}` : ''}` : 'N/A'}</td>
+                                        <td>{row.notes || 'N/A'}</td>
+                                        <td>{row.created_by_name || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
             default:
                 if (Array.isArray(data) && data.length > 0) {
                     // Generic table for reports without specific formatting
@@ -1498,7 +1765,7 @@ const ReportsPage = () => {
                                             <td key={header}>
                                                 {typeof row[header] === 'number' ?
                                                     header.toLowerCase().includes('amount') || header.toLowerCase().includes('price') || header.toLowerCase().includes('cost') ?
-                                                        `₦${Number(row[header]).toFixed(2)}` : Number(row[header]).toFixed(0)
+                                                        `${formatNaira(row[header])}` : Number(row[header]).toFixed(0)
                                                     : String(row[header] || 'N/A')}
                                             </td>
                                         ))}
@@ -1573,7 +1840,11 @@ const ReportsPage = () => {
                                 <option value="rider-sales">Rider Sales Report</option>
                                 <option value="rider-performance">Rider Performance Report</option>
                                 <option value="rider-payments">Rider Payment History</option>
-                                <option value="rider-collection">Rider Collection Efficiency</option>  {/* ADD THIS LINE */}
+                                <option value="rider-collection">Rider Collection Efficiency</option>
+                                {/* Phase 7: Returns / Split Payments / Wallets */}
+                                <option value="returns">Sales Returns Report</option>
+                                <option value="split-payments">Split Payments Report</option>
+                                <option value="wallet-transactions">Advance Wallet Report</option>
                             </Form.Control>
                         </Col>
                     </Form.Group>
@@ -1767,6 +2038,90 @@ const ReportsPage = () => {
                                         </Col>
                                     </>
                                 )}
+
+                            {/* Phase 7: Sales Returns filters */}
+                            {reportType === 'returns' && (
+                                <>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUsers className="me-1" />Customer</Form.Label>
+                                            <Form.Control as="select" name="customerId" value={filterData.customerId} onChange={handleFilterChange}>
+                                                <option value="">All Customers</option>
+                                                {allCustomers.map(customer => (
+                                                    <option key={customer.id} value={customer.id}>{customer.fullname}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaMotorcycle className="me-1" />Rider</Form.Label>
+                                            <Form.Control as="select" name="riderId" value={filterData.riderId} onChange={handleFilterChange}>
+                                                <option value="">All Riders</option>
+                                                {allRiders.map(rider => (
+                                                    <option key={rider.id} value={rider.id}>{rider.fullname}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUndo className="me-1" />Refund Method</Form.Label>
+                                            <Form.Control as="select" name="refundMethod" value={filterData.refundMethod} onChange={handleFilterChange}>
+                                                <option value="">All Methods</option>
+                                                <option value="credit_balance">Credit Balance</option>
+                                                <option value="advance">Advance Wallet</option>
+                                                <option value="cash">Cash</option>
+                                                <option value="bank">Bank</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                </>
+                            )}
+
+                            {/* Phase 7: Split Payments filters */}
+                            {reportType === 'split-payments' && (
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label><FaMoneyBillWave className="me-1" />Payment Method</Form.Label>
+                                        <Form.Control as="select" name="paymentMethod" value={filterData.paymentMethod} onChange={handleFilterChange}>
+                                            <option value="">All Methods</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Wallet">Wallet</option>
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Col>
+                            )}
+
+                            {/* Phase 7: Advance Wallet filters */}
+                            {reportType === 'wallet-transactions' && (
+                                <>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaWallet className="me-1" />Wallet Owner</Form.Label>
+                                            <Form.Control as="select" name="ownerType" value={filterData.ownerType} onChange={handleFilterChange}>
+                                                <option value="">Customers & Riders</option>
+                                                <option value="CUSTOMER">Customers</option>
+                                                <option value="RIDER">Riders</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaExchangeAlt className="me-1" />Transaction Type</Form.Label>
+                                            <Form.Control as="select" name="walletTxnType" value={filterData.walletTxnType} onChange={handleFilterChange}>
+                                                <option value="">All Types</option>
+                                                <option value="DEPOSIT">Deposit</option>
+                                                <option value="REFUND">Refund</option>
+                                                <option value="USAGE">Used on Sale</option>
+                                                <option value="RETURN_CREDIT">Return Credit</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                </>
+                            )}
 
                             {/* Inventory Movement filters */}
                             {(reportType === 'inventory-movement') && (

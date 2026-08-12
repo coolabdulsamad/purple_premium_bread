@@ -305,7 +305,7 @@ const AllPayments = () => {
                                             <td className="customer-name">{payment.customer_name || 'N/A'}</td>
                                             <td className="transaction-id">#{payment.transaction_id}</td>
                                             <td className="payment-amount fw-bold">
-                                                ₦{Number(payment.amount).toFixed(2)}
+                                                ₦{Number(payment.amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td>
                                                 <Badge

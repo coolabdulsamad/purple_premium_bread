@@ -22,8 +22,9 @@ const OperatingExpensesPage = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
+    // Default view: current month — KPIs and history open on this month
     const [filters, setFilters] = useState({
-        viewType: 'all',
+        viewType: 'monthly',
         startDate: '',
         endDate: '',
         category: '',
@@ -38,7 +39,9 @@ const OperatingExpensesPage = () => {
         totalPages: 0
     });
     const [summary, setSummary] = useState({});
-    const [categories, setCategories] = useState([]);
+    // Predefined + previously-used category → expense-type options (cascading dropdowns)
+    const [expenseOptions, setExpenseOptions] = useState({});
+    const [customType, setCustomType] = useState(false);
 
     // Confirmation Modal States
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -59,15 +62,20 @@ const OperatingExpensesPage = () => {
         recurrence_pattern: ''
     });
 
-    // Common expense categories and types
+    // Fallback categories (used only if the /options endpoint is unreachable)
     const expenseCategories = [
-        'Fuel', 'Utilities', 'Maintenance', 'Supplies', 'Salaries', 
-        'Transport', 'Office', 'Marketing', 'Insurance', 'Taxes', 'Other'
+        'Production', 'Operations', 'Staff', 'Administrative', 'Marketing', 'Miscellaneous'
     ];
 
     const paymentMethods = ['Cash', 'Bank Transfer', 'Card', 'Mobile Money'];
 
     const recurrencePatterns = ['', 'daily', 'weekly', 'monthly', 'yearly'];
+
+    const categoryOptions = Object.keys(expenseOptions).length
+        ? Object.keys(expenseOptions)
+        : expenseCategories;
+
+    const typeOptions = expenseOptions[formData.category] || [];
 
 // Fetch expenses
     const fetchExpenses = async (page = 1) => {
@@ -92,19 +100,19 @@ const OperatingExpensesPage = () => {
     };
 
 
-    // Fetch categories
-    const fetchCategories = async () => {
+    // Fetch category → expense-type options for the cascading dropdowns
+    const fetchOptions = async () => {
         try {
-            const response = await api.get('/operating-expenses/categories');
-            setCategories(response.data);
+            const response = await api.get('/operating-expenses/options');
+            setExpenseOptions(response.data || {});
         } catch (error) {
-            console.error('Error fetching categories:', error);
+            console.error('Error fetching expense options:', error);
         }
     };
 
     useEffect(() => {
         fetchExpenses();
-        fetchCategories();
+        fetchOptions();
     }, [filters]);
 
     const handleFilterChange = (key, value) => {
@@ -197,6 +205,7 @@ const OperatingExpensesPage = () => {
             setShowModal(false);
             resetForm();
             fetchExpenses();
+            fetchOptions(); // pick up any brand-new custom type for next time
         } catch (error) {
             console.error('Error saving expense:', error);
             toast.error('Failed to save expense.');
@@ -270,6 +279,7 @@ const handleConfirmDelete = async () => {
         });
         setEditingExpense(null);
         setPendingFormData(null);
+        setCustomType(false);
     };
 
     const handleModalClose = () => {
@@ -279,7 +289,7 @@ const handleConfirmDelete = async () => {
 
     const clearFilters = () => {
         setFilters({
-            viewType: 'all',
+            viewType: 'monthly',
             startDate: '',
             endDate: '',
             category: '',
@@ -314,7 +324,12 @@ const handleConfirmDelete = async () => {
             Marketing: 'oe-marketing',
             Insurance: 'oe-insurance',
             Taxes: 'oe-taxes',
-            Other: 'oe-other'
+            Other: 'oe-other',
+            Production: 'oe-maintenance',
+            Operations: 'oe-transport',
+            Staff: 'oe-salaries',
+            Administrative: 'oe-office',
+            Miscellaneous: 'oe-other'
         };
         return colors[category] || 'oe-other';
     };
@@ -372,6 +387,63 @@ const handleConfirmDelete = async () => {
             default: return <FiAlertTriangle />;
         }
     };
+
+    // Shared expense-type field (select from options, with a custom-type escape hatch)
+    const renderExpenseTypeField = () => (
+        <div className="oe-field oe-field--full">
+            <label className="oe-label">Expense Type *</label>
+            <div className="oe-input">
+                {!customType && typeOptions.length > 0 ? (
+                    <select
+                        value={formData.expense_type}
+                        onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                                setCustomType(true);
+                                setFormData(prev => ({ ...prev, expense_type: '' }));
+                            } else {
+                                setFormData(prev => ({ ...prev, expense_type: e.target.value }));
+                            }
+                        }}
+                        required
+                        className="oe-input__field"
+                        disabled={!formData.category}
+                    >
+                        <option value="">
+                            {formData.category ? 'Select Expense Type' : 'Select a category first'}
+                        </option>
+                        {typeOptions.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                        ))}
+                        <option value="__custom__">➕ Other (enter custom type)…</option>
+                    </select>
+                ) : (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="e.g., Diesel for Generator, Electricity Bill, etc."
+                            value={formData.expense_type}
+                            onChange={(e) => setFormData(prev => ({ ...prev, expense_type: e.target.value }))}
+                            required
+                            className="oe-input__field"
+                            style={{ flex: 1 }}
+                        />
+                        {typeOptions.length > 0 && (
+                            <button
+                                type="button"
+                                className="oe-btn oe-btn--ghost"
+                                onClick={() => {
+                                    setCustomType(false);
+                                    setFormData(prev => ({ ...prev, expense_type: '' }));
+                                }}
+                            >
+                                List
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 
     return (
         <div className="oe-page">
@@ -563,31 +635,22 @@ const handleConfirmDelete = async () => {
                                     <div className="oe-input">
                                         <select
                                             value={formData.category}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                                            onChange={(e) => {
+                                                setFormData(prev => ({ ...prev, category: e.target.value, expense_type: '' }));
+                                                setCustomType(false);
+                                            }}
                                             required
                                             className="oe-input__field"
                                         >
                                             <option value="">Select Category</option>
-                                            {expenseCategories.map(cat => (
+                                            {categoryOptions.map(cat => (
                                                 <option key={cat} value={cat}>{cat}</option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="oe-field oe-field--full">
-                                    <label className="oe-label">Expense Type *</label>
-                                    <div className="oe-input">
-                                        <input
-                                            type="text"
-                                            placeholder="e.g., Diesel for Generator, Electricity Bill, etc."
-                                            value={formData.expense_type}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, expense_type: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
+                                {renderExpenseTypeField()}
 
                                 <div className="oe-field oe-field--full">
                                     <label className="oe-label">Description</label>
@@ -780,10 +843,11 @@ const handleConfirmDelete = async () => {
                                             onChange={(e) => handleFilterChange('viewType', e.target.value)}
                                             className="oe-input__field"
                                         >
-                                            <option value="all">All Time</option>
+                                            <option value="monthly">This Month</option>
                                             <option value="today">Today</option>
                                             <option value="weekly">This Week</option>
-                                            <option value="monthly">This Month</option>
+                                            <option value="yearly">This Year</option>
+                                            <option value="all">All Time</option>
                                             <option value="custom">Custom Date Range</option>
                                         </select>
                                     </div>
@@ -831,7 +895,7 @@ const handleConfirmDelete = async () => {
                                             className="oe-input__field"
                                         >
                                             <option value="">All Categories</option>
-                                            {expenseCategories.map(cat => (
+                                            {categoryOptions.map(cat => (
                                                 <option key={cat} value={cat}>{cat}</option>
                                             ))}
                                         </select>
@@ -1016,170 +1080,6 @@ const handleConfirmDelete = async () => {
                     )}
                 </div>
             </div>
-
-            {/* Add/Edit Expense Modal */}
-            {showModal && (
-                <div className="oe-modal">
-                    <div className="oe-modal__content">
-                        <div className="oe-modal__header">
-                            <h3 className="oe-modal__title">
-                                {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-                            </h3>
-                            <button className="oe-modal__close" onClick={handleModalClose}>
-                                <FiX />
-                            </button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="oe-modal__body">
-                            <div className="oe-form-grid">
-                                <div className="oe-field">
-                                    <label className="oe-label">Expense Date *</label>
-                                    <div className="oe-input">
-                                        <input
-                                            type="date"
-                                            value={formData.expense_date}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, expense_date: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="oe-field">
-                                    <label className="oe-label">Category *</label>
-                                    <div className="oe-input">
-                                        <select
-                                            value={formData.category}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        >
-                                            <option value="">Select Category</option>
-                                            {expenseCategories.map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="oe-field oe-field--full">
-                                    <label className="oe-label">Expense Type *</label>
-                                    <div className="oe-input">
-                                        <input
-                                            type="text"
-                                            placeholder="e.g., Diesel for Generator, Electricity Bill, etc."
-                                            value={formData.expense_type}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, expense_type: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="oe-field oe-field--full">
-                                    <label className="oe-label">Description</label>
-                                    <div className="oe-input">
-                                        <textarea
-                                            rows={3}
-                                            placeholder="Detailed description of the expense..."
-                                            value={formData.description}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="oe-field">
-                                    <label className="oe-label">Amount (₦) *</label>
-                                    <div className="oe-input">
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            value={formData.amount}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="oe-field">
-                                    <label className="oe-label">Payment Method *</label>
-                                    <div className="oe-input">
-                                        <select
-                                            value={formData.payment_method}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, payment_method: e.target.value }))}
-                                            required
-                                            className="oe-input__field"
-                                        >
-                                            {paymentMethods.map(method => (
-                                                <option key={method} value={method}>{method}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="oe-field">
-                                    <label className="oe-label">Reference Number</label>
-                                    <div className="oe-input">
-                                        <input
-                                            type="text"
-                                            placeholder="Transaction reference, receipt number, etc."
-                                            value={formData.reference_number}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, reference_number: e.target.value }))}
-                                            className="oe-input__field"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="oe-field">
-                                    <label className="oe-label">Recurrence</label>
-                                    <div className="oe-recurrence">
-                                        <label className="oe-checkbox">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.is_recurring}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, is_recurring: e.target.checked }))}
-                                            />
-                                            <span className="oe-checkbox__label">Recurring Expense</span>
-                                        </label>
-                                        {formData.is_recurring && (
-                                            <div className="oe-input">
-                                                <select
-                                                    value={formData.recurrence_pattern}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, recurrence_pattern: e.target.value }))}
-                                                    className="oe-input__field"
-                                                >
-                                                    <option value="">Select Pattern</option>
-                                                    {recurrencePatterns.filter(p => p).map(pattern => (
-                                                        <option key={pattern} value={pattern}>
-                                                            {pattern.charAt(0).toUpperCase() + pattern.slice(1)}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                        <div className="oe-modal__footer">
-                            <button className="oe-btn oe-btn--ghost" onClick={handleModalClose}>
-                                Cancel
-                            </button>
-                            <button 
-                                type="submit" 
-                                className="oe-btn oe-btn--primary"
-                                onClick={handleSubmit}
-                            >
-                                <FiSave />
-                                {editingExpense ? 'Update Expense' : 'Add Expense'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

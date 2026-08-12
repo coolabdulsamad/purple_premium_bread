@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, Modal } from 'react-bootstrap';
 import { FaPlus, FaSearch, FaTimes, FaFilter, FaRedo, FaExchangeAlt, FaHistory, FaBox, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
@@ -30,6 +30,7 @@ const MaterialTransactions = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'transaction_date', direction: 'descending' });
+    const [showRestockModal, setShowRestockModal] = useState(false);
 
     const [restockFormData, setRestockFormData] = useState({
         raw_material_id: '',
@@ -149,6 +150,7 @@ const MaterialTransactions = () => {
             fetchTransactions();
             fetchRawMaterials();
             resetRestockForm();
+            setShowRestockModal(false);
         } catch (err) {
             const errorMsg = 'Failed to record restock. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
@@ -235,15 +237,22 @@ const MaterialTransactions = () => {
             {error && <Alert variant="danger" className="alert-message">{error}</Alert>}
             {successMessage && <Alert variant="success" className="alert-message">{successMessage}</Alert>}
 
-            {/* Record Restock Form */}
-            <Card className="form-card">
-                <Card.Header className="form-card-header">
-                    <h3>
+            {/* Restock action — opens the form in a popout modal */}
+            <div className="page-actions-bar" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                <Button variant="outline-primary" onClick={() => setShowRestockModal(true)}>
+                    <FaPlus className="me-1" /> Record New Restock
+                </Button>
+            </div>
+
+            {/* Record Restock Modal */}
+            <Modal show={showRestockModal} onHide={() => setShowRestockModal(false)} centered size="lg">
+                <Modal.Header closeButton className="form-card-header">
+                    <Modal.Title>
                         <FaPlus className="me-2" />
                         Record New Restock
-                    </h3>
-                </Card.Header>
-                <Card.Body>
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
                     <Form onSubmit={handleRestockSubmit}>
                         <Row className="g-3">
                             <Col md={12} lg={4}>
@@ -314,13 +323,16 @@ const MaterialTransactions = () => {
                             </Col>
                         </Row>
                         <div className="form-actions">
+                            <Button variant="outline-secondary" className="me-2" onClick={() => setShowRestockModal(false)}>
+                                <FaTimes className="me-1" /> Cancel
+                            </Button>
                             <Button variant="outline-primary" type="submit">
                                 <FaPlus className="me-1" /> Record Restock
                             </Button>
                         </div>
                     </Form>
-                </Card.Body>
-            </Card>
+                </Modal.Body>
+            </Modal>
 
             {/* Transaction History Filters */}
             <Card className="filter-card">
@@ -514,13 +526,13 @@ const MaterialTransactions = () => {
                                                     : 'text-danger fw-bold quantity-change'
                                             }>
                                                 {transaction.transaction_type === 'restock' ? '+' : '-'}
-                                                {Number(transaction.quantity_change).toFixed(2)}
+                                                {Number(transaction.quantity_change).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className="unit-cost">
-                                                ₦{Number(transaction.unit_cost).toFixed(2)}
+                                                ₦{Number(transaction.unit_cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className="total-cost fw-bold">
-                                                ₦{(Number(transaction.quantity_change) * Number(transaction.unit_cost)).toFixed(2)}
+                                                ₦{(Number(transaction.quantity_change) * Number(transaction.unit_cost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className="recorded-by">
                                                 {transaction.recorded_by_user_name || 'N/A'}
