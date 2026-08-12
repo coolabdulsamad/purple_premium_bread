@@ -653,3 +653,40 @@
     max-width: 88%;
   }
 }
+
+/* ===== WhatsApp linking ===== */
+.ppb-chat__new-btn--wa {
+  flex: 0 0 44px;
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+  font-size: 16px;
+}
+
+.ppb-chat__new-btn--wa:hover {
+  background: #1eb85a;
+  border-color: #1eb85a;
+}
+
+.ppb-chat__wa-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 2px dashed var(--ppb-chat-purple);
+  border-radius: var(--ppb-chat-radius);
+  background: var(--ppb-chat-purple-50);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: var(--ppb-chat-purple);
+}
+
+.ppb-chat__wa-code small {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ppb-chat-muted);
+}
