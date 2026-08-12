@@ -10,7 +10,7 @@ import CustomersPage from './pages/CustomersPage';
 import POSDashboard from './pages/POSDashboard';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import BranchesPage from './pages/BranchesPage';
-import RecipeManagement from './pages/RecipeManagement';
+import RecipeManagementPage from './pages/RecipeManagement';
 import AlertsDashboard from './pages/AlertsDashboard';
 import StaffManagement from './pages/StaffManagement';
 import RawInventoryDashboard from './pages/RawInventoryDashboard';
@@ -23,6 +23,7 @@ import MoneyPage from './pages/MoneyPage';
 import LoanManagementPage from './pages/LoanManagementPage';
 import ReturnsPage from './pages/ReturnsPage';
 import WalletsPage from './pages/WalletsPage';
+import AIChatPage from './pages/AIChatPage';
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -57,7 +58,7 @@ function App() {
         <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
         <Route path="/sales-history" element={<Layout><SalesHistoryPage /></Layout>} />
         <Route path="/branches" element={<Layout><BranchesPage /></Layout>} />
-        <Route path="/recipes" element={<Layout><RecipeManagement /></Layout>} />
+        <Route path="/recipes" element={<Layout><RecipeManagementPage /></Layout>} />
         <Route path="/payments" element={<Layout><CreditDashboard /></Layout>} />
         <Route path="/alerts" element={<Layout><AlertsDashboard /></Layout>} />
         <Route path="/staff" element={<Layout><StaffManagement /></Layout>} />
@@ -80,6 +81,7 @@ function App() {
         <Route path="/loans" element={<Layout><LoanManagementPage /></Layout>} />
         <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
         <Route path="/wallets" element={<Layout><WalletsPage /></Layout>} />
+        <Route path="/ai-assistant" element={<Layout><AIChatPage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 
