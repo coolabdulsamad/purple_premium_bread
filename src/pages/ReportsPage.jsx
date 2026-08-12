@@ -10,7 +10,7 @@ import {
     FaMoneyBillWave, FaDownload, FaSync, FaGift, FaReceipt,
     FaTrash, FaIndustry, FaUserTie, FaShieldAlt, FaPercentage,
     FaCalculator,
-    FaMotorcycle
+    FaMotorcycle, FaWallet, FaUndo
 } from 'react-icons/fa';
 import '../assets/styles/reports.css';
 import CustomToast from '../components/CustomToast';
@@ -76,6 +76,10 @@ const ReportsPage = () => {
         issueType: '',
         // Rider filters
         riderId: '',
+        // Phase 7: returns / wallets filters
+        refundMethod: '',
+        ownerType: '',
+        walletTxnType: '',
     });
 
     // Dropdown data states
@@ -194,6 +198,9 @@ const ReportsPage = () => {
             wasteReason: '',
             issueType: '',
             riderId: '',
+            refundMethod: '',
+            ownerType: '',
+            walletTxnType: '',
         });
         toast(<CustomToast id={`info-clear-${Date.now()}`} type="info" message="Filters cleared" />, {
             toastId: 'clear-filters'
@@ -230,6 +237,10 @@ const ReportsPage = () => {
                 'rider-payments': ['startDate', 'endDate', 'riderId', 'paymentMethod'],
                 'rider-collection': ['startDate', 'endDate', 'riderId'],
                 'rider-sales-summary': ['startDate', 'endDate', 'branchId'], // NEW
+                // Phase 7: returns / split payments / wallets
+                'returns': ['startDate', 'endDate', 'customerId', 'riderId', 'refundMethod'],
+                'split-payments': ['startDate', 'endDate', 'paymentMethod', 'branchId'],
+                'wallet-transactions': ['startDate', 'endDate', 'ownerType', 'walletTxnType'],
             };
 
             const relevantFilters = relevantFiltersMap[reportType] || [];
@@ -291,6 +302,9 @@ const ReportsPage = () => {
             case 'wasteReason': return `Waste Reason: ${value}`;
             case 'issueType': return `Issue Type: ${value}`;
             case 'riderId': return `Rider: ${allRiders.find(r => r.id === parseInt(value))?.fullname || value}`;
+            case 'refundMethod': return `Refund Method: ${String(value).replace('_', ' ')}`;
+            case 'ownerType': return `Wallet Owner: ${value === 'RIDER' ? 'Riders' : 'Customers'}`;
+            case 'walletTxnType': return `Wallet Txn: ${String(value).replace('_', ' ')}`;
             default: return `${key}: ${value}`;
         }
     };
@@ -306,7 +320,7 @@ const ReportsPage = () => {
             'paymentMethod', 'status', 'minTotal', 'maxTotal', 'transactionType',
             'inventoryTransactionType', 'rawMaterialId', 'rawMaterialTransactionType', 'groupBy',
             'expenseType', 'expenseCategory', 'salaryStatus', 'wasteReason', 'issueType',
-            'riderId'
+            'riderId', 'refundMethod', 'ownerType', 'walletTxnType'
         ];
 
         orderedFilters.forEach(key => {
@@ -438,6 +452,8 @@ const ReportsPage = () => {
             if (reportType === 'profit-loss') {
                 csvContent += "Item,Amount (₦)\r\n";
                 csvContent += `Total Revenue (Sales),${data.totalRevenue?.toFixed(2) || '0.00'}\r\n`;
+                csvContent += `Sales Returns,${data.totalReturns?.toFixed(2) || '0.00'}\r\n`;
+                csvContent += `Revenue Net of Returns,${data.revenueNetOfReturns?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Total Cost of Goods Sold (COGS),${data.totalCostOfGoodsSold?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Gross Profit,${data.grossProfit?.toFixed(2) || '0.00'}\r\n`;
                 csvContent += `Total Operating Expenses,${data.totalOperatingExpenses?.toFixed(2) || '0.00'}\r\n`;
@@ -512,6 +528,14 @@ const ReportsPage = () => {
                             <tr className="table-row-advantage-amount">
                                 <td><FaMoneyBillWave className="me-2" /> &nbsp;&nbsp; Total Advantage Amount (Premium)</td>
                                 <td className="text-end text-success">+{formatNaira(plData.totalAdvantageAmount)}</td>
+                            </tr>
+                            <tr className="table-row-returns">
+                                <td><FaUndo className="me-2" /> Sales Returns (in period)</td>
+                                <td className="text-end text-danger">-{formatNaira(plData.totalReturns)}</td>
+                            </tr>
+                            <tr className="table-row-revenue-net fw-bold">
+                                <td><FaDollarSign className="me-2" /> Revenue Net of Returns</td>
+                                <td className="text-end">{formatNaira(plData.revenueNetOfReturns)}</td>
                             </tr>
 
                             {/* COGS */}
@@ -1479,6 +1503,246 @@ const ReportsPage = () => {
             // Add other report types here (inventory-movement, raw-material-consumption, etc.)
             // ... existing code for other report types ...
 
+            case 'returns':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No sales returns found for the selected filters.</Alert>;
+                }
+
+                const returnsSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={2} className="text-center">
+                                        <h5>Returns</h5>
+                                        <h3 className="text-primary">{Number(returnsSummary.totalReturns || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Return Value</h5>
+                                        <h3 className="text-danger">{formatNaira(returnsSummary.totalReturnValue || 0)}</h3>
+                                    </Col>
+                                    <Col md={3} className="text-center">
+                                        <h5>Applied to Credit</h5>
+                                        <h3 className="text-info">{formatNaira(returnsSummary.totalCreditApplied || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>To Wallets</h5>
+                                        <h3 className="text-success">{formatNaira(returnsSummary.totalWalletCredited || 0)}</h3>
+                                    </Col>
+                                    <Col md={3} className="text-center">
+                                        <h5>Cash/Bank Refunded</h5>
+                                        <h3 className="text-warning">{formatNaira(returnsSummary.totalCashRefunded || 0)}</h3>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Return ID</th>
+                                    <th>Date</th>
+                                    <th>Sale #</th>
+                                    <th>Customer/Rider</th>
+                                    <th>Items Returned</th>
+                                    <th>Refund Method</th>
+                                    <th>Total Amount</th>
+                                    <th>Credit Applied</th>
+                                    <th>Wallet Credited</th>
+                                    <th>Cash Refunded</th>
+                                    <th>Reason</th>
+                                    <th>Processed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.return_id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{row.return_id}</td>
+                                        <td>{new Date(row.return_date).toLocaleString()}</td>
+                                        <td>#{row.sale_id}</td>
+                                        <td><strong>{row.owner_name || 'N/A'}</strong>{row.rider_name ? ' (Rider)' : ''}</td>
+                                        <td>{row.items_summary || 'N/A'}</td>
+                                        <td>{(row.refund_method || '').replace('_', ' ') || 'N/A'}</td>
+                                        <td className="text-end text-danger">{formatNaira(row.total_amount || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.credit_applied || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.wallet_credited || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.cash_refunded || 0)}</td>
+                                        <td>{row.reason || 'N/A'}</td>
+                                        <td>{row.processed_by_name || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                                <tr className="table-totals table-danger">
+                                    <td colSpan="7" className="text-end fw-bold">Totals:</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalReturnValue || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalCreditApplied || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalWalletCredited || 0)}</td>
+                                    <td className="text-end fw-bold">{formatNaira(returnsSummary.totalCashRefunded || 0)}</td>
+                                    <td colSpan="2"></td>
+                                </tr>
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
+            case 'split-payments':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No split payments found for the selected filters.</Alert>;
+                }
+
+                const splitsSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={4} className="text-center">
+                                        <h5>Sales with Split Payments</h5>
+                                        <h3 className="text-primary">{Number(splitsSummary.salesWithSplits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Split Records</h5>
+                                        <h3 className="text-info">{Number(splitsSummary.totalSplits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Total Split Amount</h5>
+                                        <h3 className="text-success">{formatNaira(splitsSummary.totalSplitAmount || 0)}</h3>
+                                    </Col>
+                                </Row>
+                                {Array.isArray(splitsSummary.byMethod) && splitsSummary.byMethod.length > 0 && (
+                                    <Row className="mt-3">
+                                        {splitsSummary.byMethod.map(m => (
+                                            <Col key={m.method} md={3} className="text-center">
+                                                <h6 className="text-muted mb-1">{m.method}</h6>
+                                                <strong>{formatNaira(m.amount || 0)}</strong>
+                                                <span className="text-muted"> ({m.count})</span>
+                                            </Col>
+                                        ))}
+                                    </Row>
+                                )}
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Date</th>
+                                    <th>Sale #</th>
+                                    <th>Customer</th>
+                                    <th>Rider</th>
+                                    <th>Cashier</th>
+                                    <th>Payment Method</th>
+                                    <th>Split Amount</th>
+                                    <th>Sale Total</th>
+                                    <th>Sale Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.split_id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{new Date(row.sale_date).toLocaleString()}</td>
+                                        <td>#{row.sale_id}</td>
+                                        <td>{row.customer_name || 'N/A'}</td>
+                                        <td>{row.rider_name || 'N/A'}</td>
+                                        <td>{row.cashier_name || 'N/A'}</td>
+                                        <td>{row.payment_method || 'N/A'}</td>
+                                        <td className="text-end text-success">{formatNaira(row.amount || 0)}</td>
+                                        <td className="text-end">{formatNaira(row.sale_total || 0)}</td>
+                                        <td>{row.sale_status || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                                <tr className="table-totals table-primary">
+                                    <td colSpan="7" className="text-end fw-bold">Total:</td>
+                                    <td className="text-end fw-bold">{formatNaira(splitsSummary.totalSplitAmount || 0)}</td>
+                                    <td colSpan="2"></td>
+                                </tr>
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
+            case 'wallet-transactions':
+                if (!Array.isArray(data) || data.length === 0) {
+                    return <Alert variant="info">No wallet transactions found for the selected filters.</Alert>;
+                }
+
+                const walletSummary = reportResult.summary || {};
+
+                return (
+                    <div>
+                        <Card className="mb-4 bg-light">
+                            <Card.Body>
+                                <Row>
+                                    <Col md={2} className="text-center">
+                                        <h5>Deposits</h5>
+                                        <h3 className="text-success">{formatNaira(walletSummary.totalDeposits || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Refunds</h5>
+                                        <h3 className="text-warning">{formatNaira(walletSummary.totalRefunds || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Used on Sales</h5>
+                                        <h3 className="text-info">{formatNaira(walletSummary.totalUsage || 0)}</h3>
+                                    </Col>
+                                    <Col md={2} className="text-center">
+                                        <h5>Return Credits</h5>
+                                        <h3 className="text-primary">{formatNaira(walletSummary.totalReturnCredits || 0)}</h3>
+                                    </Col>
+                                    <Col md={4} className="text-center">
+                                        <h5>Current Wallet Balance (Customers + Riders)</h5>
+                                        <h3 className="text-success">{formatNaira(walletSummary.totalWalletBalance || 0)}</h3>
+                                        <small className="text-muted">
+                                            Customers: {formatNaira(walletSummary.customerWalletBalance || 0)} · Riders: {formatNaira(walletSummary.riderWalletBalance || 0)}
+                                        </small>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped bordered hover responsive className="report-table">
+                            <thead>
+                                <tr>
+                                    <th>S/N</th>
+                                    <th>Date</th>
+                                    <th>Owner Type</th>
+                                    <th>Owner</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Balance After</th>
+                                    <th>Reference</th>
+                                    <th>Notes</th>
+                                    <th>Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((row, index) => (
+                                    <tr key={row.id || index}>
+                                        <td className="text-center">{index + 1}</td>
+                                        <td>{new Date(row.created_at).toLocaleString()}</td>
+                                        <td>{row.owner_type === 'RIDER' ? 'Rider' : 'Customer'}</td>
+                                        <td><strong>{row.owner_name || 'N/A'}</strong></td>
+                                        <td>{(row.transaction_type || '').replace('_', ' ')}</td>
+                                        <td className={`text-end ${row.transaction_type === 'DEPOSIT' || row.transaction_type === 'RETURN_CREDIT' ? 'text-success' : 'text-danger'}`}>
+                                            {formatNaira(row.amount || 0)}
+                                        </td>
+                                        <td className="text-end">{formatNaira(row.balance_after || 0)}</td>
+                                        <td>{row.reference_type ? `${row.reference_type}${row.reference_id ? ` #${row.reference_id}` : ''}` : 'N/A'}</td>
+                                        <td>{row.notes || 'N/A'}</td>
+                                        <td>{row.created_by_name || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    </div>
+                );
+
             default:
                 if (Array.isArray(data) && data.length > 0) {
                     // Generic table for reports without specific formatting
@@ -1576,7 +1840,11 @@ const ReportsPage = () => {
                                 <option value="rider-sales">Rider Sales Report</option>
                                 <option value="rider-performance">Rider Performance Report</option>
                                 <option value="rider-payments">Rider Payment History</option>
-                                <option value="rider-collection">Rider Collection Efficiency</option>  {/* ADD THIS LINE */}
+                                <option value="rider-collection">Rider Collection Efficiency</option>
+                                {/* Phase 7: Returns / Split Payments / Wallets */}
+                                <option value="returns">Sales Returns Report</option>
+                                <option value="split-payments">Split Payments Report</option>
+                                <option value="wallet-transactions">Advance Wallet Report</option>
                             </Form.Control>
                         </Col>
                     </Form.Group>
@@ -1770,6 +2038,90 @@ const ReportsPage = () => {
                                         </Col>
                                     </>
                                 )}
+
+                            {/* Phase 7: Sales Returns filters */}
+                            {reportType === 'returns' && (
+                                <>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUsers className="me-1" />Customer</Form.Label>
+                                            <Form.Control as="select" name="customerId" value={filterData.customerId} onChange={handleFilterChange}>
+                                                <option value="">All Customers</option>
+                                                {allCustomers.map(customer => (
+                                                    <option key={customer.id} value={customer.id}>{customer.fullname}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaMotorcycle className="me-1" />Rider</Form.Label>
+                                            <Form.Control as="select" name="riderId" value={filterData.riderId} onChange={handleFilterChange}>
+                                                <option value="">All Riders</option>
+                                                {allRiders.map(rider => (
+                                                    <option key={rider.id} value={rider.id}>{rider.fullname}</option>
+                                                ))}
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaUndo className="me-1" />Refund Method</Form.Label>
+                                            <Form.Control as="select" name="refundMethod" value={filterData.refundMethod} onChange={handleFilterChange}>
+                                                <option value="">All Methods</option>
+                                                <option value="credit_balance">Credit Balance</option>
+                                                <option value="advance">Advance Wallet</option>
+                                                <option value="cash">Cash</option>
+                                                <option value="bank">Bank</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                </>
+                            )}
+
+                            {/* Phase 7: Split Payments filters */}
+                            {reportType === 'split-payments' && (
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label><FaMoneyBillWave className="me-1" />Payment Method</Form.Label>
+                                        <Form.Control as="select" name="paymentMethod" value={filterData.paymentMethod} onChange={handleFilterChange}>
+                                            <option value="">All Methods</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Wallet">Wallet</option>
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Col>
+                            )}
+
+                            {/* Phase 7: Advance Wallet filters */}
+                            {reportType === 'wallet-transactions' && (
+                                <>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaWallet className="me-1" />Wallet Owner</Form.Label>
+                                            <Form.Control as="select" name="ownerType" value={filterData.ownerType} onChange={handleFilterChange}>
+                                                <option value="">Customers & Riders</option>
+                                                <option value="CUSTOMER">Customers</option>
+                                                <option value="RIDER">Riders</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Group>
+                                            <Form.Label><FaExchangeAlt className="me-1" />Transaction Type</Form.Label>
+                                            <Form.Control as="select" name="walletTxnType" value={filterData.walletTxnType} onChange={handleFilterChange}>
+                                                <option value="">All Types</option>
+                                                <option value="DEPOSIT">Deposit</option>
+                                                <option value="REFUND">Refund</option>
+                                                <option value="USAGE">Used on Sale</option>
+                                                <option value="RETURN_CREDIT">Return Credit</option>
+                                            </Form.Control>
+                                        </Form.Group>
+                                    </Col>
+                                </>
+                            )}
 
                             {/* Inventory Movement filters */}
                             {(reportType === 'inventory-movement') && (
