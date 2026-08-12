@@ -103,6 +103,36 @@ const AllocationHistoryPage = () => {
         }
     };
 
+    const handleExportCSV = () => {
+        if (history.length === 0) {
+            toast(<CustomToast type="error" message="No data to export." />);
+            return;
+        }
+        const headers = ['S/N', 'Type', 'Product', 'Quantity', 'From', 'To', 'Recorded By', 'Date/Time'];
+        const csvData = history.map((log, index) => [
+            index + 1,
+            log.issue_type,
+            log.product_name,
+            log.quantity,
+            log.from_user_name || 'Main Inventory',
+            log.to_user_name || 'Main Inventory',
+            log.recorded_by_name,
+            new Date(log.created_at).toLocaleString()
+        ]);
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `allocation_history_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        toast(<CustomToast type="success" message="Export started." />);
+    };
+
     const getIssueTypeIcon = (type) => {
         switch (type) {
             case 'ISSUE': return '📤';
@@ -320,7 +350,7 @@ const AllocationHistoryPage = () => {
                             <FaEye />
                             Allocation History
                         </div>
-                        <button className="ah-btn ah-btn--secondary ah-btn--icon">
+                        <button className="ah-btn ah-btn--secondary ah-btn--icon" onClick={handleExportCSV}>
                             <FaDownload />
                             Export
                         </button>
