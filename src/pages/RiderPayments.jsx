@@ -15,7 +15,7 @@ import {
     FaCheckCircle,
     FaExclamationTriangle
 } from 'react-icons/fa';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
+import { Form, Button, ButtonGroup, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '../assets/styles/credit-dashboard.css';
@@ -46,6 +46,10 @@ const RiderPayments = () => {
         paymentReference: '',
         proof: '',
     });
+
+    // Pay-by-amount mode: auto-allocates oldest-first via /payments/allocate
+    const [paymentMode, setPaymentMode] = useState('sale'); // 'sale' = pay a specific sale | 'amount' = pay by amount
+    const [allocAmount, setAllocAmount] = useState('');
 
     // File upload states
     const [selectedFile, setSelectedFile] = useState(null);
@@ -226,21 +230,39 @@ const RiderPayments = () => {
         setSuccessMessage('');
         setUploadingImage(false);
 
-        // Validate payment data
-        if (!selectedRiderId || !paymentFormData.transaction_id || paymentFormData.amount <= 0) {
-            const errorMsg = 'Please select a rider, an outstanding transaction, and enter a positive payment amount.';
+        if (!selectedRiderId) {
+            const errorMsg = 'Please select a rider first.';
             setError(errorMsg);
             toast(<CustomToast id={`error-validation-${Date.now()}`} type="error" message={errorMsg} />);
             return;
         }
 
-        // Validate payment amount doesn't exceed balance due
-        const selectedTransaction = outstandingSales.find(s => s.id === parseInt(paymentFormData.transaction_id));
-        if (selectedTransaction && paymentFormData.amount > selectedTransaction.balance_due) {
-            const errorMsg = `Payment amount cannot exceed the balance due (₦${Number(selectedTransaction.balance_due || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
-            setError(errorMsg);
-            toast(<CustomToast id={`error-amount-${Date.now()}`} type="error" message={errorMsg} />);
-            return;
+        if (paymentMode === 'sale') {
+            // Validate payment data for a specific sale
+            if (!paymentFormData.transaction_id || paymentFormData.amount <= 0) {
+                const errorMsg = 'Please select an outstanding transaction and enter a positive payment amount.';
+                setError(errorMsg);
+                toast(<CustomToast id={`error-validation-${Date.now()}`} type="error" message={errorMsg} />);
+                return;
+            }
+
+            // Validate payment amount doesn't exceed balance due
+            const selectedTransaction = outstandingSales.find(s => s.id === parseInt(paymentFormData.transaction_id));
+            if (selectedTransaction && paymentFormData.amount > selectedTransaction.balance_due) {
+                const errorMsg = `Payment amount cannot exceed the balance due (₦${Number(selectedTransaction.balance_due || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+                setError(errorMsg);
+                toast(<CustomToast id={`error-amount-${Date.now()}`} type="error" message={errorMsg} />);
+                return;
+            }
+        } else {
+            // Pay-by-amount mode: just a positive amount (may exceed debt - leftover goes to advance wallet)
+            const amt = parseFloat(allocAmount);
+            if (isNaN(amt) || amt <= 0) {
+                const errorMsg = 'Please enter a positive payment amount.';
+                setError(errorMsg);
+                toast(<CustomToast id={`error-validation-${Date.now()}`} type="error" message={errorMsg} />);
+                return;
+            }
         }
 
         let finalProof = paymentFormData.paymentReference;
@@ -275,6 +297,38 @@ const RiderPayments = () => {
             }
         }
 
+        // ---- Pay by AMOUNT mode: auto-allocate oldest-first across unpaid sales ----
+        if (paymentMode === 'amount') {
+            try {
+                const response = await api.post(`/payments/allocate`, {
+                    rider_id: parseInt(selectedRiderId),
+                    amount: parseFloat(allocAmount),
+                    payment_method: paymentFormData.payment_method,
+                    proof: finalProof || null
+                });
+
+                const successMsg = response.data.message || `Payment of ₦${parseFloat(allocAmount).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} allocated successfully, oldest first!`;
+                setSuccessMessage(successMsg);
+                toast(<CustomToast id={`success-alloc-${Date.now()}`} type="success" message={successMsg} />);
+
+                await fetchRiderDetails(selectedRiderId);
+                window.dispatchEvent(new CustomEvent('rider-payment-recorded', {
+                    detail: { riderId: selectedRiderId, amount: parseFloat(allocAmount) }
+                }));
+
+                setAllocAmount('');
+                resetPaymentForm();
+                clearImage();
+            } catch (err) {
+                console.error('Allocation error:', err);
+                const errorMsg = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to allocate payment';
+                setError(errorMsg);
+                toast(<CustomToast id={`error-alloc-${Date.now()}`} type="error" message={errorMsg} />);
+            }
+            return;
+        }
+
+        // ---- Pay a SPECIFIC sale ----
         try {
             const payload = {
                 transaction_id: parseInt(paymentFormData.transaction_id),
@@ -286,7 +340,7 @@ const RiderPayments = () => {
 
             const response = await api.post(`/payments/rider`, payload);
 
-            const successMsg = `Payment of ₦${Number(response.data.payment.amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} recorded successfully!`;
+            const successMsg = `Payment of ₦${Number(paymentFormData.amount || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} recorded successfully!`;
             setSuccessMessage(successMsg);
             toast(<CustomToast id={`success-payment-${Date.now()}`} type="success" message={successMsg} />);
 
@@ -546,7 +600,29 @@ const RiderPayments = () => {
                     </Card.Header>
                     <Card.Body>
                         <Form onSubmit={handleRecordPayment}>
+                            <ButtonGroup className="mb-4 w-100 payment-mode-toggle">
+                                <Button
+                                    variant={paymentMode === 'sale' ? 'primary' : 'outline-primary'}
+                                    onClick={(e) => { e.preventDefault(); setPaymentMode('sale'); }}
+                                >
+                                    <FaFileInvoiceDollar className="me-2" /> Pay a Specific Sale
+                                </Button>
+                                <Button
+                                    variant={paymentMode === 'amount' ? 'primary' : 'outline-primary'}
+                                    onClick={(e) => { e.preventDefault(); setPaymentMode('amount'); }}
+                                >
+                                    <FaMoneyBillWave className="me-2" /> Pay by Amount (Auto-Allocate)
+                                </Button>
+                            </ButtonGroup>
+                            {paymentMode === 'amount' && (
+                                <Alert variant="info" className="py-2">
+                                    The amount will be applied to this rider's unpaid sales <strong>oldest first</strong>.
+                                    Any leftover after clearing all debt is credited to the rider's advance wallet.
+                                    Total outstanding: <strong>{formatCurrency(outstandingSales.reduce((sum, sl) => sum + Number(sl.balance_due || 0), 0))}</strong>
+                                </Alert>
+                            )}
                             <Row className="g-4">
+                                {paymentMode === 'sale' && (
                                 <Col md={12} lg={6}>
                                     <Form.Group className="form-group-spaced">
                                         <Form.Label>Select Transaction to Pay</Form.Label>
@@ -571,6 +647,24 @@ const RiderPayments = () => {
                                         </Form.Control>
                                     </Form.Group>
                                 </Col>
+                                )}
+                                {paymentMode === 'amount' ? (
+                                <Col md={12} lg={6}>
+                                    <Form.Group className="form-group-spaced">
+                                        <Form.Label>Payment Amount (₦)</Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            value={allocAmount}
+                                            onChange={(e) => setAllocAmount(e.target.value)}
+                                            min="0.01"
+                                            step="0.01"
+                                            required
+                                            placeholder="Enter any amount - auto-allocated oldest first"
+                                            className="full-width-input"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                ) : (
                                 <Col md={12} lg={6}>
                                     <Form.Group className="form-group-spaced">
                                         <Form.Label>Payment Amount (₦)</Form.Label>
@@ -586,6 +680,7 @@ const RiderPayments = () => {
                                         />
                                     </Form.Group>
                                 </Col>
+                                )}
                                 <Col md={12} lg={6}>
                                     <Form.Group className="form-group-spaced">
                                         <Form.Label>Payment Method</Form.Label>
@@ -660,10 +755,11 @@ const RiderPayments = () => {
                                     type="submit"
                                     disabled={
                                         !selectedRider ||
-                                        paymentFormData.amount <= 0 ||
-                                        outstandingSales.length === 0 ||
                                         uploadingImage ||
-                                        (paymentFormData.payment_method !== 'Cash' && !selectedFile && !paymentFormData.paymentReference)
+                                        (paymentFormData.payment_method !== 'Cash' && !selectedFile && !paymentFormData.paymentReference) ||
+                                        (paymentMode === 'sale'
+                                            ? (paymentFormData.amount <= 0 || outstandingSales.length === 0)
+                                            : !(parseFloat(allocAmount) > 0))
                                     }
                                     className="w-100 payment-submit-btn"
                                 >
