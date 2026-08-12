@@ -548,7 +548,7 @@ const NewSalePage = () => {
       const availableCredit = (rider.credit_limit || 0) - (rider.current_balance || 0);
       
       if (cartToProcess.total > availableCredit) {
-        toast(<CustomToast type="error" message={`Rider's available credit (₦${availableCredit.toFixed(2)}) is insufficient for this sale.`} />, {
+        toast(<CustomToast type="error" message={`Rider's available credit (${formatNaira(availableCredit)}) is insufficient for this sale.`} />, {
           toastId: 'rider-credit-error'
         });
         return;
@@ -966,7 +966,7 @@ const NewSalePage = () => {
                       <option value="">Choose a rider...</option>
                       {riders.map(rider => (
                         <option key={rider.id} value={rider.id}>
-                          {rider.fullname} - Bal: ₦{Number(rider.current_balance || 0).toFixed(2)}
+                          {rider.fullname} - Bal: {formatNaira(rider.current_balance)}
                         </option>
                       ))}
                     </Form.Select>
@@ -976,19 +976,19 @@ const NewSalePage = () => {
                         <div className="ppb-credit-item">
                           <span>Credit Limit:</span>
                           <span className="ppb-credit-value">
-                            ₦{Number(activeCart.riderCreditInfo.creditLimit).toFixed(2)}
+                            {formatNaira(activeCart.riderCreditInfo.creditLimit)}
                           </span>
                         </div>
                         <div className="ppb-credit-item">
                           <span>Current Balance:</span>
                           <span className={`ppb-credit-value ${activeCart.riderCreditInfo.currentBalance > 0 ? 'text-danger' : 'text-success'}`}>
-                            ₦{Number(activeCart.riderCreditInfo.currentBalance).toFixed(2)}
+                            {formatNaira(activeCart.riderCreditInfo.currentBalance)}
                           </span>
                         </div>
                         <div className="ppb-credit-item">
                           <span>Available Credit:</span>
                           <span className={`ppb-credit-value ${activeCart.riderCreditInfo.availableCredit > 0 ? 'text-success' : 'text-danger'}`}>
-                            ₦{Number(activeCart.riderCreditInfo.availableCredit).toFixed(2)}
+                            {formatNaira(activeCart.riderCreditInfo.availableCredit)}
                           </span>
                         </div>
                       </div>
