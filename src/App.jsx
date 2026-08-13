@@ -27,6 +27,7 @@ import AIChatPage from './pages/AIChatPage';
 import ChatPage from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import ProfilePage from './pages/ProfilePage';
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -88,6 +89,7 @@ function App() {
         <Route path="/ai-assistant" element={<Layout><AIChatPage /></Layout>} />
         <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
         <Route path="/audit-logs" element={<Layout><AuditLogsPage /></Layout>} />
+        <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
 

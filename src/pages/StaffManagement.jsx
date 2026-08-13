@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge, Tabs, Tab } from 'react-bootstrap';
+import { Form, Button, Table, Alert, Spinner, Card, Row, Col, InputGroup, Badge } from 'react-bootstrap';
 import { 
     FaUserPlus, FaCalendarAlt, FaEdit, FaTrash, FaSearch, FaTimes, FaUser, 
     FaIdBadge, FaInfoCircle, FaFilter, FaSync, FaClock, FaChartBar, 
@@ -1510,37 +1510,46 @@ const StaffManagement = () => {
                 <p>Manage staff duties, attendance, and members</p>
             </div>
 
-            <Tabs 
-                activeKey={activeTab} 
-                onSelect={setActiveTab} 
-                className="staff-management-tabs"
-                fill
-            >
-                <Tab eventKey="duties" title={
-                    <span>
-                        <FaCalendarAlt className="me-1" />
-                        Duty Assignments
-                    </span>
-                }>
-                    <DutiesTabContent />
-                </Tab>
-                <Tab eventKey="attendance" title={
-                    <span>
-                        <FaUserCheck className="me-1" />
-                        Attendance
-                    </span>
-                }>
-                    <AttendanceTab />
-                </Tab>
-                <Tab eventKey="staff-members" title={
-                    <span>
-                        <FaUser className="me-1" />
-                        Staff Members
-                    </span>
-                }>
-                    <StaffMembersTab />
-                </Tab>
-            </Tabs>
+            {/* Custom tab nav — renders ONLY the active section (fixes all 3 sections showing in every tab) */}
+            <div className="staff-management-tabs-nav" style={{
+                display: 'flex',
+                gap: '4px',
+                borderBottom: '2px solid #dee2e6',
+                marginBottom: '20px',
+                flexWrap: 'wrap'
+            }}>
+                {[
+                    { key: 'duties', label: 'Duty Assignments', icon: <FaCalendarAlt className="me-1" /> },
+                    { key: 'attendance', label: 'Attendance', icon: <FaUserCheck className="me-1" /> },
+                    { key: 'staff-members', label: 'Staff Members', icon: <FaUser className="me-1" /> }
+                ].map(tab => (
+                    <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setActiveTab(tab.key)}
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '10px 20px',
+                            border: 'none',
+                            borderBottom: activeTab === tab.key ? '3px solid var(--ppb-purple, #6f42c1)' : '3px solid transparent',
+                            background: activeTab === tab.key ? 'rgba(111, 66, 193, 0.08)' : 'transparent',
+                            color: activeTab === tab.key ? 'var(--ppb-purple, #6f42c1)' : '#6c757d',
+                            fontWeight: activeTab === tab.key ? 600 : 400,
+                            fontSize: '15px',
+                            cursor: 'pointer',
+                            marginBottom: '-2px',
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        {tab.icon} {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {activeTab === 'duties' && <DutiesTabContent />}
+            {activeTab === 'attendance' && <AttendanceTab />}
+            {activeTab === 'staff-members' && <StaffMembersTab />}
 
             <DeleteConfirmationDialog
                 isOpen={deleteDialog.isOpen}
