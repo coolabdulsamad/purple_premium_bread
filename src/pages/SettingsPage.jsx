@@ -1,5 +1,5 @@
 // src/pages/SettingsPage.jsx — Admin-only system settings (app_settings table).
-// Edits the exact dotted keys that the AI assistant and WhatsApp backends read,
+// Edits the exact dotted keys that the AI assistant and Telegram/WhatsApp backends read,
 // so integrations can be activated from the UI without touching server env vars.
 import React, { useEffect, useState } from 'react';
 import api from '../api/axiosInstance';
@@ -27,8 +27,16 @@ const GROUPS = [
         ]
     },
     {
+        id: 'telegram',
+        title: 'Telegram Integration',
+        fields: [
+            { key: 'telegram.enabled', label: 'Enabled', hint: 'true or false' },
+            { key: 'telegram.bot_token', label: 'Bot token', secret: true, hint: 'Token from @BotFather on Telegram' }
+        ]
+    },
+    {
         id: 'whatsapp',
-        title: 'WhatsApp Integration',
+        title: 'WhatsApp Integration (legacy)',
         fields: [
             { key: 'whatsapp.enabled', label: 'Enabled', hint: 'true or false' },
             { key: 'whatsapp.phone_number_id', label: 'Phone number ID', hint: 'Meta Cloud API phone number ID' },
