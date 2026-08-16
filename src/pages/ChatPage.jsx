@@ -6,7 +6,7 @@ import { Spinner, Modal, Button, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import {
     FaComments, FaPaperPlane, FaPlus, FaUsers, FaBoxOpen, FaShoppingCart,
-    FaCreditCard, FaUser, FaMotorcycle, FaTimes, FaLink, FaSignOutAlt, FaUserPlus, FaWhatsapp
+    FaCreditCard, FaUser, FaMotorcycle, FaTimes, FaLink, FaSignOutAlt, FaUserPlus, FaTelegram
 } from 'react-icons/fa';
 import api from '../api/axiosInstance';
 import CustomToast from '../components/CustomToast';
@@ -61,10 +61,10 @@ const ChatPage = () => {
     const [showNewGroup, setShowNewGroup] = useState(false);
     const [showRefPicker, setShowRefPicker] = useState(false);
     const [showAddMember, setShowAddMember] = useState(false);
-    const [showWhatsApp, setShowWhatsApp] = useState(false);
-    const [waStatus, setWaStatus] = useState({ linked: false });
-    const [waCode, setWaCode] = useState(null);
-    const [waBusy, setWaBusy] = useState(false);
+    const [showTelegram, setShowTelegram] = useState(false);
+    const [tgStatus, setTgStatus] = useState({ linked: false });
+    const [tgCode, setTgCode] = useState(null);
+    const [tgBusy, setTgBusy] = useState(false);
 
     const [users, setUsers] = useState([]);
     const [groupName, setGroupName] = useState('');
@@ -192,41 +192,41 @@ const ChatPage = () => {
         }
     };
 
-    // ---------- WhatsApp linking ----------
-    const openWhatsAppModal = async () => {
-        setShowWhatsApp(true);
-        setWaCode(null);
+    // ---------- Telegram linking ----------
+    const openTelegramModal = async () => {
+        setShowTelegram(true);
+        setTgCode(null);
         try {
-            const res = await api.get('/whatsapp/link-status');
-            setWaStatus(res.data);
+            const res = await api.get('/telegram/link-status');
+            setTgStatus(res.data);
         } catch {
-            setWaStatus({ linked: false });
+            setTgStatus({ linked: false });
         }
     };
 
-    const generateWaCode = async () => {
-        setWaBusy(true);
+    const generateTgCode = async () => {
+        setTgBusy(true);
         try {
-            const res = await api.post('/whatsapp/link-code');
-            setWaCode(res.data);
+            const res = await api.post('/telegram/link-code');
+            setTgCode(res.data);
         } catch (err) {
             notify('error', err.response?.data?.error || 'Could not generate a code');
         } finally {
-            setWaBusy(false);
+            setTgBusy(false);
         }
     };
 
-    const unlinkWhatsApp = async () => {
-        setWaBusy(true);
+    const unlinkTelegram = async () => {
+        setTgBusy(true);
         try {
-            await api.post('/whatsapp/unlink');
-            setWaStatus({ linked: false });
-            setWaCode(null);
-            notify('info', 'WhatsApp unlinked');
+            await api.post('/telegram/unlink');
+            setTgStatus({ linked: false });
+            setTgCode(null);
+            notify('info', 'Telegram unlinked');
         } catch (err) {
             notify('error', err.response?.data?.error || 'Could not unlink');
         } finally {
-            setWaBusy(false);
+            setTgBusy(false);
         }
     };
 
@@ -290,8 +290,8 @@ const ChatPage = () => {
                         <button className="ppb-chat__new-btn ppb-chat__new-btn--group" onClick={() => setShowNewGroup(true)}>
                             <FaUsers /> New Group
                         </button>
-                        <button className="ppb-chat__new-btn ppb-chat__new-btn--wa" title="Link your WhatsApp" onClick={openWhatsAppModal}>
-                            <FaWhatsapp />
+                        <button className="ppb-chat__new-btn ppb-chat__new-btn--wa" title="Link your Telegram" onClick={openTelegramModal}>
+                            <FaTelegram />
                         </button>
                     </div>
 
@@ -553,43 +553,43 @@ const ChatPage = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* ===== WhatsApp linking modal ===== */}
-            <Modal show={showWhatsApp} onHide={() => setShowWhatsApp(false)} centered>
-                <Modal.Header closeButton><Modal.Title><FaWhatsapp className="me-2" />Link your WhatsApp</Modal.Title></Modal.Header>
+            {/* ===== Telegram linking modal ===== */}
+            <Modal show={showTelegram} onHide={() => setShowTelegram(false)} centered>
+                <Modal.Header closeButton><Modal.Title><FaTelegram className="me-2" />Link your Telegram</Modal.Title></Modal.Header>
                 <Modal.Body>
-                    {waStatus.linked ? (
+                    {tgStatus.linked ? (
                         <>
-                            <p>Your WhatsApp is linked to number <strong>{waStatus.phone_number}</strong>.</p>
+                            <p>Your Telegram is linked to chat ID <strong>{tgStatus.chat_id}</strong>.</p>
                             <p className="text-muted" style={{ fontSize: 13 }}>
-                                Send <strong>hi</strong> to the company WhatsApp number to use the system from WhatsApp —
+                                Send <strong>hi</strong> to the company Telegram bot to use the system from Telegram —
                                 check sales, record payments, expenses and more, step by step.
                             </p>
                         </>
                     ) : (
                         <>
-                            <p>Link this account to your WhatsApp number:</p>
+                            <p>Link this account to your Telegram:</p>
                             <ol style={{ fontSize: 14 }}>
                                 <li>Tap <strong>Generate code</strong> below</li>
-                                <li>Open WhatsApp and message the company number</li>
+                                <li>Open Telegram and message the company bot</li>
                                 <li>Send the 6-digit code within 10 minutes</li>
                             </ol>
-                            {waCode && (
+                            {tgCode && (
                                 <div className="ppb-chat__wa-code">
-                                    {waCode.code}
-                                    <small>expires in {waCode.ttl_minutes} minutes</small>
+                                    {tgCode.code}
+                                    <small>expires in {tgCode.ttl_minutes} minutes</small>
                                 </div>
                             )}
                         </>
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    {waStatus.linked ? (
-                        <Button variant="danger" onClick={unlinkWhatsApp} disabled={waBusy}>
-                            {waBusy ? 'Working…' : 'Unlink WhatsApp'}
+                    {tgStatus.linked ? (
+                        <Button variant="danger" onClick={unlinkTelegram} disabled={tgBusy}>
+                            {tgBusy ? 'Working…' : 'Unlink Telegram'}
                         </Button>
                     ) : (
-                        <Button variant="success" onClick={generateWaCode} disabled={waBusy}>
-                            {waBusy ? 'Generating…' : waCode ? 'Generate new code' : 'Generate code'}
+                        <Button variant="primary" onClick={generateTgCode} disabled={tgBusy}>
+                            {tgBusy ? 'Generating…' : tgCode ? 'Generate new code' : 'Generate code'}
                         </Button>
                     )}
                 </Modal.Footer>
