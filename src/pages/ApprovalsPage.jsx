@@ -43,6 +43,52 @@ const StatusBadge = ({ status }) => {
     );
 };
 
+// Renders the enriched `payload.display` object staged by the workflow engine:
+// { fields: [{label, value}], items: [row objects], total: {label, value} }
+const DisplayDetails = ({ display }) => {
+    if (!display) return null;
+    const fields = Array.isArray(display.fields) ? display.fields : [];
+    const items = Array.isArray(display.items) ? display.items : [];
+    const columns = items.length ? Object.keys(items[0]) : [];
+    return (
+        <div className="apv-details">
+            <small>Request details</small>
+            {fields.length > 0 && (
+                <div className="apv-details__grid">
+                    {fields.map((f, i) => (
+                        <div className="apv-details__row" key={i}>
+                            <span className="apv-details__label">{f.label}</span>
+                            <span className="apv-details__value">{f.value ?? '—'}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {items.length > 0 && (
+                <div className="apv-details__table-wrap">
+                    <table className="apv-details__table">
+                        <thead>
+                            <tr>{columns.map((c) => <th key={c}>{c}</th>)}</tr>
+                        </thead>
+                        <tbody>
+                            {items.map((row, i) => (
+                                <tr key={i}>
+                                    {columns.map((c) => <td key={c}>{row[c] ?? '—'}</td>)}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+            {display.total && (
+                <div className="apv-details__total">
+                    <span>{display.total.label}</span>
+                    <strong>{display.total.value}</strong>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const ApprovalsPage = () => {
     const { user } = useAuth();
     const [tab, setTab] = useState('pending');
@@ -299,13 +345,19 @@ const ApprovalsPage = () => {
                                     </div>
                                 )}
 
-                                {/* Staged payload */}
+                                {/* Enriched request details (names, phones, line values) */}
+                                <DisplayDetails display={selected.payload?.display} />
+
+                                {/* Staged payload (technical) */}
                                 <div className="apv-payload">
                                     <small>
                                         Staged action: {selected.payload?.method}{' '}
                                         {selected.payload?.url}
                                     </small>
-                                    <pre>{JSON.stringify(selected.payload?.body ?? {}, null, 2)}</pre>
+                                    <details className="apv-payload__raw">
+                                        <summary>View technical payload (raw JSON)</summary>
+                                        <pre>{JSON.stringify(selected.payload?.body ?? {}, null, 2)}</pre>
+                                    </details>
                                 </div>
 
                                 {selected.status === 'APPROVED' && selected.execution_result && (
