@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import InventoryPage from './InventoryPage';
 import NewSalePage from './NewSalePage';
 import SalesOutPage from './SalesOutPage';
@@ -17,6 +18,7 @@ import NewExchangePage from './NewExchangePage';
 const POSDashboard = () => {
     const [activeTab, setActiveTab] = useState('newSale');
     const { isAuthenticated, userRole } = useAuth();
+    const { can } = usePermissions();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -31,9 +33,11 @@ const POSDashboard = () => {
 
     if (!isAuthenticated) return null;
 
-    const canViewInventory = ['admin', 'manager', 'baker'].includes(userRole);
-    const canManageSales = ['admin', 'manager', 'sales'].includes(userRole);
-    const canManageExchange = ['admin', 'manager', 'sales'].includes(userRole);
+    // Permission-aware tab gates: the live permissions catalog decides when an
+    // admin has configured it; otherwise the role list preserves the defaults.
+    const canViewInventory = can('inventory.view', ['admin', 'manager', 'baker']);
+    const canManageSales = can('sales.create', ['admin', 'manager', 'sales']);
+    const canManageExchange = can('exchanges.create', ['admin', 'manager', 'sales']);
     // const canViewCustomers = ['admin', 'manager', 'sales'].includes(userRole);
 
     return (
@@ -89,9 +93,9 @@ const POSDashboard = () => {
             </nav>
 
             <main className="tab-content">
-                {activeTab === 'newSale' && <NewSalePage />}
+                {activeTab === 'newSale' && canManageSales && <NewSalePage />}
                 {activeTab === 'breadexchange' && canManageExchange && <NewExchangePage />}
-                {activeTab === 'salesOut' && <SalesOutPage />}
+                {activeTab === 'salesOut' && canManageSales && <SalesOutPage />}
                 {activeTab === 'inventory' && canViewInventory && <InventoryPage />}
                 {/* {activeTab === 'customers' && canViewCustomers && <CustomersPage />} */}
             </main>
