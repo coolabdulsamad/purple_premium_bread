@@ -41,54 +41,69 @@ import RegisterRider from './pages/RegisterRider';
 import EditRider from './pages/EditRider';
 import RiderSalesPage from './pages/RiderSalesPage';
 import AnalysisPage from './pages/AnalysisPage';
+import usePermissions from './hooks/usePermissions';
+
+// Route guard: shows the page only when the permission catalog (or the
+// fallback role list) allows it. This keeps pages reachable only where the
+// sidebar shows them, so hidden pages can't be opened by typing the URL.
+const RequirePermission = ({ perm, roles, children }) => {
+  const { can, loaded } = usePermissions();
+  if (!loaded) return null;
+  if (!perm || can(perm, roles)) return children;
+  return (
+    <div style={{ padding: '3rem', textAlign: 'center' }}>
+      <h2>Access restricted</h2>
+      <p>You don't have permission to view this page. Please contact an administrator if you need access.</p>
+    </div>
+  );
+};
+
+const P = ({ perm, roles, children }) => (
+  <Layout>
+    <RequirePermission perm={perm} roles={roles}>{children}</RequirePermission>
+  </Layout>
+);
 
 function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <Layout>
-              <Dashboard />
-            </Layout>
-          }
-        />
-        <Route path="/pos" element={<Layout><POSDashboard /></Layout>} />
-        <Route path="/admin" element={<Layout><AdminPage /></Layout>} />
-        <Route path="/production" element={<Layout><ProductionDashboard /></Layout>} />
-        <Route path="/products" element={<Layout><ProductManagementPage /></Layout>} />
-        <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
-        <Route path="/sales-history" element={<Layout><SalesHistoryPage /></Layout>} />
-        <Route path="/branches" element={<Layout><BranchesPage /></Layout>} />
-        <Route path="/recipes" element={<Layout><RecipeManagement /></Layout>} />
-        <Route path="/payments" element={<Layout><CreditDashboard /></Layout>} />
-        <Route path="/alerts" element={<Layout><AlertsDashboard /></Layout>} />
-        <Route path="/staff" element={<Layout><StaffManagement /></Layout>} />
-        <Route path="/operating-expenses" element={<Layout><OperatingExpensesPage /></Layout>} />
-        <Route path="/reports" element={<Layout><ReportDashboard /></Layout>} />
-        <Route path="/raw_materials_inventory" element={<Layout><RawInventoryDashboard /></Layout>} />
-        <Route path='/wastestock' element={<Layout><WasteStock /></Layout>} />
-        <Route path='/sales_management' element={<Layout><SalesManagementDashboard /></Layout>} />
-        <Route path="/riders" element={<Layout><RidersPage /></Layout>} />
-        <Route path="/riders/register" element={<Layout><RegisterRider /></Layout>} />
-        <Route path="/exchanges-history" element={<Layout><ExchangeHistoryPage /></Layout>} />
-        <Route path="/salary-management" element={<Layout><SalaryManagementPage /></Layout>} />
-        <Route path="/services" element={<Layout><Services /></Layout>} />
-        <Route path="/riders/edit/:id" element={<Layout><EditRider /></Layout>} />
-        <Route path="/riders/sales/:riderId" element={<Layout><RiderSalesPage /></Layout>} />
-        <Route path="/analysis" element={<Layout><AnalysisPage /></Layout>} />
-        <Route path="/permissions" element={<Layout><PermissionsPage /></Layout>} />
-        <Route path="/approvals" element={<Layout><ApprovalsPage /></Layout>} />
-        <Route path="/money" element={<Layout><MoneyPage /></Layout>} />
-        <Route path="/loans" element={<Layout><LoanManagementPage /></Layout>} />
-        <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
-        <Route path="/wallets" element={<Layout><WalletsPage /></Layout>} />
-        <Route path="/team-chat" element={<Layout><ChatPage /></Layout>} />
-        <Route path="/ai-assistant" element={<Layout><AIChatPage /></Layout>} />
-        <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
-        <Route path="/audit-logs" element={<Layout><AuditLogsPage /></Layout>} />
+        <Route path="/dashboard" element={<P perm="dashboard.view" roles={['admin', 'manager', 'accountant']}><Dashboard /></P>} />
+        <Route path="/pos" element={<P perm="sales.view" roles={['admin', 'sales', 'manager']}><POSDashboard /></P>} />
+        <Route path="/admin" element={<P perm="users.view" roles={['admin']}><AdminPage /></P>} />
+        <Route path="/production" element={<P perm="production.view" roles={['admin', 'baker', 'manager']}><ProductionDashboard /></P>} />
+        <Route path="/products" element={<P perm="products.view" roles={['admin', 'manager', 'accountant']}><ProductManagementPage /></P>} />
+        <Route path="/customers" element={<P perm="customers.view" roles={['admin', 'sales', 'manager', 'accountant']}><CustomersPage /></P>} />
+        <Route path="/sales-history" element={<P perm="sales.view" roles={['admin', 'sales', 'manager', 'accountant']}><SalesHistoryPage /></P>} />
+        <Route path="/branches" element={<P perm="branches.view" roles={['admin', 'manager']}><BranchesPage /></P>} />
+        <Route path="/recipes" element={<P perm="recipes.view" roles={['admin', 'manager', 'accountant']}><RecipeManagement /></P>} />
+        <Route path="/payments" element={<P perm="payments.view" roles={['admin', 'manager', 'sales', 'accountant']}><CreditDashboard /></P>} />
+        <Route path="/alerts" element={<P perm="inventory.view" roles={['admin', 'manager', 'sales', 'accountant']}><AlertsDashboard /></P>} />
+        <Route path="/staff" element={<P perm="staff.view" roles={['admin', 'accountant', 'manager']}><StaffManagement /></P>} />
+        <Route path="/operating-expenses" element={<P perm="expenses.view" roles={['admin', 'manager', 'accountant']}><OperatingExpensesPage /></P>} />
+        <Route path="/reports" element={<P perm="reports.view" roles={['admin', 'manager', 'accountant']}><ReportDashboard /></P>} />
+        <Route path="/raw_materials_inventory" element={<P perm="raw_materials.view" roles={['admin', 'manager', 'accountant']}><RawInventoryDashboard /></P>} />
+        <Route path='/wastestock' element={<P perm="inventory.view" roles={['admin', 'sales', 'manager', 'accountant']}><WasteStock /></P>} />
+        <Route path='/sales_management' element={<P perm="sales.approve" roles={['admin', 'manager']}><SalesManagementDashboard /></P>} />
+        <Route path="/riders" element={<P perm="riders.view" roles={['admin', 'manager', 'accountant']}><RidersPage /></P>} />
+        <Route path="/riders/register" element={<P perm="riders.create" roles={['admin', 'manager']}><RegisterRider /></P>} />
+        <Route path="/exchanges-history" element={<P perm="exchanges.view" roles={['admin', 'sales', 'manager', 'accountant']}><ExchangeHistoryPage /></P>} />
+        <Route path="/salary-management" element={<P perm="salaries.view" roles={['admin', 'accountant']}><SalaryManagementPage /></P>} />
+        <Route path="/services" element={<P perm="services.view" roles={['admin', 'manager', 'accountant']}><Services /></P>} />
+        <Route path="/riders/edit/:id" element={<P perm="riders.edit" roles={['admin', 'manager']}><EditRider /></P>} />
+        <Route path="/riders/sales/:riderId" element={<P perm="riders.view" roles={['admin', 'manager', 'accountant']}><RiderSalesPage /></P>} />
+        <Route path="/analysis" element={<P perm="analysis.view" roles={['admin', 'manager', 'accountant']}><AnalysisPage /></P>} />
+        <Route path="/permissions" element={<P perm="settings.view" roles={['admin']}><PermissionsPage /></P>} />
+        <Route path="/approvals" element={<P perm="approvals.view" roles={['admin', 'manager', 'accountant']}><ApprovalsPage /></P>} />
+        <Route path="/money" element={<P perm="money.view" roles={['admin', 'manager', 'accountant']}><MoneyPage /></P>} />
+        <Route path="/loans" element={<P perm="debts.view" roles={['admin', 'accountant', 'manager']}><LoanManagementPage /></P>} />
+        <Route path="/returns" element={<P perm="returns.view" roles={['admin', 'sales', 'manager', 'accountant']}><ReturnsPage /></P>} />
+        <Route path="/wallets" element={<P perm="wallets.view" roles={['admin', 'manager', 'accountant']}><WalletsPage /></P>} />
+        <Route path="/team-chat" element={<P perm="chat.view" roles={['admin', 'manager', 'sales', 'baker', 'accountant']}><ChatPage /></P>} />
+        <Route path="/ai-assistant" element={<P perm="ai_assistant.view" roles={['admin', 'manager', 'accountant']}><AIChatPage /></P>} />
+        <Route path="/settings" element={<P perm="settings.view" roles={['admin']}><SettingsPage /></P>} />
+        <Route path="/audit-logs" element={<P perm="audit_logs.view" roles={['admin', 'manager']}><AuditLogsPage /></P>} />
         <Route path="/profile" element={<Layout><ProfilePage /></Layout>} />
         <Route path="*" element={<Layout><h2>404 - Page Not Found</h2></Layout>} />
       </Routes>
