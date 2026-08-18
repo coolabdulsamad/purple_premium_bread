@@ -5,6 +5,7 @@ import { FaCheckCircle, FaTimesCircle, FaRedo, FaCalendarAlt, FaBoxes, FaUser, F
 import { toast } from 'react-toastify';
 import CustomToast from '../components/CustomToast';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import '../assets/styles/exchangeApproval.css';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
@@ -21,6 +22,8 @@ const ManagerExchangeApprovalQueue = () => {
     const [rejectingId, setRejectingId] = useState(null);
     const [productsMap, setProductsMap] = useState({}); 
     const { userRole } = useAuth();
+    const { can } = usePermissions();
+    const canApproveExchange = can('exchanges.approve', ['admin', 'manager']);
 
     // Confirmation Modal State
     const [showApproveModal, setShowApproveModal] = useState(false);
@@ -61,11 +64,11 @@ const ManagerExchangeApprovalQueue = () => {
     };
 
     useEffect(() => {
-        if (['admin', 'manager'].includes(userRole)) {
+        if (canApproveExchange) {
             fetchProductData();
             fetchData();
         }
-    }, [userRole]);
+    }, [userRole, canApproveExchange]);
 
     const handleApproveClick = (request) => {
         setSelectedRequest(request);
