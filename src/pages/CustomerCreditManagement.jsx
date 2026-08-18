@@ -607,16 +607,25 @@ const CustomerCreditManagement = () => {
                                                     </Badge>
                                                 </td>
                                                 <td className="payment-proof">
-                                                    {payment.proof && (
-                                                        payment.proof.startsWith('http') ? (
-                                                            <a href={payment.proof} target="_blank" rel="noopener noreferrer" className="proof-link">
-                                                                View Image
+                                                    {(payment.receipt_image_url || payment.payment_reference || payment.proof) && (
+                                                        <>
+                                                        {payment.receipt_image_url && payment.receipt_image_url.startsWith('http') && (
+                                                            <a href={payment.receipt_image_url} target="_blank" rel="noopener noreferrer" className="proof-link">
+                                                                View Receipt
                                                             </a>
-                                                        ) : (
-                                                            <span className="proof-text">{payment.proof}</span>
-                                                        )
+                                                        )}
+                                                        {(payment.payment_reference || payment.proof) && (
+                                                            (payment.payment_reference || payment.proof).startsWith('http') ? (
+                                                                <a href={payment.payment_reference || payment.proof} target="_blank" rel="noopener noreferrer" className="proof-link">
+                                                                    View Image
+                                                                </a>
+                                                            ) : (
+                                                                <span className="proof-text">{payment.payment_reference || payment.proof}</span>
+                                                            )
+                                                        )}
+                                                        </>
                                                     )}
-                                                    {!payment.proof && <span className="text-muted">N/A</span>}
+                                                    {!(payment.receipt_image_url || payment.payment_reference || payment.proof) && <span className="text-muted">N/A</span>}
                                                 </td>
                                             </tr>
                                         ))}
