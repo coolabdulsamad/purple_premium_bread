@@ -118,12 +118,29 @@ const AllPayments = () => {
         }
     };
 
-    const formatProof = (proof) => {
-        if (!proof) return 'N/A';
-        if (proof.startsWith('http')) {
-            return <a href={proof} target="_blank" rel="noopener noreferrer" className="proof-link">View Receipt</a>;
-        }
-        return <span className="proof-text">{proof}</span>;
+    // Show the uploaded receipt/document link (receipt_image_url) AND the
+    // text reference (payment_reference from Telegram, or proof from the web).
+    const formatProof = (payment) => {
+        const receiptUrl = payment.receipt_image_url;
+        const refText = payment.payment_reference || payment.proof || '';
+        const receiptIsLink = receiptUrl && receiptUrl.startsWith('http');
+        const refIsLink = refText.startsWith('http');
+        if (!receiptIsLink && !refText) return 'N/A';
+        return (
+            <span className="proof-cell">
+                {receiptIsLink && (
+                    <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="proof-link">
+                        View Receipt
+                    </a>
+                )}
+                {refIsLink && (
+                    <a href={refText} target="_blank" rel="noopener noreferrer" className="proof-link">
+                        View Image
+                    </a>
+                )}
+                {refText && !refIsLink && <span className="proof-text">{refText}</span>}
+            </span>
+        );
     };
 
     return (
@@ -316,7 +333,7 @@ const AllPayments = () => {
                                                 </Badge>
                                             </td>
                                             <td className="payment-proof">
-                                                {formatProof(payment.proof)}
+                                                {formatProof(payment)}
                                             </td>
                                         </tr>
                                     ))}
