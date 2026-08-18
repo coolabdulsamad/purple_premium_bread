@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import ProductionLogForm from './ProductionLogForm';
 import ProductionHistory from './ProductionHistory';
 import ProductionAnalytics from './ProductionAnalytics';
@@ -17,6 +18,7 @@ import { ToastContainer } from 'react-toastify';
 const ProductionDashboard = () => {
   const [activeTab, setActiveTab] = useState('log');
   const { isAuthenticated, userRole } = useAuth();
+  const { can } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,7 +31,7 @@ const ProductionDashboard = () => {
     return null;
   }
 
-  const canViewAnalytics = userRole === 'admin' || userRole === 'manager';
+  const canViewAnalytics = can('analysis.view', ['admin', 'manager']);
 
   return (
     <div className="production-dashboard-container">
