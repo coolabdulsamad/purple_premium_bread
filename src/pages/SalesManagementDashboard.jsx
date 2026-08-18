@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -25,10 +26,12 @@ const SalesManagementDashboard = () => {
     // We start with the existing stock management tab
     const [activeTab, setActiveTab] = useState('stockManagement');
     const { isAuthenticated, userRole } = useAuth();
+    const { can } = usePermissions();
     const navigate = useNavigate();
 
     // Only Managers and Admins should access this dashboard
-    const isManagerOrAdmin = ['admin', 'manager'].includes(userRole);
+    // (permission catalog wins when configured; roles are the fallback)
+    const isManagerOrAdmin = can('sales.approve', ['admin', 'manager']);
 
     useEffect(() => {
         if (!isAuthenticated || !isManagerOrAdmin) {
