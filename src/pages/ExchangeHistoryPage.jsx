@@ -29,6 +29,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import CustomToast from '../components/CustomToast';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import '../assets/styles/exchangeHistory.css';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
@@ -55,6 +56,7 @@ const getStatusIcon = (status) => {
 
 const ExchangeHistoryPage = () => {
     const { user } = useAuth();
+    const { can } = usePermissions();
     const [exchanges, setExchanges] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -154,7 +156,8 @@ const ExchangeHistoryPage = () => {
         setFilterStatus('ALL');
     };
 
-    const isAdminOrManager = ['admin', 'manager'].includes(user?.role);
+    // Permission catalog decides when configured; roles are the fallback.
+    const isAdminOrManager = can('exchanges.approve', ['admin', 'manager']);
 
     if (loading) return (
         <div className="eh-loading">
