@@ -37,6 +37,7 @@ import { RiSecurePaymentFill, RiStockFill } from 'react-icons/ri';
 import { HiMiniBellAlert } from 'react-icons/hi2';
 import { FaBuilding } from 'react-icons/fa6';
 import useAuth from '../hooks/useAuth';
+import usePermissions from '../hooks/usePermissions';
 import '../assets/styles/Sidebar.css';
 import { ASSETS } from '../assets';
 
@@ -71,68 +72,69 @@ const LogoutConfirmationDialog = ({ isOpen, onClose, onConfirm }) => {
 
 const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
   const { userRole, logout } = useAuth();
+  const { can } = usePermissions();
   const isMobile = window.innerWidth <= 768;
   const [logoutDialog, setLogoutDialog] = useState(false);
 
   const navGroups = [
     // 1️⃣ Dashboard & Sales
     [
-      { name: 'Dashboard', path: '/dashboard', icon: <FaHome />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'POS', path: '/pos', icon: <FaShoppingCart />, roles: ['admin', 'sales', 'manager'] },
-      { name: 'Sales Management', path: '/sales_management', icon: <FaClipboardList />, roles: ['admin', 'manager'] },
-      { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, roles: ['admin', 'sales', 'manager', 'accountant'] },
-      { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
-      { name: 'Sales Returns', path: '/returns', icon: <FaUndo />, roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Dashboard', path: '/dashboard', icon: <FaHome />, perm: 'dashboard.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'POS', path: '/pos', icon: <FaShoppingCart />, perm: 'sales.view', roles: ['admin', 'sales', 'manager'] },
+      { name: 'Sales Management', path: '/sales_management', icon: <FaClipboardList />, perm: 'sales.approve', roles: ['admin', 'manager'] },
+      { name: 'Sales History', path: '/sales-history', icon: <FaFileInvoiceDollar />, perm: 'sales.view', roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Exchanges History', path: '/exchanges-history', icon: <FaExchangeAlt />, perm: 'exchanges.view', roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Sales Returns', path: '/returns', icon: <FaUndo />, perm: 'returns.view', roles: ['admin', 'sales', 'manager', 'accountant'] },
     ],
 
     // 2️⃣ Production & Products
     [
-      { name: 'Production', path: '/production', icon: <FaUtensils />, roles: ['admin', 'baker', 'manager'] },
-      { name: 'Products', path: '/products', icon: <FaBoxOpen />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Recipes', path: '/recipes', icon: <FaTools />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Production', path: '/production', icon: <FaUtensils />, perm: 'production.view', roles: ['admin', 'baker', 'manager'] },
+      { name: 'Products', path: '/products', icon: <FaBoxOpen />, perm: 'products.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Recipes', path: '/recipes', icon: <FaTools />, perm: 'recipes.view', roles: ['admin', 'manager', 'accountant'] },
     ],
 
     // 3️⃣ Inventory & Stock Management
     [
-      { name: 'Raw Materials', path: '/raw_materials_inventory', icon: <MdInventory />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Waste Stock', path: '/wastestock', icon: <FaTrashAlt />, roles: ['admin', 'sales', 'manager', 'accountant'] },
-      { name: 'Branches', path: '/branches', icon: <FaBuilding />, roles: ['admin', 'manager'] },
+      { name: 'Raw Materials', path: '/raw_materials_inventory', icon: <MdInventory />, perm: 'raw_materials.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Waste Stock', path: '/wastestock', icon: <FaTrashAlt />, perm: 'inventory.view', roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Branches', path: '/branches', icon: <FaBuilding />, perm: 'branches.view', roles: ['admin', 'manager'] },
     ],
 
     // 4️⃣ Finance & Reports
     [
-      { name: 'Reports', path: '/reports', icon: <FaChartBar />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Money', path: '/money', icon: <FaWallet />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Advance Wallets', path: '/wallets', icon: <FaPiggyBank />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, roles: ['admin', 'manager', 'sales', 'accountant'] },
-      { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, roles: ['admin', 'accountant'] },
-      { name: 'Staff Loans', path: '/loans', icon: <FaHandHoldingUsd />, roles: ['admin', 'accountant', 'manager'] },
+      { name: 'Reports', path: '/reports', icon: <FaChartBar />, perm: 'reports.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Money', path: '/money', icon: <FaWallet />, perm: 'money.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Advance Wallets', path: '/wallets', icon: <FaPiggyBank />, perm: 'wallets.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Payments', path: '/payments', icon: <RiSecurePaymentFill />, perm: 'payments.view', roles: ['admin', 'manager', 'sales', 'accountant'] },
+      { name: 'Operating Expenses', path: '/operating-expenses', icon: <FaMoneyBillWave />, perm: 'expenses.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Salary Management', path: '/salary-management', icon: <FaMoneyBillWave />, perm: 'salaries.view', roles: ['admin', 'accountant'] },
+      { name: 'Staff Loans', path: '/loans', icon: <FaHandHoldingUsd />, perm: 'debts.view', roles: ['admin', 'accountant', 'manager'] },
     ],
 
     // 5️⃣ People & System
     [
-      { name: 'Customers', path: '/customers', icon: <FaUsers />, roles: ['admin', 'sales', 'manager', 'accountant'] },
-      { name: 'Riders', path: '/riders', icon: <FaMotorcycle />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, roles: ['admin', 'accountant', 'manager'] },
-      { name: 'User Admin', path: '/admin', icon: <FaUserCog />, roles: ['admin'] },
-      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, roles: ['admin', 'manager', 'sales', 'accountant'] },
-      { name: 'Services', path: '/services', icon: <FaStore />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Customers', path: '/customers', icon: <FaUsers />, perm: 'customers.view', roles: ['admin', 'sales', 'manager', 'accountant'] },
+      { name: 'Riders', path: '/riders', icon: <FaMotorcycle />, perm: 'riders.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Staff Management', path: '/staff', icon: <FaUserCog />, perm: 'staff.view', roles: ['admin', 'accountant', 'manager'] },
+      { name: 'User Admin', path: '/admin', icon: <FaUserCog />, perm: 'users.view', roles: ['admin'] },
+      { name: 'Alerts', path: '/alerts', icon: <HiMiniBellAlert />, perm: 'inventory.view', roles: ['admin', 'manager', 'sales', 'accountant'] },
+      { name: 'Services', path: '/services', icon: <FaStore />, perm: 'services.view', roles: ['admin', 'manager', 'accountant'] },
     ],
 
     // 6️⃣ Communication
     [
-      { name: 'Team Chat', path: '/team-chat', icon: <FaComments />, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
-      { name: 'AI Assistant', path: '/ai-assistant', icon: <FaRobot />, roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Team Chat', path: '/team-chat', icon: <FaComments />, perm: 'chat.view', roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
+      { name: 'AI Assistant', path: '/ai-assistant', icon: <FaRobot />, perm: 'ai_assistant.view', roles: ['admin', 'manager', 'accountant'] },
     ],
 
     // 7️⃣ Governance
     [
-      { name: 'Approvals', path: '/approvals', icon: <FaCheckDouble />, roles: ['admin', 'manager', 'accountant'] },
-      { name: 'Permissions', path: '/permissions', icon: <FaUserShield />, roles: ['admin'] },
-      { name: 'Audit Logs', path: '/audit-logs', icon: <FaHistory />, roles: ['admin', 'manager'] },
-      { name: 'Settings', path: '/settings', icon: <FaCog />, roles: ['admin'] },
-      { name: 'My Profile', path: '/profile', icon: <FaUser />, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
+      { name: 'Approvals', path: '/approvals', icon: <FaCheckDouble />, perm: 'approvals.view', roles: ['admin', 'manager', 'accountant'] },
+      { name: 'Permissions', path: '/permissions', icon: <FaUserShield />, perm: 'settings.view', roles: ['admin'] },
+      { name: 'Audit Logs', path: '/audit-logs', icon: <FaHistory />, perm: 'audit_logs.view', roles: ['admin', 'manager'] },
+      { name: 'Settings', path: '/settings', icon: <FaCog />, perm: 'settings.view', roles: ['admin'] },
+      { name: 'My Profile', path: '/profile', icon: <FaUser />, perm: null, roles: ['admin', 'manager', 'sales', 'baker', 'accountant'] },
     ],
   ];
 
@@ -158,7 +160,7 @@ const Sidebar = ({ sidebarExpanded, setSidebarExpanded }) => {
       <nav className="sidebar-nav">
         {navGroups.map((group, index) => {
           const visibleLinks = group.filter(
-            (link) => userRole && link.roles.includes(userRole)
+            (link) => userRole && (link.perm ? can(link.perm, link.roles) : link.roles.includes(userRole))
           );
           if (visibleLinks.length === 0) return null;
           return (
