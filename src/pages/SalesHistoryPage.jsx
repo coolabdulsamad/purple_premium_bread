@@ -434,7 +434,7 @@ const fetchCustomers = async () => {
                                 <span class="detail-label">Receipt ID:</span> ${saleDetails.id}
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Date:</span> ${format(new Date(saleDetails.created_at), 'MMM dd, yyyy hh:mm:ss a')}
+                                <span class="detail-label">Date:</span> ${format(new Date(saleDetails.sale_date || saleDetails.created_at), 'MMM dd, yyyy hh:mm:ss a')}
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Cashier:</span> ${saleDetails.cashier_name || 'N/A'}
@@ -1133,7 +1133,7 @@ const fetchCustomers = async () => {
                                         <tr key={sale.id} className="sh-table__row">
                                             <td className="sh-table__cell sh-table__cell--number">{index + 1}</td>
                                             <td className="sh-table__cell sh-table__cell--date">
-                                                {format(new Date(sale.created_at), 'MMM d, yyyy h:mm a')}
+                                                {format(new Date(sale.sale_date || sale.created_at), 'MMM d, yyyy h:mm a')}
                                             </td>
                                             <td className="sh-table__cell sh-table__cell--customer">
                                                 {sale.is_rider_sale ? (
@@ -1275,7 +1275,7 @@ const fetchCustomers = async () => {
                                                 </div>
                                                 <div className="sh-detail-item">
                                                     <span className="sh-detail-label">Date & Time:</span>
-                                                    <span className="sh-detail-value">{format(new Date(saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
+                                                    <span className="sh-detail-value">{format(new Date(saleDetails.sale_date || saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
                                                 </div>
                                                 <div className="sh-detail-item">
                                                     <span className="sh-detail-label">Cashier:</span>
@@ -1540,7 +1540,7 @@ const fetchCustomers = async () => {
                                             <div className="sh-details-grid--compact">
                                                 <div className="sh-detail-item">
                                                     <span className="sh-detail-label">Transaction Created:</span>
-                                                    <span className="sh-detail-value">{format(new Date(saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
+                                                    <span className="sh-detail-value">{format(new Date(saleDetails.sale_date || saleDetails.created_at), 'MMMM dd, yyyy hh:mm:ss a')}</span>
                                                 </div>
                                                 {saleDetails.updated_at && (
                                                     <div className="sh-detail-item">
