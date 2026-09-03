@@ -111,6 +111,7 @@ const NewSalePage = () => {
 
   // Free Stock Feature State
   const [isFreeStockChecked, setIsFreeStockChecked] = useState(false);
+  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().split("T")[0]); // manual sale date, defaults to today
   const [freeStockQuantities, setFreeStockQuantities] = useState({});
   const [freeStockReason, setFreeStockReason] = useState("");
 
@@ -767,6 +768,8 @@ const NewSalePage = () => {
       // Phase 5: split payments + wallet
       paymentSplits,
       walletAmountUsed: walletAmount,
+      // Manual sale date (YYYY-MM-DD, defaults to today)
+      saleDate,
     };
 
     try {
@@ -1207,6 +1210,17 @@ const NewSalePage = () => {
                         </option>
                       ))}
                     </Form.Select>
+                  </div>
+
+                  <div className="ppb-opt">
+                    <label>Sale Date</label>
+                    <FormControl
+                      type="date"
+                      value={saleDate}
+                      max={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setSaleDate(e.target.value)}
+                      required
+                    />
                   </div>
 
                   <div className="ppb-opt">
