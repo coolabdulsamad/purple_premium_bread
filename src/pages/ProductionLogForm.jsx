@@ -33,6 +33,7 @@ function ProductionLogForm() {
   const [productionCounts, setProductionCounts] = useState({});
   const [wasteCounts, setWasteCounts] = useState({});
   const [shift, setShift] = useState("Morning");
+  const [productionDate, setProductionDate] = useState(() => new Date().toISOString().split("T")[0]); // manual production date, defaults to today
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -107,7 +108,7 @@ function ProductionLogForm() {
     try {
       const res = await axios.post(
         `${API_BASE_URL}/production/log`,
-        { productionData: payload, shift },
+        { productionData: payload, shift, production_date: productionDate },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -149,9 +150,24 @@ function ProductionLogForm() {
 
   return (
     <div className="plf-wrapper">
-      <h2 className="plf-title">Log Today’s Production</h2>
+      <h2 className="plf-title">Log Production</h2>
 
       <Form onSubmit={handleSubmit} className="plf-form">
+        <Form.Group className="plf-shift">
+          <label>Production Date</label>
+          <div className="plf-inputwrap">
+            <CalendarDays size={18} />
+            <Form.Control
+              type="date"
+              value={productionDate}
+              max={new Date().toISOString().split("T")[0]}
+              onChange={(e) => setProductionDate(e.target.value)}
+              className="plf-input"
+              required
+            />
+          </div>
+        </Form.Group>
+
         <Form.Group className="plf-shift">
           <label>Shift</label>
           <div className="plf-inputwrap">
