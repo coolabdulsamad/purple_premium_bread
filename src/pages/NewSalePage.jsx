@@ -22,6 +22,9 @@ import {
   FaMotorcycle,
   FaWallet,
   FaLayerGroup,
+  FaSave,
+  FaFolderOpen,
+  FaCheckDouble,
 } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -76,6 +79,25 @@ const emptyPayment = () => ({
   walletAmount: "",
 });
 
+// Drafts are stored in the browser (localStorage) so they survive reloads / leaving the page.
+const DRAFTS_STORAGE_KEY = "ppb_new_sale_drafts";
+
+const freshCart = (id, name) => ({
+  id,
+  name: name || `Group ${id}`,
+  items: [],
+  payment: emptyPayment(),
+  total: 0,
+  discount: 0,
+  note: "",
+  isAdvantageSale: false,
+  advantageAmount: 0,
+  itemAdvantageAmounts: {},
+  isRiderSale: false,
+  selectedRider: null,
+  riderCreditInfo: null,
+});
+
 /* ========= Main Component ========= */
 const NewSalePage = () => {
   const [products, setProducts] = useState([]);
@@ -105,6 +127,27 @@ const NewSalePage = () => {
   ]);
   
   const [activeCartId, setActiveCartId] = useState(1);
+  // Saved draft groups (persisted in localStorage — survive reload/leave)
+  const [drafts, setDrafts] = useState(() => {
+    try {
+      const raw = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [completingAll, setCompletingAll] = useState(false);
+
+  // Persist drafts to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+    } catch {
+      // storage full or blocked — drafts stay in memory for this session
+    }
+  }, [drafts]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
@@ -496,6 +539,98 @@ const NewSalePage = () => {
     });
   };
 
+  /* ========= Drafts: save / restore / delete sales groups ========= */
+  const saveCartAsDraft = (cart) => {
+    if (!cart || cart.items.length === 0) {
+      toast(<CustomToast type="warning" message="This group is empty — nothing to draft." />, { toastId: 'draft-empty' });
+      return;
+    }
+    // A receipt image is a File and cannot be saved to storage — everything else is kept
+    const { paymentImage, ...paymentRest } = cart.payment;
+    const draft = {
+      ...cart,
+      payment: { ...paymentRest },
+      draftId: `${Date.now()}-${cart.id}`,
+      savedAt: new Date().toISOString(),
+    };
+    if (paymentImage) {
+      toast(<CustomToast type="info" message="Receipt image can't be saved in a draft — re-attach it after restoring." />, { toastId: 'draft-img-note' });
+    }
+    setDrafts((prev) => [...prev, draft]);
+    // Reset the group so a fresh sale can start in it
+    setCarts((prev) => prev.map((c) => (c.id === cart.id ? freshCart(c.id, c.name) : c)));
+    toast(<CustomToast type="success" message={`${cart.name} saved to drafts.`} />, { toastId: 'draft-saved' });
+  };
+
+  const restoreDraft = (draftId) => {
+    const draft = drafts.find((d) => d.draftId === draftId);
+    if (!draft) return;
+    // Re-match customer/rider against the latest lists so balances & credit are fresh
+    const freshCustomer = draft.payment?.customer
+      ? customers.find((c) => c.id === draft.payment.customer.id) || draft.payment.customer
+      : null;
+    const freshRider = draft.selectedRider
+      ? riders.find((r) => r.id === draft.selectedRider.id) || draft.selectedRider
+      : null;
+    const nextId = carts.length ? Math.max(...carts.map((c) => c.id)) + 1 : 1;
+    const restored = {
+      id: nextId,
+      name: draft.name || `Group ${nextId}`,
+      items: draft.items || [],
+      payment: { ...emptyPayment(), ...draft.payment, customer: freshCustomer, paymentImage: null },
+      total: draft.total || 0,
+      discount: draft.discount || 0,
+      note: draft.note || "",
+      isAdvantageSale: !!draft.isAdvantageSale,
+      advantageAmount: draft.advantageAmount || 0,
+      itemAdvantageAmounts: draft.itemAdvantageAmounts || {},
+      isRiderSale: !!draft.isRiderSale,
+      selectedRider: freshRider,
+      riderCreditInfo: draft.riderCreditInfo || null,
+    };
+    setCarts((prev) => [...prev, restored]);
+    setActiveCartId(nextId);
+    setDrafts((prev) => prev.filter((d) => d.draftId !== draftId));
+    setShowDrafts(false);
+    toast(<CustomToast type="success" message={`${restored.name} restored from drafts.`} />, { toastId: 'draft-restored' });
+  };
+
+  const deleteDraft = (draftId) => {
+    const draft = drafts.find((d) => d.draftId === draftId);
+    setDrafts((prev) => prev.filter((d) => d.draftId !== draftId));
+    toast(<CustomToast type="info" message={`${draft?.name || 'Draft'} deleted.`} />, { toastId: 'draft-deleted' });
+  };
+
+  /* ========= Complete all groups at once ========= */
+  const handleCompleteAll = async () => {
+    const ready = carts.filter((c) => c.items.length > 0);
+    if (ready.length === 0) {
+      toast(<CustomToast type="warning" message="No groups with items to complete." />, { toastId: 'complete-all-empty' });
+      return;
+    }
+    const skipped = carts.length - ready.length;
+    const confirmMsg = skipped > 0
+      ? `Complete all ${ready.length} group(s) with items now? (${skipped} empty group(s) will be skipped)`
+      : `Complete all ${ready.length} group(s) now?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setCompletingAll(true);
+    const failed = [];
+    for (const cart of ready) {
+      // Process groups one by one so stock checks stay safe
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await handleCheckout(cart);
+      if (!ok) failed.push(cart.name);
+    }
+    setCompletingAll(false);
+
+    if (failed.length === 0) {
+      toast(<CustomToast type="success" message={`All ${ready.length} group(s) completed successfully.`} />, { toastId: 'complete-all-success' });
+    } else {
+      toast(<CustomToast type="error" message={`Completed ${ready.length - failed.length} of ${ready.length} group(s). Failed: ${failed.join(', ')}`} />, { toastId: 'complete-all-partial' });
+    }
+  };
+
   /* ========= Split Payment Helpers ========= */
   const updateSplit = (cartId, index, field, value) => {
     setCarts((prev) =>
@@ -537,7 +672,7 @@ const NewSalePage = () => {
   const handleCheckout = async (cartToProcess) => {
     if (!cartToProcess || cartToProcess.items.length === 0) {
       toast(<CustomToast type="warning" message="Cart is empty." />, { toastId: 'cart-warn' });
-      return;
+      return false;
     }
 
     // Validate rider credit if it's a rider sale with credit payment
@@ -552,7 +687,7 @@ const NewSalePage = () => {
         toast(<CustomToast type="error" message={`Rider's available credit (${formatNaira(availableCredit)}) is insufficient for this sale.`} />, {
           toastId: 'rider-credit-error'
         });
-        return;
+        return false;
       }
     }
 
@@ -574,7 +709,7 @@ const NewSalePage = () => {
         toast(<CustomToast type="error" message="Please provide a reason for the free stock/incentive." />, {
           toastId: 'free-stock-reason-error'
         });
-        return;
+        return false;
       }
     }
 
@@ -583,7 +718,7 @@ const NewSalePage = () => {
       toast(<CustomToast type="error" message="You must be logged in to process a sale." />, {
         toastId: 'sale-error'
       });
-      return;
+      return false;
     }
 
     let paymentImageUrl = null;
@@ -599,7 +734,7 @@ const NewSalePage = () => {
         toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
           toastId: 'receipt-error'
         });
-        return;
+        return false;
       }
     }
 
@@ -624,7 +759,7 @@ const NewSalePage = () => {
     if (cartToProcess.payment.paymentMethod === "Credit") {
       if (!cartToProcess.payment.customer && !cartToProcess.isRiderSale) {
         toast(<CustomToast type="error" message="Select a customer for credit sales." />, { toastId: 'sales-error' });
-        return;
+        return false;
       }
 
       // For rider sales, use rider's credit info
@@ -644,7 +779,7 @@ const NewSalePage = () => {
         
         if (balanceDue > availableCredit && amountPaid < total) {
           toast(<CustomToast type="error" message="Exceeds rider's remaining credit limit." />, { toastId: 'credit-error' });
-          return;
+          return false;
         }
       } else if (cartToProcess.payment.customer) {
         const remainingLimit =
@@ -653,7 +788,7 @@ const NewSalePage = () => {
 
         if (balanceDue > remainingLimit && amountPaid < total) {
           toast(<CustomToast type="error" message="Exceeds customer's remaining credit limit." />, { toastId: 'credit-error' });
-          return;
+          return false;
         }
       }
 
@@ -669,7 +804,7 @@ const NewSalePage = () => {
         toast(<CustomToast type="warning" message="Choose a due date for outstanding balance." />, {
           toastId: 'balance-warn'
         });
-        return;
+        return false;
       }
     } else {
       amountPaid = total;
@@ -687,21 +822,21 @@ const NewSalePage = () => {
     if (walletAmount > 0) {
       if (!walletOwnerId) {
         toast(<CustomToast type="error" message="Select a customer or rider to use their advance wallet." />, { toastId: 'wallet-error' });
-        return;
+        return false;
       }
       const key = `${walletOwnerType}:${walletOwnerId}`;
       const available = walletBalances[key];
       if (available === null || available === undefined) {
         toast(<CustomToast type="error" message="Advance wallet is unavailable (migration pending)." />, { toastId: 'wallet-error' });
-        return;
+        return false;
       }
       if (walletAmount > available + 0.004) {
         toast(<CustomToast type="error" message={`Wallet balance (${formatNaira(available)}) is less than ${formatNaira(walletAmount)}.`} />, { toastId: 'wallet-error' });
-        return;
+        return false;
       }
       if (walletAmount > amountPaid + 0.004) {
         toast(<CustomToast type="error" message="Wallet amount cannot exceed the amount being paid." />, { toastId: 'wallet-error' });
-        return;
+        return false;
       }
     }
 
@@ -715,11 +850,11 @@ const NewSalePage = () => {
       const splitTotal = Math.round(splits.reduce((sum, s) => sum + s.amount, 0) * 100) / 100;
       if (splits.length === 0) {
         toast(<CustomToast type="error" message="Add at least one split payment amount." />, { toastId: 'split-error' });
-        return;
+        return false;
       }
       if (Math.abs(splitTotal - realMoneyPaid) > 0.01) {
         toast(<CustomToast type="error" message={`Split amounts (${formatNaira(splitTotal)}) must equal the cash/bank part of the payment (${formatNaira(realMoneyPaid)}).`} />, { toastId: 'split-error' });
-        return;
+        return false;
       }
       paymentSplits = splits;
     }
@@ -848,9 +983,11 @@ const NewSalePage = () => {
       };
       
       fetchAllData();
+      return true;
     } catch (error) {
       console.error("Sale Processing Error:", error.response?.data || error.message);
       toast(<CustomToast type="error" message={error.response?.data?.error || "Failed to process sale."} />, { toastId: 'sales-error' });
+      return false;
     }
   };
 
@@ -897,10 +1034,62 @@ const NewSalePage = () => {
                 {carts.length}
               </Badge>
             </div>
-            <Button className="ppb-group-add" size="sm" onClick={addCart}>
-              + Add Group
-            </Button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button
+                className="ppb-group-add"
+                size="sm"
+                onClick={() => setShowDrafts((s) => !s)}
+                title="Saved draft groups"
+              >
+                <FaFolderOpen /> Drafts ({drafts.length})
+              </Button>
+              <Button className="ppb-group-add" size="sm" onClick={addCart}>
+                + Add Group
+              </Button>
+            </div>
           </div>
+
+          {/* drafts panel */}
+          {showDrafts && (
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10, marginBottom: 10, background: "#fafafa" }}>
+              <div style={{ fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <FaSave /> Saved Drafts ({drafts.length})
+              </div>
+              {drafts.length === 0 ? (
+                <div style={{ color: "#6b7280", fontSize: 13 }}>
+                  No drafts yet. Use the Draft button on a group to save it here — it stays even if you reload or leave this page.
+                </div>
+              ) : (
+                drafts.map((d) => (
+                  <div key={d.draftId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 0", borderTop: "1px solid #eee" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {d.name}
+                        {d.isRiderSale && <FaMotorcycle style={{ marginLeft: 6, color: "#7c3aed" }} />}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280" }}>
+                        {(d.items || []).length} item(s) · {formatNaira(d.total || 0)}
+                        {d.payment?.customer?.fullname
+                          ? ` · ${d.payment.customer.fullname}`
+                          : d.selectedRider?.fullname
+                            ? ` · ${d.selectedRider.fullname}`
+                            : ""}
+                        {d.savedAt ? ` · ${new Date(d.savedAt).toLocaleString()}` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <Button size="sm" variant="outline-primary" onClick={() => restoreDraft(d.draftId)}>
+                        Restore
+                      </Button>
+                      <Button size="sm" variant="outline-danger" onClick={() => deleteDraft(d.draftId)}>
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
           {/* group tabs */}
           <div className="ppb-groups">
@@ -1696,13 +1885,38 @@ const NewSalePage = () => {
                     </div>
                   )}
                 </div>
-                <Button
-                  className="ppb-checkout"
-                  onClick={() => handleCheckout(activeCart)}
-                  disabled={!activeCart.items.length}
-                >
-                  Complete Sale — {activeCart.name}
-                </Button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Button
+                    variant="outline-secondary"
+                    onClick={() => saveCartAsDraft(activeCart)}
+                    disabled={!activeCart.items.length || completingAll}
+                    title="Save this group as a draft — it stays saved even if you reload or leave this page"
+                  >
+                    <FaSave /> Draft
+                  </Button>
+                  <Button
+                    className="ppb-checkout"
+                    style={{ flex: 1 }}
+                    onClick={() => handleCheckout(activeCart)}
+                    disabled={!activeCart.items.length || completingAll}
+                  >
+                    Complete Sale — {activeCart.name}
+                  </Button>
+                </div>
+                {carts.filter((c) => c.items.length > 0).length > 1 && (
+                  <Button
+                    variant="success"
+                    className="w-100"
+                    style={{ marginTop: 8 }}
+                    onClick={handleCompleteAll}
+                    disabled={completingAll}
+                  >
+                    <FaCheckDouble />{" "}
+                    {completingAll
+                      ? "Completing groups…"
+                      : `Complete All Groups (${carts.filter((c) => c.items.length > 0).length})`}
+                  </Button>
+                )}
               </div>
             </>
           )}
