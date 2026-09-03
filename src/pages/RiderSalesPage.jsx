@@ -142,7 +142,7 @@ const RiderSalesPage = () => {
 
         const headers = ['Date', 'Sale ID', 'Total Amount', 'Payment Method', 'Status', 'Balance Due', 'Items Count'];
         const csvData = sales.map(sale => [
-            format(new Date(sale.created_at), 'yyyy-MM-dd HH:mm'),
+            format(new Date(sale.sale_date || sale.created_at), 'yyyy-MM-dd HH:mm'),
             sale.id,
             sale.total_amount,
             sale.payment_method,
@@ -394,7 +394,7 @@ const RiderSalesPage = () => {
                                     {sales.map((sale) => (
                                         <tr key={sale.id}>
                                             <td className="rs-date">
-                                                {format(new Date(sale.created_at), 'MMM d, yyyy h:mm a')}
+                                                {format(new Date(sale.sale_date || sale.created_at), 'MMM d, yyyy h:mm a')}
                                             </td>
                                             <td className="rs-mono">#{sale.id}</td>
                                             <td>
@@ -477,7 +477,7 @@ const RiderSalesPage = () => {
                                 <div className="rs-details-grid">
                                     <div className="rs-detail-item">
                                         <span className="rs-detail-label">Date:</span>
-                                        <span>{format(new Date(saleDetails.created_at), 'MMMM dd, yyyy hh:mm a')}</span>
+                                        <span>{format(new Date(saleDetails.sale_date || saleDetails.created_at), 'MMMM dd, yyyy hh:mm a')}</span>
                                     </div>
                                     <div className="rs-detail-item">
                                         <span className="rs-detail-label">Cashier:</span>
