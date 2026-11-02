@@ -1,5 +1,5 @@
 // src/pages/NewSalePage.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import {
   FaShoppingCart,
@@ -36,6 +36,7 @@ import {
   InputGroup,
   Badge,
   FormCheck,
+  Modal,
 } from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -81,6 +82,10 @@ const emptyPayment = () => ({
 
 // Drafts are stored in the browser (localStorage) so they survive reloads / leaving the page.
 const DRAFTS_STORAGE_KEY = "ppb_new_sale_drafts";
+
+// Offline support: cached POS reference data + queued offline sales
+const POS_CACHE_KEY = "ppb_pos_cache";
+const OFFLINE_QUEUE_KEY = "ppb_offline_sales";
 
 const freshCart = (id, name) => ({
   id,
@@ -140,6 +145,23 @@ const NewSalePage = () => {
   const [showDrafts, setShowDrafts] = useState(false);
   const [completingAll, setCompletingAll] = useState(false);
 
+  // Confirmation dialog (single sale or complete-all) — review full details first
+  const [confirmSale, setConfirmSale] = useState(null); // { type: 'single' | 'all', carts: [...] }
+  const [processingConfirm, setProcessingConfirm] = useState(false);
+
+  // Offline mode: queue sales on this device when there is no internet, sync when back
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [offlineQueue, setOfflineQueue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [syncing, setSyncing] = useState(false);
+
   // Persist drafts to localStorage whenever they change
   useEffect(() => {
     try {
@@ -148,6 +170,15 @@ const NewSalePage = () => {
       // storage full or blocked — drafts stay in memory for this session
     }
   }, [drafts]);
+
+  // Persist offline queue to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(offlineQueue));
+    } catch {
+      // storage full or blocked — queue stays in memory for this session
+    }
+  }, [offlineQueue]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
@@ -233,14 +264,46 @@ const NewSalePage = () => {
         }, {});
         setInventory(inventoryMap);
 
+        // Cache the POS reference data on this device for offline use
+        try {
+          localStorage.setItem(POS_CACHE_KEY, JSON.stringify({
+            products: productsData,
+            customers: customersRes.data,
+            services: servicesRes.data,
+            riders: ridersRes.data?.riders || [],
+            inventoryMap,
+            savedAt: new Date().toISOString(),
+          }));
+        } catch {
+          // storage full or blocked — offline cache skipped
+        }
+
         setLoading(false);
 
       } catch (error) {
         if (!mounted) return;
         console.error("POS Data Fetch Error:", error.response?.data || error.message);
-        toast(<CustomToast type="error" message={`Failed to load POS data: ${error.response?.data?.error || 'Server Error'}`} />, {
-          toastId: 'pos-error'
-        });
+        // Offline fallback: use the reference data last saved on this device
+        let cached = null;
+        try {
+          cached = JSON.parse(localStorage.getItem(POS_CACHE_KEY) || "null");
+        } catch {
+          cached = null;
+        }
+        if (cached && Array.isArray(cached.products) && cached.products.length) {
+          setProducts(cached.products);
+          setCustomers(cached.customers || []);
+          setServices(cached.services || []);
+          setRiders(cached.riders || []);
+          setInventory(cached.inventoryMap || {});
+          toast(<CustomToast type="info" message="No internet — using data saved on this device. New sales will sync when connection returns." />, {
+            toastId: 'pos-offline-cache'
+          });
+        } else {
+          toast(<CustomToast type="error" message={`Failed to load POS data: ${error.response?.data?.error || 'No internet connection'}`} />, {
+            toastId: 'pos-error'
+          });
+        }
         setLoading(false);
       }
     };
@@ -249,6 +312,73 @@ const NewSalePage = () => {
     
     return () => { mounted = false; };
   }, [userId, userRole]);
+
+  /* ========= Online status + offline sales sync ========= */
+  const syncOfflineSales = async () => {
+    let queue;
+    try {
+      queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]");
+    } catch {
+      queue = [];
+    }
+    if (!Array.isArray(queue) || queue.length === 0) return;
+    if (!navigator.onLine || syncing) return;
+
+    setSyncing(true);
+    let synced = 0;
+    let stillOffline = false;
+    const remaining = [];
+    for (let i = 0; i < queue.length; i += 1) {
+      const entry = queue[i];
+      try {
+        // Process queued sales one by one so stock checks stay safe
+        // eslint-disable-next-line no-await-in-loop
+        await api.post(`/sales/process`, entry.payload);
+        synced += 1;
+      } catch (error) {
+        if (!error.response) {
+          // Connection dropped again — keep this and everything after it
+          stillOffline = true;
+          remaining.push(...queue.slice(i));
+          break;
+        }
+        // Server rejected it (e.g. stock changed) — keep it queued so nothing is lost silently
+        remaining.push(entry);
+      }
+    }
+    setOfflineQueue(remaining);
+    setSyncing(false);
+
+    if (synced > 0) {
+      toast(<CustomToast type="success" message={`${synced} offline sale(s) synced to the cloud.`} />, { toastId: 'offline-sync-success' });
+    }
+    if (!stillOffline && remaining.length > 0) {
+      toast(<CustomToast type="warning" message={`${remaining.length} offline sale(s) could not sync (server rejected them). They are kept on this device.`} />, { toastId: 'offline-sync-rejected' });
+    }
+  };
+
+  // A ref so the event listeners below always call the latest version
+  const syncRef = useRef(syncOfflineSales);
+  syncRef.current = syncOfflineSales;
+
+  useEffect(() => {
+    const goOnline = () => {
+      setIsOnline(true);
+      syncRef.current?.();
+    };
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    // Also retry periodically while the page is open
+    const interval = setInterval(() => {
+      if (navigator.onLine) syncRef.current?.();
+    }, 60000);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+      clearInterval(interval);
+    };
+  }, []);
 
   /* ========= Get Product Price Based on Rider ========= */
   const getProductPrice = (product, cart) => {
@@ -601,34 +731,48 @@ const NewSalePage = () => {
     toast(<CustomToast type="info" message={`${draft?.name || 'Draft'} deleted.`} />, { toastId: 'draft-deleted' });
   };
 
-  /* ========= Complete all groups at once ========= */
-  const handleCompleteAll = async () => {
+  /* ========= Complete all groups at once (opens confirmation dialog) ========= */
+  const handleCompleteAll = () => {
     const ready = carts.filter((c) => c.items.length > 0);
     if (ready.length === 0) {
       toast(<CustomToast type="warning" message="No groups with items to complete." />, { toastId: 'complete-all-empty' });
       return;
     }
-    const skipped = carts.length - ready.length;
-    const confirmMsg = skipped > 0
-      ? `Complete all ${ready.length} group(s) with items now? (${skipped} empty group(s) will be skipped)`
-      : `Complete all ${ready.length} group(s) now?`;
-    if (!window.confirm(confirmMsg)) return;
+    setConfirmSale({ type: "all", carts: ready });
+  };
 
-    setCompletingAll(true);
-    const failed = [];
-    for (const cart of ready) {
-      // Process groups one by one so stock checks stay safe
-      // eslint-disable-next-line no-await-in-loop
-      const ok = await handleCheckout(cart);
-      if (!ok) failed.push(cart.name);
-    }
-    setCompletingAll(false);
+  /* ========= Runs after the confirmation dialog is accepted ========= */
+  const processConfirmedSales = async () => {
+    if (!confirmSale) return;
+    setProcessingConfirm(true);
 
-    if (failed.length === 0) {
-      toast(<CustomToast type="success" message={`All ${ready.length} group(s) completed successfully.`} />, { toastId: 'complete-all-success' });
+    if (confirmSale.type === "single") {
+      await handleCheckout(confirmSale.carts[0]);
     } else {
-      toast(<CustomToast type="error" message={`Completed ${ready.length - failed.length} of ${ready.length} group(s). Failed: ${failed.join(', ')}`} />, { toastId: 'complete-all-partial' });
+      setCompletingAll(true);
+      const failed = [];
+      let queuedCount = 0;
+      for (const cart of confirmSale.carts) {
+        // Process groups one by one so stock checks stay safe
+        // eslint-disable-next-line no-await-in-loop
+        const ok = await handleCheckout(cart);
+        if (ok === false) failed.push(cart.name);
+        if (ok === "queued") queuedCount += 1;
+      }
+      setCompletingAll(false);
+
+      const totalCount = confirmSale.carts.length;
+      if (failed.length === 0 && queuedCount === 0) {
+        toast(<CustomToast type="success" message={`All ${totalCount} group(s) completed successfully.`} />, { toastId: 'complete-all-success' });
+      } else if (failed.length === 0) {
+        toast(<CustomToast type="info" message={`${queuedCount} of ${totalCount} group(s) saved offline — they will sync when internet returns.`} />, { toastId: 'complete-all-queued' });
+      } else {
+        toast(<CustomToast type="error" message={`Completed ${totalCount - failed.length} of ${totalCount} group(s). Failed: ${failed.join(', ')}`} />, { toastId: 'complete-all-partial' });
+      }
     }
+
+    setProcessingConfirm(false);
+    setConfirmSale(null);
   };
 
   /* ========= Split Payment Helpers ========= */
@@ -730,10 +874,16 @@ const NewSalePage = () => {
           headers: { "Content-Type": "multipart/form-data" },
         });
         paymentImageUrl = upload.data.url;
-      } catch {
-        toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
-          toastId: 'receipt-error'
-        });
+      } catch (uploadErr) {
+        if (!uploadErr.response) {
+          toast(<CustomToast type="error" message="No internet — a receipt image can't be saved offline. Remove the image to queue this sale, or reconnect and try again." />, {
+            toastId: 'receipt-error'
+          });
+        } else {
+          toast(<CustomToast type="error" message="Failed to upload receipt image." />, {
+            toastId: 'receipt-error'
+          });
+        }
         return false;
       }
     }
@@ -810,6 +960,12 @@ const NewSalePage = () => {
       amountPaid = total;
       balanceDue = 0;
       status = "Paid";
+      // Attach the selected customer even for non-credit sales (customer is optional here)
+      if (cartToProcess.isRiderSale && cartToProcess.selectedRider) {
+        customerId = cartToProcess.selectedRider.customer_id || null;
+      } else if (cartToProcess.payment.customer) {
+        customerId = cartToProcess.payment.customer.id;
+      }
     }
 
     // --- Phase 5: wallet usage ---
@@ -986,10 +1142,42 @@ const NewSalePage = () => {
       return true;
     } catch (error) {
       console.error("Sale Processing Error:", error.response?.data || error.message);
+      if (!error.response) {
+        // No internet / server unreachable — save the sale on this device and sync later
+        const entry = {
+          id: `${Date.now()}-${cartToProcess.id}`,
+          label: `${cartToProcess.name} · ${formatNaira(total)}`,
+          queuedAt: new Date().toISOString(),
+          payload,
+        };
+        setOfflineQueue((prev) => [...prev, entry]);
+        toast(<CustomToast type="info" message="No internet — sale saved on this device. It will sync automatically when connection returns." />, { toastId: 'offline-queued' });
+
+        // Reset the processed cart (same as a completed sale)
+        setCarts((prev) =>
+          prev.map((cart) =>
+            cart.id === cartToProcess.id ? freshCart(cart.id, cart.name) : cart
+          )
+        );
+        setIsFreeStockChecked(false);
+        setFreeStockQuantities({});
+        setFreeStockReason("");
+        return "queued";
+      }
       toast(<CustomToast type="error" message={error.response?.data?.error || "Failed to process sale."} />, { toastId: 'sales-error' });
       return false;
     }
   };
+
+  /* ========= Customers selectable in POS (rider-linked customers are hidden) ========= */
+  const selectableCustomers = useMemo(() => {
+    const riderCustomerIds = new Set(
+      (riders || [])
+        .map((r) => r.customer_id)
+        .filter((id) => id !== null && id !== undefined)
+    );
+    return customers.filter((c) => !riderCustomerIds.has(c.id));
+  }, [customers, riders]);
 
   /* ========= Discount Options ========= */
   const discountOptions = useMemo(
@@ -1026,6 +1214,25 @@ const NewSalePage = () => {
       {/* LEFT: Cart / Groups */}
       <aside className="ppb-cart">
         <Card className="ppb-panel ppb-sticky">
+          {(!isOnline || offlineQueue.length > 0) && (
+            <div style={{ background: !isOnline ? "#fef3c7" : "#ede9fe", border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 10px", marginBottom: 10, fontSize: 13 }}>
+              {!isOnline && (
+                <div style={{ color: "#92400e", fontWeight: 600 }}>
+                  You are offline — new sales are saved on this device and will sync automatically when connection returns.
+                </div>
+              )}
+              {offlineQueue.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, color: "#5b21b6", marginTop: !isOnline ? 4 : 0 }}>
+                  <span>{offlineQueue.length} sale(s) saved on this device waiting to sync.</span>
+                  {isOnline && (
+                    <Button size="sm" variant="outline-primary" onClick={syncOfflineSales} disabled={syncing}>
+                      {syncing ? "Syncing…" : "Sync Now"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="ppb-panel__header">
             <div className="ppb-title">
               <FaShoppingCart />
@@ -1502,7 +1709,7 @@ const NewSalePage = () => {
                               c.id === activeCart.id
                                 ? {
                                     ...c,
-                                    payment: { ...emptyPayment(), paymentMethod: opt.key },
+                                    payment: { ...emptyPayment(), paymentMethod: opt.key, customer: c.payment.customer },
                                   }
                                 : c
                             )
@@ -1513,6 +1720,80 @@ const NewSalePage = () => {
                         <span>{opt.key}</span>
                       </button>
                     ))}
+                  </div>
+
+                  {/* Customer selection — available for ALL payment methods (required for Credit, optional otherwise) */}
+                  <div className="ppb-pay__fields">
+                    <div className="ppb-opt">
+                      <label>
+                        <FaUser className="ppb-opt-icon" /> Customer
+                        {activeCart.payment.paymentMethod !== "Credit" && (
+                          <small className="ppb-muted"> (optional)</small>
+                        )}
+                      </label>
+                      <Form.Select
+                        value={activeCart.payment.customer?.id || ""}
+                        onChange={(e) => {
+                          const selected = selectableCustomers.find(
+                            (c) => c.id === parseInt(e.target.value || "0", 10)
+                          );
+                          setCarts((prev) =>
+                            prev.map((c) =>
+                              c.id === activeCart.id
+                                ? {
+                                    ...c,
+                                    payment: {
+                                      ...c.payment,
+                                      customer: selected || null,
+                                      amountPaid: 0,
+                                      walletAmount: "",
+                                    },
+                                  }
+                                : c
+                            )
+                          );
+                          if (selected) fetchWalletBalance("CUSTOMER", selected.id);
+                        }}
+                        disabled={activeCart.isRiderSale} // Rider sales use the rider instead of a customer
+                      >
+                        <option value="">Select customer…</option>
+                        {selectableCustomers.map((cu) => (
+                          <option key={cu.id} value={cu.id}>
+                            {cu.fullname}
+                          </option>
+                        ))}
+                      </Form.Select>
+
+                      {activeCart.payment.customer && !activeCart.isRiderSale && (
+                        <div className="ppb-customer-info">
+                          Balance:{" "}
+                          {formatNaira(activeCart.payment.customer.balance)} •
+                          Limit:{" "}
+                          {formatNaira(
+                            activeCart.payment.customer.credit_limit
+                          )}
+                        </div>
+                      )}
+
+                      {activeCart.isRiderSale && activeCart.selectedRider && (
+                        <div className="ppb-rider-info">
+                          <div className="ppb-info-item">
+                            <span>Rider:</span>
+                            <strong>{activeCart.selectedRider.fullname}</strong>
+                          </div>
+                          <div className="ppb-info-item">
+                            <span>Current Balance:</span>
+                            <span className={activeCart.selectedRider.current_balance > 0 ? 'text-danger' : 'text-success'}>
+                              {formatNaira(activeCart.selectedRider.current_balance)}
+                            </span>
+                          </div>
+                          <div className="ppb-info-item">
+                            <span>Credit Limit:</span>
+                            <span>{formatNaira(activeCart.selectedRider.credit_limit)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* method-specific fields */}
@@ -1574,74 +1855,6 @@ const NewSalePage = () => {
 
                   {activeCart.payment.paymentMethod === "Credit" && (
                     <div className="ppb-pay__fields">
-                      <div className="ppb-opt">
-                        <label>
-                          <FaUser className="ppb-opt-icon" /> Customer
-                        </label>
-                        <Form.Select
-                          value={activeCart.payment.customer?.id || ""}
-                          onChange={(e) => {
-                            const selected = customers.find(
-                              (c) => c.id === parseInt(e.target.value || "0", 10)
-                            );
-                            setCarts((prev) =>
-                              prev.map((c) =>
-                                c.id === activeCart.id
-                                  ? {
-                                      ...c,
-                                      payment: {
-                                        ...c.payment,
-                                        customer: selected || null,
-                                        amountPaid: 0,
-                                        walletAmount: "",
-                                      },
-                                    }
-                                  : c
-                              )
-                            );
-                            if (selected) fetchWalletBalance("CUSTOMER", selected.id);
-                          }}
-                          disabled={activeCart.isRiderSale} // Disable customer selection for rider sales
-                        >
-                          <option value="">Select customer…</option>
-                          {customers.map((cu) => (
-                            <option key={cu.id} value={cu.id}>
-                              {cu.fullname}
-                            </option>
-                          ))}
-                        </Form.Select>
-
-                        {activeCart.payment.customer && !activeCart.isRiderSale && (
-                          <div className="ppb-customer-info">
-                            Balance:{" "}
-                            {formatNaira(activeCart.payment.customer.balance)} •
-                            Limit:{" "}
-                            {formatNaira(
-                              activeCart.payment.customer.credit_limit
-                            )}
-                          </div>
-                        )}
-
-                        {activeCart.isRiderSale && activeCart.selectedRider && (
-                          <div className="ppb-rider-info">
-                            <div className="ppb-info-item">
-                              <span>Rider:</span>
-                              <strong>{activeCart.selectedRider.fullname}</strong>
-                            </div>
-                            <div className="ppb-info-item">
-                              <span>Current Balance:</span>
-                              <span className={activeCart.selectedRider.current_balance > 0 ? 'text-danger' : 'text-success'}>
-                                {formatNaira(activeCart.selectedRider.current_balance)}
-                              </span>
-                            </div>
-                            <div className="ppb-info-item">
-                              <span>Credit Limit:</span>
-                              <span>{formatNaira(activeCart.selectedRider.credit_limit)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
                       {((activeCart.payment.customer && !activeCart.isRiderSale) || 
                         (activeCart.isRiderSale && activeCart.selectedRider)) && (
                         <>
@@ -1897,7 +2110,7 @@ const NewSalePage = () => {
                   <Button
                     className="ppb-checkout"
                     style={{ flex: 1 }}
-                    onClick={() => handleCheckout(activeCart)}
+                    onClick={() => setConfirmSale({ type: "single", carts: [activeCart] })}
                     disabled={!activeCart.items.length || completingAll}
                   >
                     Complete Sale — {activeCart.name}
@@ -2028,6 +2241,119 @@ const NewSalePage = () => {
           </div>
         </Card>
       </section>
+
+      {/* Confirmation dialog — review the full details before the sale is recorded */}
+      <Modal
+        show={!!confirmSale}
+        onHide={() => { if (!processingConfirm) setConfirmSale(null); }}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton={!processingConfirm}>
+          <Modal.Title>
+            {confirmSale?.type === "all"
+              ? `Confirm ${confirmSale.carts.length} Sale(s)`
+              : `Confirm Sale — ${confirmSale?.carts[0]?.name || ""}`}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ marginBottom: 10, color: "#374151", fontSize: 14 }}>
+            Please check the full details below before confirming.
+            {" "}Sale date: <b>{saleDate}</b>
+          </p>
+          {confirmSale?.carts.map((c) => {
+            const t = getTotals(c);
+            return (
+              <div key={c.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10, marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  {c.name}
+                  {c.isRiderSale && <FaMotorcycle style={{ color: "#7c3aed" }} />}
+                </div>
+                <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>
+                  {c.isRiderSale && c.selectedRider
+                    ? `Rider: ${c.selectedRider.fullname}`
+                    : c.payment.customer
+                      ? `Customer: ${c.payment.customer.fullname}`
+                      : "Customer: Walk-in (none)"}
+                  {" · "}Payment: {c.payment.useSplit ? "Split" : c.payment.paymentMethod}
+                  {c.payment.paymentMethod === "Credit" && (
+                    <>
+                      {" · "}Paid: {formatNaira(c.payment.amountPaid || 0)}
+                      {" · "}Due: {c.payment.dueDate || "—"}
+                    </>
+                  )}
+                </div>
+                {c.payment.useSplit && (
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Splits: {(c.payment.splits || [])
+                      .filter((s) => Number(s.amount) > 0)
+                      .map((s) => `${s.method} ${formatNaira(s.amount)}`)
+                      .join(", ") || "—"}
+                  </div>
+                )}
+                {Number(c.payment.walletAmount) > 0 && (
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    Advance wallet used: {formatNaira(c.payment.walletAmount)}
+                  </div>
+                )}
+                <div style={{ marginTop: 6 }}>
+                  {c.items.map((it) => {
+                    const adv = Number(c.itemAdvantageAmounts[it.id]) || 0;
+                    return (
+                      <div key={it.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0" }}>
+                        <span>
+                          {it.name} × {it.quantity}
+                          {adv > 0 ? ` (+${formatNaira(adv)} adv.)` : ""}
+                        </span>
+                        <b>{formatNaira((Number(it.price) + adv) * Number(it.quantity))}</b>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ borderTop: "1px dashed #e5e7eb", marginTop: 6, paddingTop: 6, fontSize: 13 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Subtotal</span><b>{formatNaira(t.subtotal)}</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Discount</span><b>- {formatNaira(t.discountAmount)}</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Tax</span><b>{formatNaira(t.tax)}</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+                    <span>Total</span><b>{formatNaira(t.total)}</b>
+                  </div>
+                </div>
+                {c.note ? (
+                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                    Note: {c.note}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline-secondary"
+            onClick={() => setConfirmSale(null)}
+            disabled={processingConfirm}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="success"
+            onClick={processConfirmedSales}
+            disabled={processingConfirm}
+          >
+            {processingConfirm
+              ? "Processing…"
+              : confirmSale?.type === "all"
+                ? `Confirm All (${confirmSale.carts.length})`
+                : "Confirm Sale"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
