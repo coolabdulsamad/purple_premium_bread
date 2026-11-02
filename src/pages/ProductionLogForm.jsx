@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-import { Form } from "react-bootstrap";
+import { Form, Modal } from "react-bootstrap";
 import {
   Package,
   Recycle,
@@ -36,6 +36,7 @@ function ProductionLogForm() {
   const [productionDate, setProductionDate] = useState(() => new Date().toISOString().split("T")[0]); // manual production date, defaults to today
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false); // confirmation dialog before saving
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -74,13 +75,39 @@ function ProductionLogForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  // Build the list of products that actually have quantities entered
+  const buildPayload = () =>
+    products
+      .map((p) => ({
+        productId: p.id,
+        name: p.name,
+        quantityProduced: productionCounts[p.id] || 0,
+        wasteQuantity: wasteCounts[p.id] || 0,
+      }))
+      .filter((item) => item.quantityProduced > 0 || item.wasteQuantity > 0);
+
+  // Step 1: validate and open the confirmation dialog
+  const handleSubmit = (e) => {
     e.preventDefault();
+
+    const payload = buildPayload();
+    if (payload.length === 0) {
+      // toast(<CustomToast type="info" message="Enter at least one quantity to log." />);
+      toast(<CustomToast id={`info-quantity-${Date.now()}`} type="info" message="Enter at least one quantity to log." />, {
+        toastId: 'quantity-info'
+      });
+      return;
+    }
+
+    setShowConfirm(true);
+  };
+
+  // Step 2: user confirmed the details in the dialog — save to the server
+  const handleConfirmSubmit = async () => {
     setSubmitting(true);
 
     const token = localStorage.getItem("token");
     if (!token) {
-      toast(<CustomToast type="error" message="Not authenticated. Please login." />);
       toast(<CustomToast id={`error-login-${Date.now()}`} type="error" message="Not authenticated. Please login." />, {
         toastId: 'login-error'
       });
@@ -88,22 +115,7 @@ function ProductionLogForm() {
       return;
     }
 
-    const payload = products
-      .map((p) => ({
-        productId: p.id,
-        quantityProduced: productionCounts[p.id] || 0,
-        wasteQuantity: wasteCounts[p.id] || 0,
-      }))
-      .filter((item) => item.quantityProduced > 0 || item.wasteQuantity > 0);
-
-    if (payload.length === 0) {
-      // toast(<CustomToast type="info" message="Enter at least one quantity to log." />);
-      toast(<CustomToast id={`info-quantity-${Date.now()}`} type="info" message="Enter at least one quantity to log." />, {
-        toastId: 'quantity-info'
-      });
-      setSubmitting(false);
-      return;
-    }
+    const payload = buildPayload().map(({ name, ...item }) => item);
 
     try {
       const res = await axios.post(
@@ -134,6 +146,7 @@ function ProductionLogForm() {
       const init = products.reduce((acc, p) => ({ ...acc, [p.id]: 0 }), {});
       setProductionCounts(init);
       setWasteCounts(init);
+      setShowConfirm(false);
     } catch (err) {
       const msg =
         err?.response?.data?.details ||
@@ -244,6 +257,68 @@ function ProductionLogForm() {
           {submitting ? "Saving..." : "Log Production"}
         </button>
       </Form>
+
+      {/* Confirmation dialog — review the full details before saving */}
+      <Modal
+        show={showConfirm}
+        onHide={() => { if (!submitting) setShowConfirm(false); }}
+        centered
+      >
+        <Modal.Header closeButton={!submitting}>
+          <Modal.Title>Confirm Production Log</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ color: "#374151", fontSize: 14 }}>
+            Please check the full details below before saving.
+          </p>
+          <p style={{ fontSize: 14 }}>
+            <b>Date:</b> {productionDate} &nbsp;·&nbsp; <b>Shift:</b> {shift}
+          </p>
+          <div style={{ borderTop: "1px solid #e5e7eb" }}>
+            {buildPayload().map((item) => (
+              <div
+                key={item.productId}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "6px 0",
+                  borderBottom: "1px solid #f3f4f6",
+                  fontSize: 14,
+                }}
+              >
+                <span>{item.name}</span>
+                <span>
+                  Produced: <b>{item.quantityProduced}</b>
+                  {" · "}
+                  Waste: <b>{item.wasteQuantity}</b>
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>
+            {buildPayload().length} product(s) will be logged.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="plf-btn--primary"
+            style={{ background: "#6b7280" }}
+            onClick={() => setShowConfirm(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="plf-btn--primary"
+            onClick={handleConfirmSubmit}
+            disabled={submitting}
+          >
+            {submitting ? "Saving..." : "Confirm & Save"}
+          </button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
