@@ -8,6 +8,9 @@ import CustomToast from '../components/CustomToast';
 
 const API_BASE_URL = "https://purple-premium-bread-backend.onrender.com/api";
 
+// Only this many rows are rendered per page — keeps the page fast with large history
+const PAGE_SIZE = 50;
+
 const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -31,6 +34,7 @@ const MaterialTransactions = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'transaction_date', direction: 'descending' });
     const [showRestockModal, setShowRestockModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const [restockFormData, setRestockFormData] = useState({
         raw_material_id: '',
@@ -78,18 +82,17 @@ const MaterialTransactions = () => {
         }
     };
 
-    const fetchTransactions = useCallback(async () => {
+    // NOTE: fetches only run on page load and when the Apply button is clicked —
+    // typing in the filter inputs no longer refetches the whole history each keystroke.
+    const fetchTransactions = useCallback(async (overrideFilters) => {
         setLoading(true);
         setError('');
         try {
-            const queryParams = new URLSearchParams(filters).toString();
+            const activeFilters = overrideFilters || filters;
+            const queryParams = new URLSearchParams(activeFilters).toString();
             const response = await axios.get(`${API_BASE_URL}/material-transactions?${queryParams}`);
             setTransactions(response.data);
-            // toast.success('Transactions loaded successfully');
-            // toast(<CustomToast id="raw" type="success" message="Transactions loaded successfully" />);
-            toast(<CustomToast id={`success-transaction-${Date.now()}`} type="success" message="Transactions loaded successfully" />, {
-                toastId: 'transaction-success'
-            });
+            setCurrentPage(1);
         } catch (err) {
             const errorMsg = 'Failed to load material transaction history. ' + (err.response?.data?.details || err.message);
             setError(errorMsg);
@@ -108,9 +111,11 @@ const MaterialTransactions = () => {
         fetchUsers();
     }, []);
 
+    // Initial load only — filter changes wait for the Apply button
     useEffect(() => {
         fetchTransactions();
-    }, [filters, fetchTransactions]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleRestockChange = (e) => {
         const { name, value } = e.target;
@@ -177,13 +182,15 @@ const MaterialTransactions = () => {
     };
 
     const handleClearFilters = () => {
-        setFilters({
+        const cleared = {
             rawMaterialId: '',
             transactionType: '',
             startDate: '',
             endDate: '',
             recordedByUserId: '',
-        });
+        };
+        setFilters(cleared);
+        fetchTransactions(cleared);
         // toast.info('Filters cleared');
         // toast(<CustomToast id="raw" type="info" message="Filters cleared" />);
         toast(<CustomToast id={`info-filter-${Date.now()}`} type="info" message="Filters cleared" />, {
@@ -226,6 +233,14 @@ const MaterialTransactions = () => {
         }
         return 0;
     });
+
+    // Paginate client-side so thousands of rows never render at once (prevents page freeze)
+    const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / PAGE_SIZE));
+    const safePage = Math.min(currentPage, totalPages);
+    const paginatedTransactions = sortedTransactions.slice(
+        (safePage - 1) * PAGE_SIZE,
+        safePage * PAGE_SIZE
+    );
 
     return (
         <div className="material-transactions-container">
@@ -427,7 +442,7 @@ const MaterialTransactions = () => {
                         <Col md={12} lg={1}>
                             <Button
                                 variant="outline-primary"
-                                onClick={fetchTransactions}
+                                onClick={() => fetchTransactions()}
                                 className="w-100 filter-apply-btn"
                             >
                                 <FaSearch className="me-1" /> Apply
@@ -494,9 +509,9 @@ const MaterialTransactions = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedTransactions.map((transaction, index) => (
+                                    {paginatedTransactions.map((transaction, index) => (
                                         <tr key={transaction.id}>
-                                            <td className="fw-bold serial-number">{index + 1}</td>
+                                            <td className="fw-bold serial-number">{(safePage - 1) * PAGE_SIZE + index + 1}</td>
                                             <td className="fw-bold transaction-id">#{transaction.id}</td>
                                             <td className="transaction-date">
                                                 {new Date(transaction.transaction_date).toLocaleDateString()}
@@ -546,6 +561,29 @@ const MaterialTransactions = () => {
                                     ))}
                                 </tbody>
                             </Table>
+                            {totalPages > 1 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        disabled={safePage <= 1}
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <span style={{ fontSize: 13, color: '#6b7280' }}>
+                                        Page {safePage} of {totalPages} ({transactions.length} transactions)
+                                    </span>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        disabled={safePage >= totalPages}
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </Card.Body>
