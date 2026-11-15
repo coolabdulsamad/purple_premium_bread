@@ -121,7 +121,7 @@ const MoneyPage = () => {
     // ---- Transaction modal ----
     const openTxnModal = (direction) => {
         setTxnForm({
-            account_id: accounts[0]?.id || '',
+            account_id: accounts.find((a) => a.is_active)?.id || '',
             direction,
             amount: '',
             category: '',
