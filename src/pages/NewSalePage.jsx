@@ -237,7 +237,7 @@ const NewSalePage = () => {
             api.get(productsEndpoint),
             api.get(`/customers`),
             api.get(`/services/newsales`),
-            api.get(`/riders?status=active`),
+            api.get(`/riders?status=active&limit=1000`),
           ]);
 
         const productsData = (productsAndStockRes.data || [])
@@ -1130,7 +1130,7 @@ const NewSalePage = () => {
           setInventory(inventoryMap);
 
           // Refresh riders list
-          const ridersRes = await api.get(`/riders?status=active`);
+          const ridersRes = await api.get(`/riders?status=active&limit=1000`);
           setRiders(ridersRes.data?.riders || []);
 
         } catch (error) {
@@ -1169,14 +1169,14 @@ const NewSalePage = () => {
     }
   };
 
-  /* ========= Customers selectable in POS (rider-linked customers are hidden) ========= */
+  /* ===== Customers selectable in POS (rider-linked and inactive customers are hidden) ===== */
   const selectableCustomers = useMemo(() => {
     const riderCustomerIds = new Set(
       (riders || [])
         .map((r) => r.customer_id)
         .filter((id) => id !== null && id !== undefined)
     );
-    return customers.filter((c) => !riderCustomerIds.has(c.id));
+    return customers.filter((c) => c.is_active !== false && !riderCustomerIds.has(c.id));
   }, [customers, riders]);
 
   /* ========= Discount Options ========= */
