@@ -175,6 +175,8 @@ const CustomersPage = () => {
 
     // filter safe: guard against undefined
     const filtered = customers.filter((c) => {
+        // Rider-linked customers are managed on the Riders page — never list them here
+        if (c.is_rider || c.rider_id) return false;
         const q = (searchTerm || "").trim().toLowerCase();
         if (!q) return true;
         const fields = [
