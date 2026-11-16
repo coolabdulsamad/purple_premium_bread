@@ -13,4 +13,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>,
 );
-// build marker 2026-11-16: force fresh deploy to refresh edge assets
+window.__PPB_BUILD__ = '2026-11-16-pos-riders-fix';
