@@ -13,7 +13,8 @@
 
 /* LAYOUT */
 .custs-page {
-    max-width: 1200px;
+    max-width: 1600px;
+    width: 100%;
     margin: 0 auto;
     padding: 16px;
 }
@@ -160,11 +161,11 @@
 }
 
 .custs-table {
-  min-width: 900px;   /* force table wider than container if needed */
+  min-width: 760px;   /* small fallback so cells stay readable on narrow screens */
   border-collapse: collapse;
   background: white;
   border-radius: 8px;
-  table-layout: auto; /* let us define min-widths */
+  table-layout: auto;
 }
 
 .custs-table th,
@@ -184,45 +185,45 @@
 }
 
 /* Column widths */
-.customers-table th:nth-child(1),
-.customers-table td:nth-child(1) {
-  min-width: 60px; /* S/N */
+.custs-table th:nth-child(1),
+.custs-table td:nth-child(1) {
+  min-width: 50px; /* S/N */
   text-align: center;
 }
 
 
 .custs-table th:nth-child(2),
 .custs-table td:nth-child(2) {
-  min-width: 200px; /* Name */
+  min-width: 150px; /* Name */
     /* text-align: center; */
 }
 .custs-table th:nth-child(3),
 .custs-table td:nth-child(3) {
-  min-width: 220px; /* Email */
+  min-width: 160px; /* Email */
     /* text-align: center; */
 }
 .custs-table th:nth-child(4),
 .custs-table td:nth-child(4) {
-  min-width: 140px; /* Phone */
+  min-width: 110px; /* Phone */
     text-align: center;
 }
 .custs-table th:nth-child(5),
 .custs-table td:nth-child(5),
 .custs-table th:nth-child(6),
 .custs-table td:nth-child(6) {
-  min-width: 150px; /* Credit limit, Balance */
+  min-width: 110px; /* Credit limit, Balance */
     text-align: center;
 }
 .custs-table th:nth-child(7),
 .custs-table td:nth-child(7),
 .custs-table th:nth-child(8),
 .custs-table td:nth-child(8) {
-  min-width: 140px; /* Due date, Status */
+  min-width: 100px; /* Due date, Status */
   text-align: center;
 }
 .custs-table th:nth-child(9),
 .custs-table td:nth-child(9) {
-  min-width: 120px; /* Actions */
+  min-width: 90px; /* Actions */
   text-align: center;
 }
 
